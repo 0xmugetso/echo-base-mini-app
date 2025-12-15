@@ -1,4 +1,125 @@
+import { APP_URL } from "./constants";
+
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || "2947513B-6507-4592-8817-F6B9383DD398"; // Fallback to provided key if env missing
+
+type NotificationResult =
+  | { state: "success" }
+  | { state: "error"; error: unknown }
+  | { state: "rate_limit" };
+
+export function getNeynarClient() {
+  const headers = {
+    "Content-Type": "application/json",
+    accept: "application/json",
+    api_key: NEYNAR_API_KEY,
+  };
+
+  return {
+    fetchNonce: async () => {
+      const res = await fetch("https://api.neynar.com/v2/auth/nonce", { headers });
+      if (!res.ok) throw new Error(`Nonce fetch failed: ${res.status}`);
+      return res.json();
+    },
+    fetchSigners: async ({ message, signature }: { message: string; signature: string }) => {
+      const res = await fetch("https://api.neynar.com/v2/auth/session-signers", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message, signature }),
+      });
+      if (!res.ok) throw new Error(`Signer fetch failed: ${res.status}`);
+      return res.json();
+    },
+    fetchBulkUsers: async ({ fids }: { fids: number[] }) => {
+      const url = `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fids.join(",")}`;
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`Bulk user fetch failed: ${res.status}`);
+      return res.json();
+    },
+    createSigner: async () => {
+      const res = await fetch("https://api.neynar.com/v2/signer", {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) throw new Error(`Create signer failed: ${res.status}`);
+      return res.json();
+    },
+    lookupSigner: async ({ signerUuid }: { signerUuid: string }) => {
+      const res = await fetch(`https://api.neynar.com/v2/signer/${signerUuid}`, {
+        headers,
+      });
+      if (!res.ok) throw new Error(`Lookup signer failed: ${res.status}`);
+      return res.json();
+    },
+    lookupUserByCustodyAddress: async ({ custodyAddress }: { custodyAddress: string }) => {
+      const res = await fetch(
+        `https://api.neynar.com/v2/farcaster/user/by_custody_address?custody_address=${custodyAddress}`,
+        { headers }
+      );
+      if (!res.ok) throw new Error(`Lookup custody user failed: ${res.status}`);
+      return res.json();
+    },
+    registerSignedKey: async (payload: {
+      appFid: number;
+      deadline: number;
+      signature: string;
+      signerUuid: string;
+      redirectUrl?: string;
+      sponsor?: { sponsored_by_neynar: boolean };
+    }) => {
+      const res = await fetch("https://api.neynar.com/v2/signer/signed_key", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Register signed key failed: ${res.status}`);
+      return res.json();
+    },
+  };
+}
+
+export async function getNeynarUser(fid: number) {
+  if (!fid) return null;
+  const client = getNeynarClient();
+  const { users } = await client.fetchBulkUsers({ fids: [fid] });
+  return users?.[0] || null;
+}
+
+export async function sendNeynarMiniAppNotification({
+  fid,
+  title,
+  body,
+}: {
+  fid: number;
+  title: string;
+  body: string;
+}): Promise<NotificationResult> {
+  try {
+    const res = await fetch("https://api.neynar.com/v2/notifications/mini-app", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        accept: "application/json",
+        api_key: NEYNAR_API_KEY,
+      },
+      body: JSON.stringify({
+        target_fids: [fid],
+        title,
+        body,
+        action_url: APP_URL,
+      }),
+    });
+
+    if (res.status === 429) return { state: "rate_limit" };
+    if (!res.ok) {
+      const error = await res.text();
+      return { state: "error", error };
+    }
+
+    return { state: "success" };
+  } catch (error) {
+    return { state: "error", error };
+  }
+}
 
 export async function getBestCast(fid: number) {
   if (!fid) return null;

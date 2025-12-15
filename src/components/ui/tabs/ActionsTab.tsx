@@ -191,7 +191,7 @@ export function ActionsTab({ context }: ActionTabProps) {
 
                 <div className="bg-black/50 p-3 mb-4 text-left border border-white/10">
                   <p className="text-[10px] text-gray-500 mb-1">PREVIEW</p>
-                  <p className="text-xs text-gray-300 italic">"{lastCast?.text}"</p>
+                  <p className="text-xs text-gray-300 italic">&quot;{lastCast?.text}&quot;</p>
                 </div>
 
                 <button
@@ -274,7 +274,7 @@ export function ActionsTab({ context }: ActionTabProps) {
                     <span className="text-[10px] text-gray-500 font-mono">{new Date(cast.date).toLocaleDateString()}</span>
                     <span className="bg-primary/20 text-primary px-1 text-[10px] font-bold">+{cast.points} PTS</span>
                   </div>
-                  <p className="text-xs text-gray-300 italic line-clamp-2">"{cast.text}"</p>
+                  <p className="text-xs text-gray-300 italic line-clamp-2">&quot;{cast.text}&quot;</p>
                   <div className="flex gap-2 mt-2">
                     <a
                       href={`https://warpcast.com/~/conversations/${cast.hash}`}

@@ -246,7 +246,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     const handleShare = async () => {
         const dataUrl = await captureImage(false);
-        let imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
+        const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
 
         const text = `Verifying my Onchain History on Echo.\n\nScore: ${formatNumber(farcasterScore, 2)}\nVol: $${formatNumber(baseVolume, 0)}\n\n@echo`;
         const url = "https://aura-mini-app.vercel.app";
@@ -446,7 +446,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                             <span className="absolute -top-3 left-3 bg-black px-2 text-xs text-primary font-bold border border-white/30">TOP_CAST.LOG</span>
                             {baseStats?.farcaster?.best_cast ? (
                                 <div className="mt-2">
-                                    <p className="text-sm text-gray-200 italic line-clamp-3 leading-relaxed">"{baseStats.farcaster.best_cast.text}"</p>
+                                    <p className="text-sm text-gray-200 italic line-clamp-3 leading-relaxed">&quot;{baseStats.farcaster.best_cast.text}&quot;</p>
                                     <div className="flex gap-4 mt-3 text-[10px] text-gray-400 font-mono border-t border-white/10 pt-2">
                                         <span className="flex items-center gap-1 text-white">♥ LIKES: <span className="text-gray-300">{baseStats.farcaster.best_cast.likes}</span></span>
                                         <span className="flex items-center gap-1 text-white">↻ RECASTS: <span className="text-gray-300">{baseStats.farcaster.best_cast.recasts}</span></span>

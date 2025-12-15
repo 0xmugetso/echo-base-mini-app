@@ -19,7 +19,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function fetchTxBatch(address: string) {
     let allItems: TxItem[] = [];
     let nextUrl: string | null = `https://api.covalenthq.com/v1/${BASE_CHAIN}/address/${address}/transactions_v3/page/0/`;
-    let formattedAddress = address.toLowerCase();
+    const formattedAddress = address.toLowerCase();
 
     console.log(`[CovalentLib] Starting fetch for ${formattedAddress}`);
 

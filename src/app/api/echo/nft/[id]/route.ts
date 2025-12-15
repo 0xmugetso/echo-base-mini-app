@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/db';
-import EchoProfile from '../../../../models/EchoProfile';
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '../../../../../lib/db';
+import EchoProfile from '../../../../../models/EchoProfile';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, context: any) {
     try {
-        const tokenId = parseInt(params.id);
+        const tokenId = parseInt(context?.params?.id);
 
         await dbConnect();
 

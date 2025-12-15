@@ -21,6 +21,8 @@ export interface IEchoProfile {
         earnings: number;
     };
     pointsGrinded: number;
+    nftTokenId?: number | null;
+    nftImage?: string | null;
 
     // Monthly Activity
     rewards: {
@@ -37,6 +39,14 @@ export interface IEchoProfile {
     dailyActions: {
         lastCastDate: string | null; // YYYY-MM-DD
         completedTasks: string[];
+        castHistory?: {
+            hash?: string;
+            text?: string;
+            date?: Date;
+            points?: number;
+            likes?: number;
+            recasts?: number;
+        }[];
     };
 
     lastUpdated: Date;
@@ -55,7 +65,6 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
         referredBy: { type: Number, default: null }, // FID
         referralStatus: { type: String, enum: ['pending', 'active'], default: 'pending' },
         referralStats: {
-            count: { type: Number, default: 0 },
             count: { type: Number, default: 0 },
             earnings: { type: Number, default: 0 }
         },
