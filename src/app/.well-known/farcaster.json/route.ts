@@ -1,13 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getFarcasterDomainManifest } from '~/lib/utils';
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  try {
-    const config = await getFarcasterDomainManifest();
-    return NextResponse.json(config);
-  } catch (error) {
-    console.error('Error generating metadata:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
+// Redirect to Farcaster-hosted manifest for registration
+const HOSTED_MANIFEST_URL =
+  "https://api.farcaster.xyz/miniapps/hosted-manifest/019b1fc1-2e5f-fcd9-451d-7faac80f1140";
+
+export function GET() {
+  return NextResponse.redirect(HOSTED_MANIFEST_URL, 307);
 }
