@@ -1,4 +1,4 @@
 export { HomeTab } from './HomeTab';
 export { ActionsTab } from './ActionsTab';
-export { ContextTab } from './ContextTab';
+export { TasksTab } from './TasksTab';
 export { WalletTab } from './WalletTab'; 

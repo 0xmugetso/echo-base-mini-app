@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 
 export interface NeynarUser {
   fid: number;
+  username: string;
+  pfp_url: string;
+  display_name?: string;
+  profile?: {
+    bio: {
+      text: string;
+    };
+  };
   score: number;
+  follower_count: number;
+  following_count: number;
 }
 
 export function useNeynarUser(context?: { user?: { fid?: number } }) {

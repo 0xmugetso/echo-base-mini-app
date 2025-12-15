@@ -1,77 +1,79 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { APP_NAME } from "~/lib/constants";
 import sdk from "@farcaster/miniapp-sdk";
 import { useMiniApp } from "@neynar/react";
+import { type NeynarUser } from "~/hooks/useNeynarUser";
+import { EchoLogo } from "./Icons";
+import { Tab } from "../App";
 
-type HeaderProps = {
-  neynarUser?: {
-    fid: number;
-    score: number;
-  } | null;
-};
+interface HeaderProps {
+  neynarUser?: NeynarUser | null;
+  tab: Tab;
+}
 
-export function Header({ neynarUser }: HeaderProps) {
+export function Header({ neynarUser, tab }: HeaderProps) {
   const { context } = useMiniApp();
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+
+  const [echoPoints, setEchoPoints] = useState(0);
+
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (!context?.user?.fid) return;
+      try {
+        const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
+        const data = await res.json();
+        if (data?.points !== undefined) {
+          setEchoPoints(data.points);
+        }
+      } catch (e) {
+        console.error("Failed to fetch points", e);
+      }
+    };
+
+    fetchPoints();
+    // Refresh interval every 10s to keep it somewhat live
+    const interval = setInterval(fetchPoints, 10000);
+    return () => clearInterval(interval);
+  }, [context?.user?.fid, tab]);
 
   return (
-    <div className="relative">
-      <div 
-        className="mt-4 mb-4 mx-4 px-2 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-between border-[3px] border-double border-primary"
-      >
-        <div className="text-lg font-light">
-          Welcome to {APP_NAME}!
-        </div>
-        {context?.user && (
-          <div 
-            className="cursor-pointer"
-            onClick={() => {
-              setIsUserDropdownOpen(!isUserDropdownOpen);
-            }}
-          >
-            {context.user.pfpUrl && (
-              <img 
-                src={context.user.pfpUrl} 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full border-2 border-primary"
-              />
-            )}
+    <div className="p-4 relative">
+      <div className="window">
+        <div className="window-header">
+          <div className="flex items-center gap-2">
+            <EchoLogo className="w-5 h-5 text-white" />
+            <span>ECHO_OS_V1.0</span>
           </div>
-        )}
-      </div>
-      {context?.user && (
-        <>      
-          {isUserDropdownOpen && (
-            <div className="absolute top-full right-0 z-50 w-fit mt-1 mx-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-              <div className="p-3 space-y-2">
-                <div className="text-right">
-                  <h3 
-                    className="font-bold text-sm hover:underline cursor-pointer inline-block"
-                    onClick={() => sdk.actions.viewProfile({ fid: context.user.fid })}
-                  >
-                    {context.user.displayName || context.user.username}
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    @{context.user.username}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    FID: {context.user.fid}
-                  </p>
-                  {neynarUser && (
-                    <>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        Neynar Score: {neynarUser.score}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 bg-white"></div>
+            <div className="w-3 h-3 bg-white"></div>
+          </div>
+        </div>
+        <div className="window-content bg-black flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {context?.user.pfpUrl ? (
+              <img src={context.user.pfpUrl} alt="Profile" className="w-16 h-16 border-2 border-white grayscale contrast-125" />
+            ) : (
+              <div className="w-16 h-16 border-2 border-white bg-primary"></div>
+            )}
+            <div>
+              <p className="text-white text-lg font-bold uppercase tracking-widest leading-none">
+                {context?.user?.displayName?.split('.')[0] || APP_NAME}
+              </p>
+              <p className="text-primary text-sm font-mono mt-1">FID: {context?.user.fid}</p>
             </div>
-          )}
-        </>
-      )}
+          </div>
+
+          <div className="text-right border-l-2 border-white pl-4">
+            <p className="text-2xl text-primary font-bold leading-none">{echoPoints}</p>
+            <p className="text-xs text-white uppercase mt-1">ECHO PTS</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

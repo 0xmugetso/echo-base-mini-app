@@ -19,32 +19,61 @@
  * 
  * This design system is intentionally minimal to prevent bloat and maintain consistency.
  */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #4d4dff;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', Helvetica, Arial, sans-serif;
+  font-family: var(--font-pixel), monospace;
+  image-rendering: pixelated;
+  overflow-x: hidden;
 }
 
+/* CRT Screen Overlay - Scanlines & Vignette */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+}
+
+/* Phosphor Glow for Primary Text */
+.text-primary,
+.text-blue-600 {
+  text-shadow: 0 0 2px rgba(0, 0, 255, 0.5);
+}
+
+::selection {
+  background: var(--primary);
+  color: white;
+  text-shadow: none;
+}
+
+/* Scrollbar styles */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 *::-webkit-scrollbar {
@@ -53,66 +82,75 @@ body {
 
 @layer base {
   :root {
-    --radius: 0.5rem;
+    --radius: 0px;
   }
 }
 
 @layer components {
+
   /* Global container styles for consistent layout */
   .container {
     @apply mx-auto max-w-md px-4;
   }
-  
+
   .container-wide {
     @apply mx-auto max-w-lg px-4;
   }
-  
+
   .container-narrow {
     @apply mx-auto max-w-sm px-4;
   }
 
-  /* Global card styles */
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm;
-  }
-  
-  .card-primary {
-    @apply bg-primary/10 border-primary/20;
+  /* Retro Window styles */
+  .window {
+    @apply bg-black border-2 border-primary text-white relative shadow-[4px_4px_0px_0px_theme('colors.primary')];
   }
 
-  /* Global button styles */
+  .window-header {
+    @apply bg-primary text-white px-2 py-1 flex justify-between items-center text-sm font-bold uppercase tracking-wider;
+  }
+
+  .window-content {
+    @apply p-4;
+  }
+
+  /* Global card styles - mapped to windows or bordered boxes */
+  .card {
+    @apply bg-black border border-white p-4 relative;
+  }
+
+  .card-primary {
+    @apply border-primary;
+  }
+
+  /* Retro button styles */
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center border-2 border-primary bg-black text-primary px-4 py-2 text-sm font-bold uppercase tracking-wide transition-none hover:bg-primary hover:text-white focus:outline-none focus:ring-0 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_theme('colors.primary')];
   }
-  
+
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark focus:ring-primary;
+    @apply border-primary text-primary hover:bg-primary hover:text-white;
   }
-  
+
   .btn-secondary {
-    @apply bg-secondary text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-secondary-dark dark:text-gray-100 dark:hover:bg-gray-600;
+    @apply border-white text-white hover:bg-white hover:text-black shadow-[2px_2px_0px_0px_white];
   }
-  
+
   .btn-outline {
-    @apply border border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-gray-500 dark:border-gray-600 dark:hover:bg-gray-800;
+    @apply border-dashed border-gray-500 text-gray-500 hover:border-solid hover:border-white hover:text-white shadow-none;
   }
 
   /* Global input styles */
   .input {
-    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400;
+    @apply block w-full border-2 border-white bg-black px-3 py-2 text-white placeholder-gray-500 focus:border-primary focus:outline-none focus:ring-0 rounded-none font-mono;
   }
 
   /* Global loading spinner */
   .spinner {
-    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary;
-  }
-  
-  .spinner-primary {
-    @apply animate-spin rounded-full border-2 border-white border-t-transparent;
+    @apply animate-spin rounded-none border-4 border-white border-t-transparent h-6 w-6;
   }
 
-  /* Global focus styles */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  .spinner-primary {
+    @apply animate-spin rounded-none border-4 border-primary border-t-white h-5 w-5;
   }
 }

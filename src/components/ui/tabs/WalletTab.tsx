@@ -1,350 +1,220 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { useAccount, useSendTransaction, useSignTypedData, useWaitForTransactionReceipt, useDisconnect, useConnect, useSwitchChain, useChainId, type Connector } from "wagmi";
-import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
-import { base, degen, mainnet, optimism, unichain } from "wagmi/chains";
-import { Button } from "../Button";
-import { truncateAddress } from "../../../lib/truncateAddress";
-import { renderError } from "../../../lib/errorUtils";
-import { SignEvmMessage } from "../wallet/SignEvmMessage";
-import { SendEth } from "../wallet/SendEth";
-import { SignSolanaMessage } from "../wallet/SignSolanaMessage";
-import { SendSolana } from "../wallet/SendSolana";
-import { USE_WALLET, APP_NAME } from "../../../lib/constants";
+import { useMemo, useState, useEffect } from "react";
+import { useAccount, useDisconnect, useConnect } from "wagmi";
 import { useMiniApp } from "@neynar/react";
-
-/**
- * WalletTab component manages wallet-related UI for both EVM and Solana chains.
- * 
- * This component provides a comprehensive wallet interface that supports:
- * - EVM wallet connections (Farcaster Frame, Coinbase Wallet, MetaMask)
- * - Solana wallet integration
- * - Message signing for both chains
- * - Transaction sending for both chains
- * - Chain switching for EVM chains
- * - Auto-connection in Farcaster clients
- * 
- * The component automatically detects when running in a Farcaster client
- * and attempts to auto-connect using the Farcaster Frame connector.
- * 
- * @example
- * ```tsx
- * <WalletTab />
- * ```
- */
-
-interface WalletStatusProps {
-  address?: string;
-  chainId?: number;
-}
-
-/**
- * Displays the current wallet address and chain ID.
- */
-function WalletStatus({ address, chainId }: WalletStatusProps) {
-  return (
-    <>
-      {address && (
-        <div className="text-xs w-full">
-          Address: <pre className="inline w-full">{truncateAddress(address)}</pre>
-        </div>
-      )}
-      {chainId && (
-        <div className="text-xs w-full">
-          Chain ID: <pre className="inline w-full">{chainId}</pre>
-        </div>
-      )}
-    </>
-  );
-}
-
-interface ConnectionControlsProps {
-  isConnected: boolean;
-  context: {
-    user?: { fid?: number };
-    client?: unknown;
-  } | null;
-  connect: (args: { connector: Connector }) => void;
-  connectors: readonly Connector[];
-  disconnect: () => void;
-}
-
-/**
- * Renders wallet connection controls based on connection state and context.
- */
-function ConnectionControls({
-  isConnected,
-  context,
-  connect,
-  connectors,
-  disconnect,
-}: ConnectionControlsProps) {
-  if (isConnected) {
-    return (
-      <Button onClick={() => disconnect()} className="w-full">
-        Disconnect
-      </Button>
-    );
-  }
-  if (context) {
-    return (
-      <div className="space-y-2 w-full">
-        <Button onClick={() => connect({ connector: connectors[0] })} className="w-full">
-          Connect (Auto)
-        </Button>
-        <Button
-          onClick={() => {
-            console.log("Manual Farcaster connection attempt");
-            console.log("Connectors:", connectors.map((c, i) => `${i}: ${c.name}`));
-            connect({ connector: connectors[0] });
-          }}
-          className="w-full"
-        >
-          Connect Farcaster (Manual)
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-3 w-full">
-      <Button onClick={() => connect({ connector: connectors[1] })} className="w-full">
-        Connect Coinbase Wallet
-      </Button>
-      <Button onClick={() => connect({ connector: connectors[2] })} className="w-full">
-        Connect MetaMask
-      </Button>
-    </div>
-  );
-}
+import { RetroWindow } from "../RetroWindow";
+import { RetroBanner } from "../RetroBanner";
+import { useBaseStats } from "~/hooks/useCoinBaseData";
+import { truncateAddress } from "../../../lib/truncateAddress";
 
 export function WalletTab() {
-  // --- State ---
-  const [evmContractTransactionHash, setEvmContractTransactionHash] = useState<string | null>(null);
-  
-  // --- Hooks ---
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const solanaWallet = useSolanaWallet();
-  const { publicKey: solanaPublicKey } = solanaWallet;
-
-  // --- Wagmi Hooks ---
-  const {
-    sendTransaction,
-    error: evmTransactionError,
-    isError: isEvmTransactionError,
-    isPending: isEvmTransactionPending,
-  } = useSendTransaction();
-
-  const { isLoading: isEvmTransactionConfirming, isSuccess: isEvmTransactionConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: evmContractTransactionHash as `0x${string}`,
-    });
-
-  const {
-    signTypedData,
-    error: evmSignTypedDataError,
-    isError: isEvmSignTypedDataError,
-    isPending: isEvmSignTypedDataPending,
-  } = useSignTypedData();
-
   const { disconnect } = useDisconnect();
   const { connect, connectors } = useConnect();
 
-  const {
-    switchChain,
-    error: chainSwitchError,
-    isError: isChainSwitchError,
-    isPending: isChainSwitchPending,
-  } = useSwitchChain();
+  // Data State
+  const [profile, setProfile] = useState<any>(null); // Quick 'any' for now, ideally EchoProfile type
+  const [activityPoints, setActivityPoints] = useState(0);
 
-  // --- Effects ---
-  /**
-   * Auto-connect when Farcaster context is available.
-   * 
-   * This effect detects when the app is running in a Farcaster client
-   * and automatically attempts to connect using the Farcaster Frame connector.
-   * It includes comprehensive logging for debugging connection issues.
-   */
+  // Fetch Base Stats for Base Score
+  const user = (context?.user as any);
+  const userAddress = address || user?.custody_address || user?.verified_addresses?.eth_addresses?.[0];
+  const { data: baseStats, loading: baseLoading } = useBaseStats(userAddress || "0x0000000000000000000000000000000000000000");
+
   useEffect(() => {
-    // Check if we're in a Farcaster client environment
-    const isInFarcasterClient = typeof window !== 'undefined' && 
-      (window.location.href.includes('warpcast.com') || 
-       window.location.href.includes('farcaster') ||
-       window.ethereum?.isFarcaster ||
-       context?.client);
-    
-    if (context?.user?.fid && !isConnected && connectors.length > 0 && isInFarcasterClient) {
-      console.log("Attempting auto-connection with Farcaster context...");
-      console.log("- User FID:", context.user.fid);
-      console.log("- Available connectors:", connectors.map((c, i) => `${i}: ${c.name}`));
-      console.log("- Using connector:", connectors[0].name);
-      console.log("- In Farcaster client:", isInFarcasterClient);
-      
-      // Use the first connector (farcasterFrame) for auto-connection
+    // We try to fetch live points and profile data
+    const fetchPoints = async () => {
+      if (!user?.fid) return;
       try {
-        connect({ connector: connectors[0] });
-      } catch (error) {
-        console.error("Auto-connection failed:", error);
+        const res = await fetch(`/api/echo/profile?fid=${user.fid}`);
+        const data = await res.json();
+        if (data && !data.error) {
+          setProfile(data);
+          if (data.points !== undefined) setActivityPoints(data.points);
+        }
+      } catch (e) {
+        const saved = localStorage.getItem("echo_points");
+        setActivityPoints(saved ? parseInt(saved) : 0);
       }
-    } else {
-      console.log("Auto-connection conditions not met:");
-      console.log("- Has context:", !!context?.user?.fid);
-      console.log("- Is connected:", isConnected);
-      console.log("- Has connectors:", connectors.length > 0);
-      console.log("- In Farcaster client:", isInFarcasterClient);
-    }
-  }, [context?.user?.fid, isConnected, connectors, connect, context?.client]);
+    };
+    fetchPoints();
+  }, [user?.fid]);
 
-  // --- Computed Values ---
-  /**
-   * Determines the next chain to switch to based on the current chain.
-   * Cycles through: Base → Optimism → Degen → Mainnet → Unichain → Base
-   */
-  const nextChain = useMemo(() => {
-    if (chainId === base.id) {
-      return optimism;
-    } else if (chainId === optimism.id) {
-      return degen;
-    } else if (chainId === degen.id) {
-      return mainnet;
-    } else if (chainId === mainnet.id) {
-      return unichain;
-    } else {
-      return base;
-    }
-  }, [chainId]);
+  // Calculate Base Score
+  const baseScore = useMemo(() => {
+    if (!baseStats) return 0;
+    const ageScore = (baseStats.wallet_age_days || 0) * 10;
+    const txScore = (baseStats.total_tx || 0) * 5;
+    return Math.floor(ageScore + txScore);
+  }, [baseStats]);
 
-  // --- Handlers ---
-  /**
-   * Handles switching to the next chain in the rotation.
-   * Uses the switchChain function from wagmi to change the active chain.
-   */
-  const handleSwitchChain = useCallback(() => {
-    switchChain({ chainId: nextChain.id });
-  }, [switchChain, nextChain.id]);
+  const totalScore = activityPoints + baseScore;
 
-  /**
-   * Sends a transaction to call the yoink() function on the Yoink contract.
-   * 
-   * This function sends a transaction to a specific contract address with
-   * the encoded function call data for the yoink() function.
-   */
-  const sendEvmContractTransaction = useCallback(() => {
-    sendTransaction(
-      {
-        // call yoink() on Yoink contract
-        to: "0x4bBFD120d9f352A0BEd7a014bd67913a2007a878",
-        data: "0x9846cd9efc000023c0",
-      },
-      {
-        onSuccess: (hash) => {
-          setEvmContractTransactionHash(hash);
-        },
-      }
-    );
-  }, [sendTransaction]);
+  const handleDisconnect = () => disconnect();
 
-  /**
-   * Signs typed data using EIP-712 standard.
-   * 
-   * This function creates a typed data structure with the app name, version,
-   * and chain ID, then requests the user to sign it.
-   */
-  const signTyped = useCallback(() => {
-    signTypedData({
-      domain: {
-        name: APP_NAME,
-        version: "1",
-        chainId,
-      },
-      types: {
-        Message: [{ name: "content", type: "string" }],
-      },
-      message: {
-        content: `Hello from ${APP_NAME}!`,
-      },
-      primaryType: "Message",
-    });
-  }, [chainId, signTypedData]);
+  const handleConnect = () => {
+    // Prefer Coinbase Wallet or Injected for Base
+    const connector = connectors.find(c => c.name === 'Coinbase Wallet') || connectors[0];
+    if (connector) connect({ connector });
+  };
 
-  // --- Early Return ---
-  if (!USE_WALLET) {
-    return null;
-  }
-
-  // --- Render ---
   return (
-    <div className="space-y-3 px-6 w-full max-w-md mx-auto">
-      {/* Wallet Information Display */}
-      <WalletStatus address={address} chainId={chainId} />
+    <div className="space-y-6 pb-24">
+      <RetroBanner src="/assets/banner_data.jpg" alt="Wallet Data" />
 
-      {/* Connection Controls */}
-      <ConnectionControls
-        isConnected={isConnected}
-        context={context}
-        connect={connect}
-        connectors={connectors}
-        disconnect={disconnect}
-      />
+      {/* COMPACT PROFILE CARD */}
+      <RetroWindow title="AGENT_PROFILE.DAT" icon="info">
+        <div className="space-y-4">
 
-      {/* EVM Wallet Components */}
-      <SignEvmMessage />
+          {/* Main Info Row */}
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">OPERATOR</p>
+              <h1 className="text-2xl font-pixel text-white leading-none">
+                {user?.displayName || "UNKNOWN_USER"}
+              </h1>
+              <p className="text-xs font-mono text-primary mt-1">@{user?.username?.toUpperCase() || "ANON"}</p>
+            </div>
 
-      {isConnected && (
-        <>
-          <SendEth />
-          <Button
-            onClick={sendEvmContractTransaction}
-            disabled={!isConnected || isEvmTransactionPending}
-            isLoading={isEvmTransactionPending}
-            className="w-full"
-          >
-            Send Transaction (contract)
-          </Button>
-          {isEvmTransactionError && renderError(evmTransactionError)}
-          {evmContractTransactionHash && (
-            <div className="text-xs w-full">
-              <div>Hash: {truncateAddress(evmContractTransactionHash)}</div>
-              <div>
-                Status:{" "}
-                {isEvmTransactionConfirming
-                  ? "Confirming..."
-                  : isEvmTransactionConfirmed
-                  ? "Confirmed!"
-                  : "Pending"}
+            {/* Status Badge */}
+            <div className="flex flex-col items-end gap-2">
+              <div className={`px-2 py-1 border ${isConnected ? 'border-primary bg-primary/20 text-primary' : 'border-red-500 text-red-500'} text-[10px] font-bold uppercase flex items-center gap-2`}>
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-primary animate-pulse' : 'bg-red-500'}`} />
+                {isConnected ? 'ONLINE' : 'OFFLINE'}
               </div>
             </div>
-          )}
-          <Button
-            onClick={signTyped}
-            disabled={!isConnected || isEvmSignTypedDataPending}
-            isLoading={isEvmSignTypedDataPending}
-            className="w-full"
-          >
-            Sign Typed Data
-          </Button>
-          {isEvmSignTypedDataError && renderError(evmSignTypedDataError)}
-          <Button
-            onClick={handleSwitchChain}
-            disabled={isChainSwitchPending}
-            isLoading={isChainSwitchPending}
-            className="w-full"
-          >
-            Switch to {nextChain.name}
-          </Button>
-          {isChainSwitchError && renderError(chainSwitchError)}
-        </>
-      )}
+          </div>
 
-      {/* Solana Wallet Components */}
-      {solanaPublicKey && (
-        <>
-          <SignSolanaMessage signMessage={solanaWallet.signMessage} />
-          <SendSolana />
-        </>
-      )}
+          {/* Details Grid (FID Removed, Disconnect Moved) */}
+          <div className="flex justify-between items-center bg-white/5 p-3 border border-white/10">
+            <div>
+              <p className="text-[8px] text-gray-400 uppercase">WALLET_ADDR</p>
+              <p className="font-mono text-xs text-white">
+                {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "NOT_LINKED"}
+              </p>
+            </div>
+
+            <div>
+              {isConnected ? (
+                <button onClick={handleDisconnect} className="text-[10px] text-red-400 hover:text-white border border-red-500/50 px-2 py-1 bg-black hover:bg-red-500 transition-colors">
+                  UNLINK WALLET
+                </button>
+              ) : (
+                <button onClick={handleConnect} className="text-[10px] text-primary hover:text-white border border-primary/50 px-2 py-1 bg-black hover:bg-primary transition-colors">
+                  CONNECT WALLET
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </RetroWindow>
+
+      {/* REFERRAL PROGRAM */}
+      <RetroWindow title="REFERRAL_SYSTEM_V1" icon="users">
+        <div className="p-2 space-y-4">
+          <div>
+            <p className="font-pixel text-lg text-white mb-1">INVITE & EARN</p>
+            <p className="text-[10px] text-gray-300 leading-tight">
+              Invite friends and earn <span className="text-primary font-bold">5% CUT</span> of all points they grind!
+              <br />
+              <span className="text-[9px] text-gray-400 mt-1 block">*Friend must complete 1 TX to activate. Updated every 12h.</span>
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-900 border border-gray-700 p-2 text-center">
+              <p className="text-[9px] text-gray-500 uppercase">ACTIVE_REFS</p>
+              <p className="font-pixel text-xl text-white">
+                {profile?.referralStats?.count || 0}
+              </p>
+            </div>
+            <div className="bg-gray-900 border border-gray-700 p-2 text-center">
+              <p className="text-[9px] text-gray-500 uppercase">TOTAL_EARNED</p>
+              <p className="font-pixel text-xl text-white">
+                {profile?.referralStats?.earnings || 0} <span className="text-sm text-primary">PTS</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Invite Link */}
+          <div className="bg-black border border-dashed border-gray-600 p-2 flex items-center justify-between gap-2">
+            <code className="text-[10px] text-gray-300 font-mono truncate">
+              https://echo.app?ref={profile?.referralCode || "..."}
+            </code>
+            <button
+              onClick={() => {
+                if (!profile?.referralCode) return;
+                navigator.clipboard.writeText(`https://echo.app?ref=${profile.referralCode}`);
+                alert("LINK COPIED! SHARE WITH FRIENDS.");
+              }}
+              className="px-2 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-gray-200"
+            >
+              COPY
+            </button>
+          </div>
+        </div>
+      </RetroWindow>
+
+      {/* SCORES */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="border-2 border-primary bg-black p-3 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-1 opacity-20 text-primary">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+          </div>
+          <p className="text-[10px] text-primary uppercase font-bold">ECHO_PTS</p>
+          <p className="text-2xl font-pixel text-white">{activityPoints.toLocaleString()}</p>
+        </div>
+        <div className="border border-white bg-black/50 p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-bold">BASE_SCORE</p>
+          <p className="text-2xl font-pixel text-gray-300">{baseLoading ? "..." : baseScore.toLocaleString()}</p>
+        </div>
+      </div>
+
+      {/* BADGES (PROMINENT) */}
+      <RetroWindow title="EARNED_BADGES" icon="star">
+        <div className="grid grid-cols-4 gap-3 p-2">
+
+          {/* OG Badge */}
+          <div className="aspect-square bg-[#0052FF] border-2 border-white shadow-[4px_4px_0_0_rgba(255,255,255,0.2)] flex flex-col items-center justify-center p-1 group relative cursor-help">
+            <span className="font-pixel text-lg text-white">OG</span>
+            <span className="text-[8px] text-white/80 mt-1">EARLY</span>
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black border border-white px-2 py-1 text-[8px] whitespace-nowrap hidden group-hover:block z-20">
+              FOUNDING MEMBER
+            </div>
+          </div>
+
+          {/* V1 Badge (Placeholder) */}
+          <div className="aspect-square bg-purple-900 border border-white/50 flex flex-col items-center justify-center p-1 opacity-80">
+            <span className="font-pixel text-lg text-white">V1</span>
+            <span className="text-[8px] text-white/60 mt-1">TESTER</span>
+          </div>
+
+          {/* Locked Slots */}
+          <div className="aspect-square border border-dashed border-gray-700 bg-black/50 flex items-center justify-center">
+            <span className="text-gray-700 text-xs">?</span>
+          </div>
+          <div className="aspect-square border border-dashed border-gray-700 bg-black/50 flex items-center justify-center">
+            <span className="text-gray-700 text-xs">?</span>
+          </div>
+
+        </div>
+      </RetroWindow>
+
+      {/* LEADERBOARD (COMING SOON) */}
+      <div className="relative opacity-60">
+        <RetroWindow title="GLOBAL_RANKING" icon="list">
+          <div className="h-32 flex items-center justify-center bg-stripes-gray">
+            <div className="bg-black border border-white px-4 py-2 text-center transform rotate-[-2deg]">
+              <p className="font-pixel text-lg text-white">COMING SOON</p>
+              <p className="text-[8px] text-gray-400 uppercase tracking-widest">SEASON 1</p>
+            </div>
+          </div>
+        </RetroWindow>
+      </div>
+
     </div>
   );
-} 
+}

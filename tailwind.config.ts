@@ -13,48 +13,56 @@ import type { Config } from "tailwindcss";
  * - Orange theme: primary: "#EA580C"
  */
 export default {
-    darkMode: "media",
-    content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  theme: {
-  	extend: {
-  		colors: {
-  			// Main theme color - change this to update the entire app's color scheme
-  			primary: "#8b5cf6", // Main brand color
-  			"primary-light": "#a78bfa", // For hover states
-  			"primary-dark": "#7c3aed", // For active states
-  			
-  			// Secondary colors for backgrounds and text
-  			secondary: "#f8fafc", // Light backgrounds
-  			"secondary-dark": "#334155", // Dark backgrounds
-  			
-  			// Legacy CSS variables for backward compatibility
-  			background: 'var(--background)',
-  			foreground: 'var(--foreground)'
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		// Custom spacing for consistent layout
-  		spacing: {
-  			'18': '4.5rem',
-  			'88': '22rem',
-  		},
-  		// Custom container sizes
-  		maxWidth: {
-  			'xs': '20rem',
-  			'sm': '24rem',
-  			'md': '28rem',
-  			'lg': '32rem',
-  			'xl': '36rem',
-  			'2xl': '42rem',
-  		}
-  	}
-  },
-  plugins: [require("tailwindcss-animate")],
+	darkMode: "media",
+	content: [
+		"./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+	],
+	theme: {
+		extend: {
+			colors: {
+				// Main theme color - change this to update the entire app's color scheme
+				primary: "#0000FF", // Pure Blue
+				"primary-light": "#3333FF", // Lighter Blue
+				"primary-dark": "#0000CC", // Darker Blue
+
+				// Secondary colors for backgrounds and text
+				secondary: "#ffffff", // White
+				"secondary-dark": "#000000", // Black
+
+				// Retro Palette
+				"retro-blue": "#0000FF",
+				"retro-gray": "#C0C0C0",
+				"retro-bg": "#000000",
+
+				// Legacy CSS variables for backward compatibility
+				background: 'var(--background)',
+				foreground: 'var(--foreground)'
+			},
+			borderRadius: {
+				lg: '0px',
+				md: '0px',
+				sm: '0px'
+			},
+			// Custom spacing for consistent layout
+			spacing: {
+				'18': '4.5rem',
+				'88': '22rem',
+			},
+			fontFamily: {
+				pixel: ['var(--font-pixel)', 'monospace'],
+			},
+			// Custom container sizes
+			maxWidth: {
+				'xs': '20rem',
+				'sm': '24rem',
+				'md': '28rem',
+				'lg': '32rem',
+				'xl': '36rem',
+				'2xl': '42rem',
+			}
+		}
+	},
+	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
