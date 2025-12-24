@@ -142,13 +142,14 @@ export function WalletTab() {
           {/* Invite Link */}
           <div className="bg-black border border-dashed border-gray-600 p-2 flex items-center justify-between gap-2">
             <code className="text-[10px] text-gray-300 font-mono truncate">
-              https://echo.app?ref={profile?.referralCode || "..."}
+              {`https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile?.referralCode || ""}`)}`}
             </code>
             <button
               onClick={() => {
                 if (!profile?.referralCode) return;
-                navigator.clipboard.writeText(`https://echo.app?ref=${profile.referralCode}`);
-                alert("LINK COPIED! SHARE WITH FRIENDS.");
+                const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
+                navigator.clipboard.writeText(deepLink);
+                alert("DEEP LINK COPIED! SHARE ON WARPCAST.");
               }}
               className="px-2 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-gray-200"
             >

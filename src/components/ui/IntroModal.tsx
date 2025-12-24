@@ -249,7 +249,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
 
         const text = `Verifying my Onchain History on Echo.\n\nScore: ${formatNumber(farcasterScore, 2)}\nVol: $${formatNumber(baseVolume, 0)}\n\n@echo`;
-        const url = "https://aura-mini-app.vercel.app";
+        const url = "https://echo-base-mini-app.vercel.app";
         let intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
         if (imageUrl) intentUrl += `&embeds[]=${encodeURIComponent(imageUrl)}`;
 

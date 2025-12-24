@@ -157,7 +157,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   }
 
   const handleShare = () => {
-    const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-frame.vercel.app`;
+    const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-base-mini-app.vercel.app`;
     // Use intent
     window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}`, '_blank');
   };
