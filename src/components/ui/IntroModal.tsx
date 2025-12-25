@@ -7,6 +7,7 @@ import { PixelShareIcon } from "./PixelShareIcon";
 import { PixelMintIcon } from "./PixelMintIcon";
 import { useWriteContract } from "wagmi";
 import { parseEther, getAddress } from "viem";
+import { base } from "viem/chains";
 import { createPortal } from "react-dom";
 import * as htmlToImage from 'html-to-image';
 import { useMiniApp } from "@neynar/react";
@@ -235,10 +236,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     args: [getAddress(neynarUser.custody_address), tokenURI],
                 });
 
+                console.log("[Mint] Sending via SDK to:", AURA_CONTRACT_ADDRESS);
                 const result = await (sdk as any).actions.sendTransaction({
+                    chainId: base.id,
                     to: AURA_CONTRACT_ADDRESS,
                     data,
-                    value: parseEther("0.00015"),
                 });
                 if (!result?.hash) throw new Error("Minting cancelled or failed");
                 hash = result.hash;

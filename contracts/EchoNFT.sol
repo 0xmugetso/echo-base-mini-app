@@ -19,7 +19,7 @@ contract EchoNFT is ERC721URIStorage, Ownable {
         }
         
         uint256 tokenId = _nextTokenId++;
-        _safeMint(to, tokenId);
+        _mint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
 
