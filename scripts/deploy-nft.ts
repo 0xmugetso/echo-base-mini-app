@@ -44,7 +44,7 @@ async function compile() {
         }
     };
 
-    const output = JSON.parse(solc.compile(JSON.stringify(input), { import: findImports }));
+    const output = JSON.parse((solc as any).compile(JSON.stringify(input), { import: findImports }));
 
     if (output.errors) {
         output.errors.forEach((err: any) => console.error(err.formattedMessage));
@@ -72,10 +72,11 @@ async function main() {
     console.log(`🚀 Deploying EchoNFT from: ${account.address}`);
     console.log(`👤 Initial Owner: ${owner}`);
 
-    const hash = await client.deployContract({
+    const hash = await (client as any).deployContract({
         abi,
         bytecode,
         args: [owner],
+        chain: base,
     });
 
     console.log(`⏳ Deployment Pending: ${hash}`);

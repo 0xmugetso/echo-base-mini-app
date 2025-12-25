@@ -1,38 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '../../../../../lib/db';
-import EchoProfile from '../../../../../models/EchoProfile';
+import EchoNFT from '../../../../../models/EchoNFT';
 
-export async function GET(_request: NextRequest, context: any) {
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
+    const tokenId = parseInt(id);
+
     try {
-        const tokenId = parseInt(context?.params?.id);
-
         await dbConnect();
+        const nftRecord = await EchoNFT.findOne({ tokenId });
 
-        // Find profile associated with this Token ID
-        // Note: This requires the minting process to call back and save the tokenId to the profile
-        const profile = await EchoProfile.findOne({ nftTokenId: tokenId });
-
-        if (!profile) {
-            // Fallback or pending metadata
-            return NextResponse.json({
-                name: `Echo Pioneer #${tokenId}`,
-                description: "This Echo has not yet been revealed.",
-                image: "https://echo-mini-app.vercel.app/assets/placeholder_nft.png"
-            });
+        if (!nftRecord) {
+            return NextResponse.json({ error: 'NFT not found' }, { status: 404 });
         }
 
+        // Return standard ERC-721 Metadata
         return NextResponse.json({
-            name: `Echo Pioneer #${tokenId}`,
-            description: `Onchain History for ${profile.fid}. Verified by Echo.`,
-            image: profile.nftImage || "https://echo-mini-app.vercel.app/assets/placeholder_nft.png",
+            name: `Echo Onchain Stats #${tokenId}`,
+            description: `A snapshot of ${nftRecord.address}'s onchain legacy on Base and Farcaster. Verified by Echo.`,
+            image: nftRecord.imageUrl,
+            external_url: `https://echo-base-mini-app.vercel.app/profile/${nftRecord.fid}`,
             attributes: [
-                { trait_type: "Points", value: profile.points },
-                { trait_type: "Streak", value: profile.streak.current },
-                { trait_type: "Join Date", value: new Date(profile.createdAt).toISOString().split('T')[0] }
+                {
+                    trait_type: "Points",
+                    value: nftRecord.points
+                },
+                {
+                    trait_type: "FID",
+                    value: nftRecord.fid
+                }
             ]
         });
-
-    } catch (e) {
-        return NextResponse.json({ error: "Metadata Error" }, { status: 500 });
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message }, { status: 500 });
     }
 }
