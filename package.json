@@ -19,7 +19,8 @@
     "lint": "next lint",
     "deploy:vercel": "tsx scripts/deploy.ts",
     "deploy:raw": "vercel --prod",
-    "cleanup": "node scripts/cleanup.js"
+    "cleanup": "node scripts/cleanup.js",
+    "deploy-nft": "tsx scripts/deploy-nft.ts"
   },
   "overrides": {
     "backslash": "0.2.0",
@@ -51,6 +52,7 @@
     "@farcaster/quick-auth": ">=0.0.7 <1.0.0",
     "@neynar/nodejs-sdk": "^2.19.0",
     "@neynar/react": "^1.2.15",
+    "@openzeppelin/contracts": "^5.4.0",
     "@pigment-css/react": "^0.0.30",
     "@radix-ui/react-label": "^2.1.1",
     "@solana/wallet-adapter-react": "^0.15.38",
@@ -69,6 +71,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "siwe": "^3.0.0",
+    "solc": "^0.8.20",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "^5.115.3",

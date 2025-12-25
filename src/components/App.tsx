@@ -69,7 +69,11 @@ export default function App(
       </div>
 
       <div className="relative z-10 pb-24 max-w-lg mx-auto min-h-screen flex flex-col">
-        <Header neynarUser={neynarUser} tab={currentTab as Tab} />
+        <Header
+          neynarUser={neynarUser}
+          tab={currentTab as Tab}
+          address={(context?.user as any)?.custodyAddress || (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0]}
+        />
 
         <main className="flex-1 p-4">
           <div className={currentTab === Tab.Home ? "block" : "hidden"}>

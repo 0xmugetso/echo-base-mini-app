@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { RetroStatBox } from "./tabs/HomeTab";
 import { RetroWindow } from "./RetroWindow";
@@ -32,21 +32,18 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     // --- STATE ---
     const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
     const [isMinting, setIsMinting] = useState(false);
-    const [isCasting, setIsCasting] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
-    const [pointsParam, setPointsParam] = useState(0);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // --- HOOKS ---
-    const { signerStatus, createSigner, checkStatus } = useNeynarSigner();
+    const { signerStatus, checkStatus } = useNeynarSigner();
     const { sdk } = useMiniApp() as any;
     const { writeContractAsync } = useWriteContract();
 
     // --- EFFECTS ---
     useEffect(() => {
         setMounted(true);
-        // Polling (kept generic)
         let interval: NodeJS.Timeout;
         if (signerStatus.status === 'pending_approval' && signerStatus.signer_uuid) {
             interval = setInterval(async () => {
@@ -60,41 +57,32 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         }
     }, [signerStatus.status, signerStatus.signer_uuid, checkStatus]);
 
-    // Step 2 Loader Logic (Data Dependent)
+    // Step 2 Loader Logic
     const [loadProgress, setLoadProgress] = useState(0);
     useEffect(() => {
         if (step !== 2) return;
         setLoadProgress(0);
-
         let current = 0;
         const interval = setInterval(() => {
-            // Check if we are waiting for data
             const isWaiting = loading || !baseStats;
-
-            // If waiting, cap at 90%
             const target = isWaiting ? 90 : 100;
-
             if (current >= 100) {
                 clearInterval(interval);
                 setTimeout(() => setStep(3), 500);
             } else if (current < target) {
-                // Random jump
                 const jump = Math.random() * 8;
                 current = Math.min(current + jump, target);
                 setLoadProgress(current);
             }
         }, 100);
-
         return () => clearInterval(interval);
     }, [step, loading, baseStats]);
 
     // Step 4 Calculation Logic
     useEffect(() => {
         if (step !== 4) return;
-
-        const calculate = async () => {
+        const calculateProfile = async () => {
             if (!neynarUser?.fid || !neynarUser?.custody_address) return;
-
             try {
                 const res = await fetch('/api/echo/profile', {
                     method: 'POST',
@@ -104,39 +92,33 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                         address: neynarUser.custody_address,
                         action: 'calculate',
                         manualStats: JSON.parse(JSON.stringify(baseStats, (key, value) =>
-                            typeof value === 'bigint'
-                                ? value.toString()
-                                : value // return everything else unchanged
+                            typeof value === 'bigint' ? value.toString() : value
                         ))
                     })
                 });
                 const data = await res.json();
-                if (data.profile) {
-                    setCalculatedPoints(data.profile.points);
-                }
+                if (data.profile) setCalculatedPoints(data.profile.points);
             } catch (e) {
                 console.error("Calculation Error", e);
             }
         };
-
-        // Small delay to start animation
-        setTimeout(calculate, 1000);
-    }, [step, neynarUser]);
+        setTimeout(calculateProfile, 1000);
+    }, [step, neynarUser, baseStats]);
 
     // --- COUNT UP ANIMATION ---
     const useCountUp = (end: number, startAnim: boolean, duration: number = 2000) => {
         const [count, setCount] = useState(0);
         useEffect(() => {
             if (!startAnim) return;
-            let start = 0;
+            let startCount = 0;
             const increment = end / (duration / 30);
             const timer = setInterval(() => {
-                start += increment;
-                if (start >= end) {
+                startCount += increment;
+                if (startCount >= end) {
                     setCount(end);
                     clearInterval(timer);
                 } else {
-                    setCount(start);
+                    setCount(startCount);
                 }
             }, 30);
             return () => clearInterval(timer);
@@ -148,6 +130,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const isStep4 = step === 4;
     const farcasterScore = neynarUser?.score || 0;
     const fcWalletValue = baseStats?.farcaster?.wallet_value_usd || 0;
+    const castCount = baseStats?.farcaster?.cast_count || 0;
     const baseVolume = baseStats?.total_volume_usd || 0;
     const totalTx = baseStats?.total_tx || 0;
     const holdings = baseStats?.farcaster?.holdings || {};
@@ -157,16 +140,14 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     const animScore = useCountUp(farcasterScore, isStep3);
     const animWallet = useCountUp(fcWalletValue, isStep3);
+    const animCastCount = useCountUp(castCount, isStep3);
     const animVolume = useCountUp(baseVolume, isStep3);
     const animTotalTx = useCountUp(totalTx, isStep3);
     const animBiggestTx = useCountUp(biggestTx, isStep3);
     const animGasPaid = useCountUp(gasPaid, isStep3);
     const animWalletAge = useCountUp(walletAge, isStep3);
-
-    // Step 4 Points Animation
     const animPoints = useCountUp(calculatedPoints || 0, isStep4 && calculatedPoints !== null);
 
-    // --- HELPERS ---
     const formatNumber = (value?: number | null, digits = 0) => {
         if (value === null || value === undefined) return "—";
         return Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
@@ -174,10 +155,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- ACTION HANDLERS ---
     const captureImage = async (download = false) => {
-        const node = document.getElementById('nft-card');
+        const node = document.getElementById('nft-card-capture') || document.getElementById('nft-card');
         try {
             if (node) {
-                // Ensure the node has width/height before capture
                 const dataUrl = await htmlToImage.toPng(node, {
                     backgroundColor: '#000',
                     cacheBust: true,
@@ -185,11 +165,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                         transform: 'scale(1)',
                         transformOrigin: 'top left',
                         height: 'auto',
-                        width: '380px', // Fixed width for mobile-friendly NFTs
+                        width: '380px',
                     },
                     pixelRatio: 2,
                 });
-
                 if (download) {
                     const link = document.createElement('a');
                     link.download = `echo-stats-${neynarUser?.username || 'anon'}.png`;
@@ -198,13 +177,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 }
                 return dataUrl;
             } else {
-                console.error("[Capture] node 'nft-card' not found in DOM");
+                console.error("[Capture] No capture node found");
+                return null;
             }
         } catch (e: any) {
-            console.error("[Capture] html-to-image error:", e.message);
+            console.error("[Capture] Error:", e.message);
             return null;
         }
-        return null;
     }
 
     const uploadImage = async (dataUrl: string) => {
@@ -212,15 +191,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const blob = await (await fetch(dataUrl)).blob();
             const filename = `echo-${Date.now()}.png`;
             const res = await fetch(`/api/upload?filename=${filename}`, { method: 'POST', body: blob });
-            if (!res.ok) {
-                const errorData = await res.json();
-                console.error("[Upload] Server error:", errorData.error);
-                return null;
-            }
+            if (!res.ok) return null;
             const json = await res.json();
             return json.url;
-        } catch (e: any) {
-            console.error("[Upload] Catch error:", e.message);
+        } catch (e) {
+            console.error("[Upload] Error:", e);
             return null;
         }
     }
@@ -228,14 +203,27 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const handleMint = async () => {
         setIsMinting(true);
         try {
-            // 1. Capture & Upload Image
             const dataUrl = await captureImage(false);
-            if (!dataUrl) throw new Error("Image capture failed");
+            if (!dataUrl) throw new Error("Capture failed");
 
-            const uploadRes = await uploadImage(dataUrl);
-            if (!uploadRes) throw new Error("Upload failed");
+            const imgRes = await uploadImage(dataUrl);
+            if (!imgRes) throw new Error("Upload failed");
 
-            // 2. Mint (Using configured AURA contract)
+            // 3. Register NFT & Get URI
+            const regRes = await fetch('/api/echo/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fid: neynarUser.fid,
+                    address: neynarUser.custody_address,
+                    action: 'register_nft',
+                    nftImage: imgRes
+                })
+            });
+            const { tokenURI } = await regRes.json();
+            if (!tokenURI) throw new Error("Metadata registration failed");
+
+            // 4. Mint (Using new signature: mint(address to, string memory uri))
             let hash: string;
 
             if ((sdk as any)?.actions?.sendTransaction) {
@@ -244,7 +232,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 const data = encodeFunctionData({
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address)],
+                    args: [getAddress(neynarUser.custody_address), tokenURI],
                 });
 
                 const result = await (sdk as any).actions.sendTransaction({
@@ -256,58 +244,114 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 hash = result.hash;
             } else {
                 console.log("[Mint] Falling back to wagmi writeContractAsync");
-                hash = await writeContractAsync({
+                hash = await (writeContractAsync as any)({
                     address: AURA_CONTRACT_ADDRESS,
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address)],
+                    args: [getAddress(neynarUser.custody_address), tokenURI],
                     value: parseEther("0.00015"),
                 });
             }
 
-            // 3. Link Token ID to Profile (Server-side)
-            await fetch('/api/echo/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fid: neynarUser.fid,
-                    action: 'register_nft',
-                    nftImage: uploadRes
-                })
-            });
-
             console.log("MINT SUBMITTED: " + hash);
         } catch (e: any) {
             console.error("[Mint] Error:", e.message);
-            console.error("MINT FAILED");
         } finally { setIsMinting(false); }
     };
 
     const handleShare = async () => {
         const dataUrl = await captureImage(false);
         const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
-
         const text = `Verifying my Onchain History on Echo.\n\nScore: ${formatNumber(farcasterScore, 2)}\nVol: $${formatNumber(baseVolume, 0)}\n\n@echo`;
         const url = "https://echo-base-mini-app.vercel.app";
         let intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
         if (imageUrl) intentUrl += `&embeds[]=${encodeURIComponent(imageUrl)}`;
-
         if (sdk?.actions?.openUrl) sdk.actions.openUrl(intentUrl);
         else window.open(intentUrl, "_blank");
     }
 
-    const handleCast = async () => {
-        handleShare();
-    }
+    // --- SUB-COMPONENTS ---
+    const StatsCardContent = ({ captureId }: { captureId?: string }) => (
+        <div id={captureId} className="space-y-6 bg-black p-4" style={{ width: '380px' }}>
+            <div className="window">
+                <div className="window-header">
+                    <div className="flex items-center gap-2"><span>ECHO_OS_V1.0</span></div>
+                    <div className="flex gap-1"><div className="w-2 h-2 bg-white"></div><div className="w-2 h-2 bg-white"></div></div>
+                </div>
+                <div className="window-content bg-black flex items-center gap-4 p-3 border-2 border-t-0 border-white">
+                    {neynarUser?.pfp_url ? (
+                        <img src={neynarUser.pfp_url} crossOrigin="anonymous" className="w-12 h-12 border-2 border-white grayscale contrast-125" />
+                    ) : (
+                        <div className="w-12 h-12 border-2 border-white bg-primary"></div>
+                    )}
+                    <div>
+                        <p className="text-white text-base font-bold uppercase tracking-widest leading-none font-pixel">{neynarUser?.username || "ANON"}</p>
+                        <p className="text-primary text-xs font-mono mt-1">FID: {neynarUser?.fid || "---"}</p>
+                    </div>
+                </div>
+            </div>
 
-    // --- RENDER STEPS ---
+            <RetroWindow title="BASE_ACTIVITY">
+                <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">CHECK_ACTIVITY<br /><span className="text-primary">DATA_BY_ECHO</span></div>
+                <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <RetroStatBox label="BIGGEST TX" value={`$${formatNumber(animBiggestTx, 0)}`} />
+                        <RetroStatBox label="GAS PAID" value={`${formatNumber(animGasPaid, 4)}`} subValue="ETH" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <RetroStatBox label="TX COUNT" value={formatNumber(animTotalTx)} />
+                        <RetroStatBox label="VOLUME" value={`$${formatNumber(animVolume, 0)}`} />
+                        <RetroStatBox label="AGE" value={`${formatNumber(animWalletAge, 0)}`} subValue="DAYS" />
+                    </div>
+                </div>
+            </RetroWindow>
 
-    // REDESIGNED PROGRESS NAV - Top aligned, minimal overlay
+            <RetroWindow title="FARCASTER_METRICS">
+                <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">SOCIAL_LAYER<br /><span className="text-primary">BY_NEYNAR</span></div>
+                <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <RetroStatBox label="SCORE" value={formatNumber(animScore, 2)} />
+                        <RetroStatBox label="TOTAL CASTS" value={formatNumber(animCastCount)} />
+                    </div>
+                    <div className="border border-dashed border-white/30 p-4 relative bg-black">
+                        <span className="absolute -top-3 left-3 bg-black px-2 text-[10px] text-primary font-bold border border-white/30 uppercase">TOP_CAST.LOG</span>
+                        {baseStats?.farcaster?.best_cast ? (
+                            <div className="mt-2 text-left">
+                                <p className="text-xs text-gray-300 italic line-clamp-3 leading-relaxed">"{baseStats.farcaster.best_cast.text}"</p>
+                                <div className="flex gap-4 mt-3 text-[8px] text-gray-500 font-mono border-t border-white/10 pt-2">
+                                    <span>♥ LIKES: {baseStats.farcaster.best_cast.likes}</span>
+                                    <span>↻ RECASTS: {baseStats.farcaster.best_cast.recasts}</span>
+                                </div>
+                            </div>
+                        ) : <p className="text-[10px] text-gray-600 text-center py-2">NO_DATA</p>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
+                            <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
+                            <div className="flex flex-wrap gap-1">
+                                {['clanker', 'toshi', 'degen', 'brett'].map(t => (
+                                    <span key={t} className={`text-[7px] border px-1 ${holdings?.[t] ? 'border-primary text-primary bg-primary/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
+                            <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
+                            <div className="flex flex-wrap gap-1">
+                                {['warplets', 'pro_og', 'punk', 'bankr'].map(t => (
+                                    <span key={t} className={`text-[7px] border px-1 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </RetroWindow>
+        </div>
+    );
+
     const ProgressBar = () => (
         <div className="w-full flex items-center justify-center gap-2 mb-4 relative z-50">
             {[1, 2, 3, 4, 5].map(s => (
-                <div key={s}
-                    onClick={() => s < step ? setStep(s as any) : null}
+                <div key={s} onClick={() => s < step ? setStep(s as any) : null}
                     className={`h-2 border border-white transition-all duration-300 ${s === step ? 'w-12 bg-white' : 'w-6 bg-white/20'} ${s < step ? 'bg-primary border-primary cursor-pointer' : ''}`}
                 />
             ))}
@@ -315,224 +359,52 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     );
 
     const renderStep1 = () => (
-        <div className="flex flex-col h-full bg-black text-white p-6 relative overflow-hidden items-center justify-center">
-            {/* BIG WHITE ECHO TITLE */}
-            <h1 className="text-7xl font-pixel text-white mb-2 tracking-widest relative z-10" style={{ textShadow: '4px 4px 0 #000, -2px -2px 0 #4d4dff' }}>
-                ECHO
-            </h1>
-            <p className="font-pixel text-lg text-primary mb-8 tracking-wider text-center animate-pulse relative z-10">
-                UNCOVER YOUR ONCHAIN LEGACY
-            </p>
-
-            <div className="flex flex-col items-center space-y-8 z-10 w-full max-w-xs">
-                {/* Identity Card - Using RetroWindow Look */}
-                <div className="w-full bg-black border-2 border-primary relative shadow-[4px_4px_0_0_theme('colors.primary')] p-1">
+        <div className="flex flex-col h-full bg-black text-white p-6 items-center justify-center relative overflow-hidden">
+            <h1 className="text-7xl font-pixel text-white mb-2 tracking-widest z-10" style={{ textShadow: '4px 4px 0 #000, -2px -2px 0 #4d4dff' }}>ECHO</h1>
+            <p className="font-pixel text-lg text-primary mb-8 animate-pulse z-10 uppercase">UNCOVER YOUR ONCHAIN LEGACY</p>
+            <div className="w-full max-w-xs space-y-8 z-10">
+                <div className="bg-black border-2 border-primary relative shadow-[4px_4px_0_0_theme('colors.primary')] p-1">
                     <div className="bg-primary px-2 py-1 flex justify-between items-center mb-1">
-                        <span className="font-bold text-xs text-white uppercase tracking-wider">IDENTITY_MODULE</span>
-                        <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                            <div className="w-2 h-2 bg-white/50 rounded-full" />
-                        </div>
+                        <span className="font-bold text-xs text-white uppercase">IDENTITY_MODULE</span>
                     </div>
-
                     <div className="border border-white/20 p-6 flex flex-col items-center gap-4 bg-[#08081a]">
-                        <div className="w-24 h-24 border-2 border-white overflow-hidden relative shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                            {neynarUser?.pfp_url ? (
-                                <img src={neynarUser.pfp_url} className="w-full h-full object-cover grayscale contrast-125" />
-                            ) : (
-                                <div className="w-full h-full bg-white/10 flex items-center justify-center text-xs">NO IMG</div>
-                            )}
-                            {/* Corner Accents */}
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white" />
-                            <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white" />
-                            <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white" />
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white" />
+                        <div className="w-24 h-24 border-2 border-white overflow-hidden relative grayscale contrast-125">
+                            {neynarUser?.pfp_url ? <img src={neynarUser.pfp_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/10" />}
                         </div>
-
                         <div className="text-center">
-                            <p className="font-pixel text-2xl uppercase mb-1 text-white">{neynarUser?.username || "ANON"}</p>
-                            <div className="flex items-center gap-2 justify-center bg-white/5 border border-dashed border-white/20 px-3 py-1 rounded-full">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                <p className="font-mono text-[10px] text-gray-400">{neynarUser?.custody_address?.slice(0, 6)}...{neynarUser?.custody_address?.slice(-4)}</p>
-                            </div>
+                            <p className="font-pixel text-2xl text-white uppercase">{neynarUser?.username || "ANON"}</p>
+                            <p className="font-mono text-xs text-gray-400 mt-1">FID: {neynarUser?.fid || "---"}</p>
                         </div>
                     </div>
                 </div>
-
-                <div className="w-full space-y-3">
-                    <button
-                        onClick={() => setStep(2)}
-                        className="btn btn-primary w-full py-4 text-xl border-2 hover:bg-primary/80 transition-all font-pixel uppercase tracking-widest shadow-[4px_4px_0_0_theme('colors.primary')]"
-                    >
-                        INITIALIZE SYSTEM {'>'}
-                    </button>
-
-                    <button
-                        onClick={() => alert("Please switch accounts in your Farcaster client.")}
-                        className="w-full py-2 text-center font-mono text-[10px] text-gray-500 hover:text-white uppercase decoration-dashed underline"
-                    >
-                        SWITCH ACCOUNT
-                    </button>
-                </div>
+                <button onClick={() => setStep(2)} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">INITIALIZE {'>'}</button>
             </div>
-
-            {/* Background Grid */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none"
-                style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
-            </div>
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
     );
 
     const renderStep2 = () => (
-        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-12 relative overflow-hidden">
-            <div className="space-y-4 text-center z-10">
-                <h2 className="text-3xl font-pixel text-white animate-pulse">SYSTEM_SCANNING</h2>
-                <p className="font-mono text-xs text-gray-400">ACCESSING BASE CHAIN HISTORY...</p>
+        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-8">
+            <div className="space-y-4 text-center">
+                <h2 className="text-3xl font-pixel animate-pulse">SYSTEM_SCANNING</h2>
+                <p className="font-mono text-xs text-gray-500 uppercase tracking-widest">ACCESSING BASE_CHAIN...</p>
             </div>
-
-            {/* RETRO LOADING BAR - Redesigned */}
-            <div className="w-full max-w-xs border-4 border-white p-2 bg-black z-10 shadow-[8px_8px_0_0_#4d4dff]">
+            <div className="w-full max-w-xs border-4 border-white p-2 bg-black shadow-[8px_8px_0_0_#4d4dff]">
                 <div className="h-6 w-full flex gap-1">
                     {Array.from({ length: 20 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className={`flex-1 h-full transition-colors duration-75 ${loadProgress > (i * 5) ? 'bg-primary' : 'bg-[#111]'}`}
-                        />
+                        <div key={i} className={`flex-1 h-full ${loadProgress > (i * 5) ? 'bg-primary' : 'bg-[#111]'}`} />
                     ))}
                 </div>
-            </div>
-
-            {/* TERMINAL OUTPUT */}
-            <div className="font-mono text-xs text-primary z-10 bg-black/50 p-4 border border-white/20 w-full max-w-xs h-32 overflow-hidden flex flex-col justify-end">
-                {loadProgress > 10 && <p>{'>'} INIT_SEQUENCE_START...</p>}
-                {loadProgress > 30 && <p>{'>'} CONNECTING_BASE_RPC... <span className="text-green-500">OK</span></p>}
-                {loadProgress > 50 && <p>{'>'} PARSING_TX_HISTORY... <span className="text-green-500">OK</span></p>}
-                {loadProgress > 70 && <p>{'>'} CALCULATING_SOCIAL_SCORE... <span className="text-green-500">OK</span></p>}
-                {loadProgress > 90 && <p>{'>'} FINALIZING... <span className="animate-blink">_</span></p>}
             </div>
         </div>
     );
 
     const renderStep3 = () => (
         <div className="flex flex-col h-full bg-black relative">
-            {/* Nav Header */}
-            <div className="p-4 flex flex-col items-center bg-black z-10 border-b border-white/10 pb-2">
-                <span className="font-pixel text-2xl text-white tracking-widest">YOUR STATS</span>
-            </div>
-
-            {/* Scrollable Content */}
-            <div id="nft-card" className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
-
-                {/* 0. IDENTITY HEADER (Mini) */}
-                <div className="window">
-                    <div className="window-header">
-                        <div className="flex items-center gap-2">
-                            <span>ECHO_OS_V1.0</span>
-                        </div>
-                        <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-white"></div>
-                            <div className="w-2 h-2 bg-white"></div>
-                        </div>
-                    </div>
-                    <div className="window-content bg-black flex items-center gap-4 p-3">
-                        {neynarUser?.pfp_url ? (
-                            <img
-                                src={neynarUser.pfp_url}
-                                alt="Profile"
-                                crossOrigin="anonymous"
-                                className="w-12 h-12 border-2 border-white grayscale contrast-125"
-                            />
-                        ) : (
-                            <div className="w-12 h-12 border-2 border-white bg-primary"></div>
-                        )}
-                        <div>
-                            <p className="text-white text-base font-bold uppercase tracking-widest leading-none font-pixel">
-                                {neynarUser?.username || "ANON"}
-                            </p>
-                            <p className="text-primary text-xs font-mono mt-1">FID: {neynarUser?.fid || "---"}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 1. BASE ACTIVITY WINDOW */}
-                <RetroWindow title="BASE_ACTIVITY">
-                    <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">
-                        CHECK YOUR ONCHAIN ACTIVITY<br /><span className="text-primary">DATA BROUGHT TO YOU BY ECHO</span>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <RetroStatBox label="BIGGEST TX" value={`$${formatNumber(animBiggestTx, 0)}`} />
-                            <RetroStatBox label="GAS PAID" value={`${formatNumber(animGasPaid, 4)}`} subValue="ETH" />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                            <RetroStatBox label="TX COUNT" value={formatNumber(animTotalTx)} />
-                            <RetroStatBox label="VOLUME" value={`$${formatNumber(animVolume, 0)}`} />
-                            <RetroStatBox label="AGE" value={`${formatNumber(animWalletAge, 0)}`} subValue="DAYS" />
-                        </div>
-                    </div>
-                </RetroWindow>
-
-                {/* 2. FARCASTER METRICS WINDOW */}
-                <RetroWindow title="FARCASTER_METRICS">
-                    <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">
-                        YOUR SOCIAL LAYER STATUS<br /><span className="text-primary">POWERED BY NEYNAR</span>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <RetroStatBox label="NEYNAR SCORE" value={formatNumber(animScore, 2)} />
-                            <RetroStatBox label="FC WALLET ($)" value={`$${formatNumber(animWallet, 0)}`} />
-                        </div>
-
-                        {/* Best Cast Log */}
-                        <div className="border border-dashed border-white/30 p-4 relative bg-[#0a0a0a]">
-                            <span className="absolute -top-3 left-3 bg-black px-2 text-xs text-primary font-bold border border-white/30">TOP_CAST.LOG</span>
-                            {baseStats?.farcaster?.best_cast ? (
-                                <div className="mt-2">
-                                    <p className="text-sm text-gray-200 italic line-clamp-3 leading-relaxed">&quot;{baseStats.farcaster.best_cast.text}&quot;</p>
-                                    <div className="flex gap-4 mt-3 text-[10px] text-gray-400 font-mono border-t border-white/10 pt-2">
-                                        <span className="flex items-center gap-1 text-white">♥ LIKES: <span className="text-gray-300">{baseStats.farcaster.best_cast.likes}</span></span>
-                                        <span className="flex items-center gap-1 text-white">↻ RECASTS: <span className="text-gray-300">{baseStats.farcaster.best_cast.recasts}</span></span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-xs text-gray-500 text-center py-2">NO_CASTS_FOUND</p>
-                            )}
-                        </div>
-
-                        {/* Token Cache */}
-                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                            <p className="text-[10px] font-bold text-gray-500 mb-2 uppercase">TOKEN_CACHE</p>
-                            <div className="flex flex-wrap gap-2">
-                                {['clanker', 'toshi', 'degen', 'brett'].map(t => (
-                                    <span key={t} className={`text-[8px] border px-1 ${holdings?.[t] ? 'border-primary text-primary bg-primary/10' : 'border-dashed border-gray-700 text-gray-700'}`}>{t.toUpperCase()}</span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* NFT Cache */}
-                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                            <p className="text-[10px] font-bold text-gray-500 mb-2 uppercase">NFT_COLLECTION</p>
-                            <div className="flex flex-wrap gap-2">
-                                {['warplets', 'pro_og', 'based_punk', 'bankr'].map(t => (
-                                    <span key={t} className={`text-[8px] border px-1 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : 'border-dashed border-gray-700 text-gray-700'}`}>{t.toUpperCase()}</span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </RetroWindow>
-
-            </div>
-
-            {/* Next Button Footer */}
+            <div className="p-4 flex flex-col items-center border-b border-white/10"><span className="font-pixel text-2xl tracking-widest text-white uppercase">YOUR STATS</span></div>
+            <div className="flex-1 overflow-y-auto pb-24"><StatsCardContent captureId="nft-card" /></div>
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20 bg-black z-20">
-                <button
-                    onClick={() => setStep(4)}
-                    className="btn btn-primary w-full py-4 text-lg"
-                >
-                    CALCULATE ECHO {'>'}
-                </button>
+                <button onClick={() => setStep(4)} className="btn btn-primary w-full py-4 text-lg font-pixel uppercase">CALCULATE ECHO {'>'}</button>
             </div>
         </div>
     );
@@ -540,97 +412,43 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const renderStep4 = () => (
         <div className="flex flex-col h-full bg-black text-white items-center justify-center p-6 relative">
             <div className="text-center space-y-8 z-10 w-full max-w-sm">
-
-                <h2 className="text-3xl font-pixel text-white uppercase tracking-widest animate-pulse">
-                    CALCULATING_ECHO
-                </h2>
-
-                <div className="relative border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')]">
-                    <p className="font-mono text-xs text-center text-gray-400 mb-2">INITIAL_ECHO_POINTS</p>
-                    <div className="text-8xl font-pixel text-center text-primary text-shadow-glow">
-                        {Math.floor(animPoints)}
-                    </div>
-                    <p className="font-mono text-[10px] text-center text-gray-500 mt-2">BASED ON YOUR ONCHAIN ACTIVITY</p>
+                <h2 className="text-3xl font-pixel animate-pulse uppercase">CALCULATING_ECHO</h2>
+                <div className="border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')]">
+                    <p className="font-mono text-xs text-gray-400 mb-2 uppercase">INITIAL_POINTS</p>
+                    <div className="text-8xl font-pixel text-primary">{Math.floor(animPoints)}</div>
                 </div>
-
-                <div className="flex flex-col gap-3 w-full">
-                    {calculatedPoints !== null && (
-                        <button
-                            onClick={() => setStep(5)}
-                            className="btn btn-primary w-full py-4 text-xl border-2 hover:bg-primary/80 transition-all font-pixel uppercase tracking-widest shadow-[4px_4px_0_0_theme('colors.primary')]"
-                        >
-                            ENTER ECHO OS {'>'}
-                        </button>
-                    )}
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 font-mono text-[10px] uppercase hover:text-white"
-                    >
-                        [ ABORT_PROCESS ]
-                    </button>
-                </div>
-            </div>
-
-            {/* Matrix Rain effect or grid */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none"
-                style={{ backgroundImage: 'linear-gradient(#4d4dff 1px, transparent 1px), linear-gradient(90deg, #4d4dff 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                {calculatedPoints !== null && (
+                    <button onClick={() => setStep(5)} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">ENTER ECHO OS {'>'}</button>
+                )}
+                <button onClick={onClose} className="text-gray-500 font-mono text-[10px] uppercase underline hover:text-white">[ ABORT_PROCESS ]</button>
             </div>
         </div>
     );
 
     const renderStep5 = () => (
         <div className="flex flex-col h-full bg-black p-6 relative items-center justify-center">
-
-            <h1 className="text-7xl font-pixel text-white mb-2 tracking-widest relative z-10" style={{ textShadow: '4px 4px 0 #000, -2px -2px 0 #4d4dff' }}>
-                ECHO
-            </h1>
-            <p className="font-pixel text-xs text-gray-400 mb-6 tracking-wide text-center max-w-xs relative z-10 uppercase">
-                IMMORTALIZE YOUR STATUS.<br />MINT YOUR LEGACY OR SHARE TO FLEX.<br /><span className="text-white">START EXPLORING.</span>
-            </p>
-
-            <div className="w-full max-w-sm mb-8 z-10">
-                <RetroBanner src="/assets/banner-modal.JPG" alt="Echo Banner" />
-            </div>
-
+            <h1 className="text-7xl font-pixel text-white mb-2 tracking-widest z-10 uppercase">ECHO</h1>
+            <p className="font-pixel text-[10px] text-gray-400 mb-6 text-center max-w-xs z-10 uppercase leading-relaxed">IMMORTALIZE YOUR STATUS.<br />MINT YOUR LEGACY OR SHARE TO FLEX.</p>
+            <div className="w-full max-w-sm mb-8 z-10"><RetroBanner src="/assets/banner-modal.JPG" alt="Echo Banner" /></div>
             <div className="w-full max-w-sm flex flex-col gap-4 z-10">
                 <div className="grid grid-cols-2 gap-4">
                     <button onClick={handleShare} className="group border-2 border-white bg-black p-3 flex flex-col items-center gap-1 hover:bg-white hover:text-black transition-all shadow-[4px_4px_0_0_#fff]">
-                        <PixelShareIcon className="w-6 h-6" />
-                        <span className="font-pixel text-base">SHARE</span>
+                        <PixelShareIcon className="w-6 h-6" /><span className="font-pixel text-sm uppercase">SHARE</span>
                     </button>
                     <button onClick={handleMint} disabled={isMinting} className="group border-2 border-primary bg-black p-3 flex flex-col items-center gap-1 hover:bg-primary hover:text-white transition-all shadow-[4px_4px_0_0_theme('colors.primary')]">
-                        <PixelMintIcon className="w-6 h-6 text-primary group-hover:text-white" />
-                        <span className="font-pixel text-base text-white">{isMinting ? "..." : "MINT"}</span>
+                        <PixelMintIcon className="w-6 h-6 text-primary group-hover:text-white" /><span className="font-pixel text-sm text-white uppercase">{isMinting ? "..." : "MINT"}</span>
                     </button>
                 </div>
-
-                <button
-                    onClick={async () => {
-                        const dataUrl = await captureImage(false);
-                        if (dataUrl) setPreviewImage(dataUrl);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 border border-white/20 py-2 font-mono text-[10px] text-gray-400 hover:text-white hover:border-white transition-colors"
-                >
-                    <EyeIcon className="w-4 h-4" />
-                    PREVIEW ECHO_CARD
+                <button onClick={async () => { const dataUrl = await captureImage(false); if (dataUrl) setPreviewImage(dataUrl); }} className="w-full flex items-center justify-center gap-2 border border-white/20 py-2 font-mono text-[10px] text-gray-400 hover:text-white hover:border-white transition-colors uppercase">
+                    <EyeIcon className="w-3 h-3" /> PREVIEW ECHO_CARD
                 </button>
             </div>
-
-            <button onClick={onClose} className="absolute bottom-6 text-xs font-mono text-gray-600 hover:text-white text-center">
-                [ CLOSE TERMINAL ]
-            </button>
-
-            {/* PREVIEW MODAL OVERLAY */}
+            <button onClick={onClose} className="absolute bottom-6 text-[10px] font-mono text-gray-600 hover:text-white uppercase">[ CLOSE_TERMINAL ]</button>
             {previewImage && (
-                <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4">
                     <div className="relative w-full max-w-sm border-2 border-white bg-black p-1 shadow-[10px_10px_0_0_#fff]">
-                        <button
-                            onClick={() => setPreviewImage(null)}
-                            className="absolute -top-10 right-0 text-white font-pixel text-sm bg-black border-2 border-white px-2 py-1"
-                        >
-                            CLOSE [X]
-                        </button>
-                        <img src={previewImage} className="w-full h-auto" />
+                        <button onClick={() => setPreviewImage(null)} className="absolute -top-10 right-0 text-white font-pixel text-sm bg-black border-2 border-white px-2 py-1 uppercase tracking-tighter">CLOSE [X]</button>
+                        <img src={previewImage} className="w-full h-auto" style={{ imageRendering: 'pixelated' }} />
                     </div>
                 </div>
             )}
@@ -640,35 +458,17 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black">
-            {/* Full Screen Container */}
-            <div className="w-full h-full flex flex-col relative overflow-hidden bg-black text-white">
-
-                {/* PROGESS BAR (Always Top) */}
-                <div className="pt-6 px-4 pb-2 bg-black z-30">
-                    <ProgressBar />
-                </div>
-
-                {/* STEPS CONTENT */}
-                <div className="flex-1 overflow-hidden relative">
-                    {step === 1 && renderStep1()}
-                    {step === 2 && renderStep2()}
-
-                    {/* Persist Step 3 in DOM for capture reliability, hide off-screen when not in use */}
-                    <div className={step === 3 ? "flex-1 h-full block" : "absolute inset-0 pointer-events-none opacity-0 h-0 overflow-hidden"}>
-                        {renderStep3()}
-                    </div>
-
-                    {step === 4 && renderStep4()}
-                    {step === 5 && renderStep5()}
-                </div>
-
-                {/* Back button? */}
-                {step > 1 && (
-                    <button onClick={() => setStep(step - 1 as any)} className="absolute top-6 left-4 z-40 text-white/50 hover:text-white font-mono text-xs">
-                        &lt;
-                    </button>
-                )}
+        <div className="fixed inset-0 z-[99999] bg-black flex flex-col overflow-hidden">
+            <div className="pt-6 px-4 pb-2 z-30"><ProgressBar /></div>
+            <div className="flex-1 relative overflow-hidden">
+                {step === 1 && renderStep1()}
+                {step === 2 && renderStep2()}
+                {step === 3 && renderStep3()}
+                {step === 4 && renderStep4()}
+                {step === 5 && renderStep5()}
+            </div>
+            <div className="fixed -left-[2000px] top-0 pointer-events-none" aria-hidden="true">
+                <StatsCardContent captureId="nft-card-capture" />
             </div>
         </div>,
         document.body

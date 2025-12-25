@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { APP_NAME } from "~/lib/constants";
 import sdk from "@farcaster/miniapp-sdk";
 import { useMiniApp } from "@neynar/react";
@@ -28,19 +28,25 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
       try {
         const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
         const data = await res.json();
-        if (data?.points !== undefined) {
+        if (data && data.points !== undefined) {
           setEchoPoints(data.points);
         }
       } catch (e) {
-        console.error("Failed to fetch points", e);
+        console.error("Points fetch failed", e);
       }
     };
 
     fetchPoints();
-    // Refresh interval every 10s to keep it somewhat live
-    const interval = setInterval(fetchPoints, 10000);
+    // Refresh every 15s to catch check-in updates
+    const interval = setInterval(fetchPoints, 15000);
     return () => clearInterval(interval);
-  }, [context?.user?.fid, tab]);
+  }, [context?.user?.fid]);
+
+  const totalDisplayScore = useMemo(() => {
+    const grind = Number(echoPoints) || 0;
+    const multi = Number(baseStats?.baseScore) || 0;
+    return grind + multi;
+  }, [echoPoints, baseStats?.baseScore]);
 
   return (
     <div className="p-4 relative">
@@ -72,7 +78,7 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
 
           <div className="text-right border-l-2 border-white pl-4">
             <p className="text-2xl text-primary font-bold leading-none">
-              {(echoPoints || 0) + (baseStats?.baseScore || 0)}
+              {totalDisplayScore.toLocaleString()}
             </p>
             <p className="text-xs text-white uppercase mt-1">ECHO POWER</p>
           </div>

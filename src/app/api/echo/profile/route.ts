@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../../lib/db';
 import EchoProfile from '../../../../models/EchoProfile';
 import UserStats from '../../../../models/UserStats';
+import EchoNFT from '../../../../models/EchoNFT';
+import Counter from '../../../../models/Counter';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -123,14 +125,38 @@ export async function POST(request: Request) {
             return NextResponse.json({ profile, calculated: true, initialPoints: profile.points });
         }
 
-        // 3. Register NFT (Highlight Mint)
+        // 3. Register NFT (Independent Mint)
         if (action === 'register_nft') {
-            const { nftImage, nftTokenId } = body;
-            if (nftImage) profile.nftImage = nftImage;
-            if (nftTokenId) profile.nftTokenId = nftTokenId; // Optional if we catch event client-side
+            const { nftImage } = body;
+            if (!nftImage) return NextResponse.json({ error: 'nftImage required' }, { status: 400 });
 
+            // Increment Token ID
+            const counter = await Counter.findOneAndUpdate(
+                { name: 'nft_token_id' },
+                { $inc: { seq: 1 } },
+                { upsert: true, new: true }
+            );
+            const nextTokenId = counter.seq;
+
+            // Create NFT Record
+            const nftEntry = new EchoNFT({
+                tokenId: nextTokenId,
+                fid: profile.fid,
+                address: profile.address,
+                imageUrl: nftImage,
+                points: profile.points
+            });
+            await nftEntry.save();
+
+            // Legacy support: update profile with latest
+            profile.nftImage = nftImage;
+            profile.nftTokenId = nextTokenId;
             await profile.save();
-            return NextResponse.json({ success: true, profile });
+
+            const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://echo-base-mini-app.vercel.app';
+            const tokenURI = `${baseUrl}/api/echo/nft/${nextTokenId}`;
+
+            return NextResponse.json({ success: true, tokenURI, tokenId: nextTokenId });
         }
 
         return NextResponse.json({ profile });

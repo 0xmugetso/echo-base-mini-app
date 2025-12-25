@@ -61,7 +61,13 @@ export async function GET(request: Request) {
 
             if (results[4].status === 'fulfilled' && results[4].value) {
                 const nUser = results[4].value;
-                (farcasterHoldings as any).cast_count = nUser.stats?.cast_count || nUser.cast_count || 0;
+                console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
+                // Neynar User object usually has cast_count directly or under stats
+                (farcasterHoldings as any).cast_count =
+                    nUser.stats?.cast_count ||
+                    nUser.profile?.stats?.cast_count ||
+                    nUser.cast_count ||
+                    0;
             }
 
         } catch (err) {
