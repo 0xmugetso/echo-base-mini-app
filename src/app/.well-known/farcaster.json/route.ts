@@ -13,13 +13,28 @@ export function GET() {
       payload: "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
       signature: "8/Wz7Nq+tmuAm9y3431ompFIz63xU4LHBW0oRKlrNQ5Hc1FNFVdl15B2DnwMRIeKoz6N7FmP9YCNRSW9hyv8ths="
     },
-    frame: {
-      version: "1",
-      name: "Echo",
-      iconUrl: `${appUrl}/assets/echo-logo.PNG`,
-      splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#000000",
-      appUrl: appUrl,
+    "frame": {
+      "name": "Echo ",
+      "version": "1",
+      "iconUrl": "https://echo-base-mini-app.vercel.app/icon.png",
+      "homeUrl": "https://echo-base-mini-app.vercel.app",
+      "imageUrl": "https://echo-base-mini-app.vercel.app/image.png",
+      "buttonTitle": "Launch Echo",
+      "splashImageUrl": "https://echo-base-mini-app.vercel.app/splash.png",
+      "splashBackgroundColor": "#6200EA",
+      "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook",
+      "subtitle": "Immortalize your on-chain status. ",
+      "description": "Mint your legacy or share to flex. Start exploring echo now.",
+      "primaryCategory": "social",
+      "tags": [
+        "social",
+        "community",
+        "score",
+        "activity",
+        "base"
+      ],
+      "ogTitle": "Echo - Immortalize your status",
+      "ogDescription": "Immortalize your on-chain base status and farcaster metrics in awesome mintable Echo card. "
     },
   };
 
