@@ -6,7 +6,6 @@ import { parseEther, stringToHex } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
 import { useMiniApp } from "@neynar/react";
 import { useToast } from "../ToastProvider";
-import sdk from "@farcaster/miniapp-sdk";
 
 type Profile = {
   points: number;
@@ -23,6 +22,7 @@ export function TasksTab({ context }: { context?: any }) {
   const { address } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
   const { signerStatus, createSigner } = useNeynarSigner();
+  const { sdk } = useMiniApp() as any;
 
   // --- FETCH PROFILE ---
   const fetchProfile = async () => {
@@ -61,13 +61,10 @@ export function TasksTab({ context }: { context?: any }) {
         data: stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`),
       };
 
-      if ((sdk as any)?.actions?.sendTransaction) {
-        console.log("[Checkin] Using SDK sendTransaction");
-        const result = await (sdk as any).actions.sendTransaction(txData);
-        if (!result?.hash) {
-          console.error("SDK sendTransaction did not return a hash or was cancelled.");
-          throw new Error("Transaction cancelled or failed via SDK.");
-        }
+      if (sdk?.actions?.sendTransaction) {
+        console.log("[Checkin] Sending via Frame SDK actions");
+        const result = await sdk.actions.sendTransaction(txData);
+        if (!result?.hash) throw new Error("Transaction cancelled or failed");
         hash = result.hash as `0x${string}`;
       } else {
         console.log("[Checkin] Falling back to wagmi sendTransactionAsync");

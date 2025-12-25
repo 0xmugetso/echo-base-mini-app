@@ -1,6 +1,6 @@
 
 // Replace this with your own wallet address!
-export const AURA_CONTRACT_ADDRESS = "0xa485aee6c744e6541664c9d9283011c1b5532ed0" as `0x${string}`;
+export const AURA_CONTRACT_ADDRESS = "0xd987123d1add4d7a45e44077616b565585effc9d" as `0x${string}`;
 
 export const AURA_ABI = [
     {

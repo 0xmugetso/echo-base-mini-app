@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EchoNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
-    uint256 public mintPrice = 0;
+    uint256 public mintPrice = 0.00003 ether;
 
     constructor(address initialOwner) 
         ERC721("Echo Card", "ECHO") 

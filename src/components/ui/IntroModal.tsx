@@ -29,6 +29,26 @@ type IntroModalProps = {
     loading: boolean;
 };
 
+const CardHeader = React.memo(({ neynarUser }: { neynarUser: any }) => (
+    <div className="window">
+        <div className="window-header">
+            <div className="flex items-center gap-2"><span>ECHO_OS_V1.0</span></div>
+            <div className="flex gap-1"><div className="w-2 h-2 bg-white"></div><div className="w-2 h-2 bg-white"></div></div>
+        </div>
+        <div className="window-content bg-black flex items-center gap-4 p-3 border-2 border-t-0 border-white">
+            {neynarUser?.pfp_url ? (
+                <img src={neynarUser.pfp_url} crossOrigin="anonymous" className="w-12 h-12 border-2 border-white grayscale contrast-125" />
+            ) : (
+                <div className="w-12 h-12 border-2 border-white bg-primary"></div>
+            )}
+            <div>
+                <p className="text-white text-base font-bold uppercase tracking-widest leading-none font-pixel">{neynarUser?.username || "ANON"}</p>
+                <p className="text-primary text-xs font-mono mt-1">FID: {neynarUser?.fid || "---"}</p>
+            </div>
+        </div>
+    </div>
+));
+
 export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: IntroModalProps) {
     // --- STATE ---
     const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -241,6 +261,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     chainId: base.id,
                     to: AURA_CONTRACT_ADDRESS,
                     data,
+                    value: parseEther("0.00003"), // 10 cents
                 });
                 if (!result?.hash) throw new Error("Minting cancelled or failed");
                 hash = result.hash;
@@ -251,7 +272,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     abi: AURA_ABI,
                     functionName: 'mint',
                     args: [getAddress(neynarUser.custody_address), tokenURI],
-                    value: 0n,
+                    value: parseEther("0.00003"), // 10 cents
                 });
             }
 
@@ -275,23 +296,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     // --- SUB-COMPONENTS ---
     const StatsCardContent = ({ captureId }: { captureId?: string }) => (
         <div id={captureId} className="space-y-6 bg-black p-4 mx-auto" style={{ width: '100%', maxWidth: '380px' }}>
-            <div className="window">
-                <div className="window-header">
-                    <div className="flex items-center gap-2"><span>ECHO_OS_V1.0</span></div>
-                    <div className="flex gap-1"><div className="w-2 h-2 bg-white"></div><div className="w-2 h-2 bg-white"></div></div>
-                </div>
-                <div className="window-content bg-black flex items-center gap-4 p-3 border-2 border-t-0 border-white">
-                    {neynarUser?.pfp_url ? (
-                        <img src={neynarUser.pfp_url} crossOrigin="anonymous" className="w-12 h-12 border-2 border-white grayscale contrast-125" />
-                    ) : (
-                        <div className="w-12 h-12 border-2 border-white bg-primary"></div>
-                    )}
-                    <div>
-                        <p className="text-white text-base font-bold uppercase tracking-widest leading-none font-pixel">{neynarUser?.username || "ANON"}</p>
-                        <p className="text-primary text-xs font-mono mt-1">FID: {neynarUser?.fid || "---"}</p>
-                    </div>
-                </div>
-            </div>
+            <CardHeader neynarUser={neynarUser} />
 
             <RetroWindow title="BASE_ACTIVITY">
                 <div className="flex flex-col gap-4">
