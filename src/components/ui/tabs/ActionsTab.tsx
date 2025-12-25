@@ -136,7 +136,7 @@ export function ActionsTab({ context }: ActionTabProps) {
         setLastCast({ points: score, hash: mockHash, text });
         fetchHistory();
       } else {
-        alert(data.error);
+        console.error(data.error);
         setStatus('IDLE');
       }
 

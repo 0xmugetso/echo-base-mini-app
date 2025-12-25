@@ -16,25 +16,25 @@ import { type AccountAssociation } from '@farcaster/miniapp-core/src/manifest';
  * The base URL of the application.
  * Used for generating absolute URLs for assets and API endpoints.
  */
-export const APP_URL: string = process.env.NEXT_PUBLIC_URL!;
+export const APP_URL: string = process.env.NEXT_PUBLIC_URL || 'https://echo-base-mini-app.vercel.app';
 
 /**
  * The name of the mini app as displayed to users.
  * Used in titles, headers, and app store listings.
  */
-export const APP_NAME: string = 'Starter Kit';
+export const APP_NAME: string = 'Echo';
 
 /**
  * A brief description of the mini app's functionality.
  * Used in app store listings and metadata.
  */
-export const APP_DESCRIPTION: string = 'A demo of the Neynar Starter Kit';
+export const APP_DESCRIPTION: string = 'Uncover your onchain legacy on Base.';
 
 /**
  * The primary category for the mini app.
  * Used for app store categorization and discovery.
  */
-export const APP_PRIMARY_CATEGORY: string = 'developer-tools';
+export const APP_PRIMARY_CATEGORY: string = 'social';
 
 /**
  * Tags associated with the mini app.

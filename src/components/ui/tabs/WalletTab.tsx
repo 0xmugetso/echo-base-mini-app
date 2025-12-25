@@ -149,7 +149,7 @@ export function WalletTab() {
                 if (!profile?.referralCode) return;
                 const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
                 navigator.clipboard.writeText(deepLink);
-                alert("DEEP LINK COPIED! SHARE ON WARPCAST.");
+                console.log("DEEP LINK COPIED! SHARE ON WARPCAST.");
               }}
               className="px-2 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-gray-200"
             >

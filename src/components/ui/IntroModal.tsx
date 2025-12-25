@@ -237,10 +237,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 })
             });
 
-            alert("MINT SUBMITTED: " + hash);
+            console.log("MINT SUBMITTED: " + hash);
         } catch (e) {
             console.error(e);
-            alert("MINT FAILED");
+            console.error("MINT FAILED");
         } finally { setIsMinting(false); }
     };
 
@@ -537,7 +537,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             </p>
 
             <div className="w-full max-w-sm mb-8 z-10">
-                <RetroBanner src="/assets/banner_skull.jpg" alt="Echo Banner" />
+                <RetroBanner src="/assets/banner-modal.JPG" alt="Echo Banner" />
             </div>
 
             <div className="w-full max-w-sm flex flex-col gap-4 z-10">

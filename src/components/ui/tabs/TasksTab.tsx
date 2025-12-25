@@ -42,7 +42,7 @@ export function TasksTab({ context }: { context?: any }) {
   const handleCheckIn = async () => {
     console.log("Check-in Clicked");
     if (!profile) {
-      alert("Profile not loaded yet");
+      console.log("Profile not loaded yet");
       return;
     }
     setActionLoading('checkin');
@@ -63,14 +63,14 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`CHECK-IN SUCCESS! +${data.pointsAdded} PTS`);
+        console.log(`CHECK-IN SUCCESS! +${data.pointsAdded} PTS`);
         fetchProfile();
       } else {
-        alert(data.error);
+        console.error(data.error);
       }
     } catch (e) {
       console.error(e);
-      alert("CHECK-IN FAILED (Did you sign?)");
+      console.error("CHECK-IN FAILED (Did you sign?)");
     } finally {
       setActionLoading(null);
     }
@@ -94,14 +94,14 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`);
+        console.log(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`);
         fetchProfile();
       } else {
-        alert(data.error);
+        console.error(data.error);
       }
     } catch (e) {
       console.error(e);
-      alert("BOX OPEN FAILED");
+      console.error("BOX OPEN FAILED");
     } finally {
       setActionLoading(null);
     }
@@ -125,10 +125,10 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`TASK COMPLETE! +${data.pointsAdded} PTS`);
+        console.log(`TASK COMPLETE! +${data.pointsAdded} PTS`);
         fetchProfile();
       } else {
-        alert(data.error || "Already claimed!");
+        console.error(data.error || "Already claimed!");
       }
     } catch (e) {
       console.error(e);

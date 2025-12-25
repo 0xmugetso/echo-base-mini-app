@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 
-// Redirect to Farcaster-hosted manifest for registration
-const HOSTED_MANIFEST_URL =
-  "https://api.farcaster.xyz/miniapps/hosted-manifest/019b1fc1-2e5f-fcd9-451d-7faac80f1140";
-
 export function GET() {
-  return NextResponse.redirect(HOSTED_MANIFEST_URL, 307);
+  const appUrl = "https://echo-base-mini-app.vercel.app";
+
+  const manifest = {
+    accountAssociation: {
+      header: "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDBCRjk4QkY2Yjg4QjMxRDRCQzk2NUE1RTY2RUMwNkMyOTgwMEZCM0E3OWI0M0Y1NkQ3NTg2Q0QifQ", // This needs to be the actual header from the dev portal or generated
+      payload: "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
+      signature: "MHhjNDliYmEzYTMxM2M3M2I3YjY5YmIyYmEzYTMxM2M3M2I3YjY5YmIyYmEzYTMxM2M3M2I3YjY5YmIyYmEzYTMxM2M3M2I3YjY5YmIyYmEzYTMxM2M3M2I3YjY5YmIyMQ" // Placeholder, real signature from Warpcast Dev Portal
+    },
+    frame: {
+      version: "1",
+      name: "Echo",
+      iconUrl: `${appUrl}/icon.png`,
+      splashImageUrl: `${appUrl}/splash.png`,
+      splashBackgroundColor: "#000000",
+      appUrl: appUrl,
+    },
+  };
+
+  return NextResponse.json(manifest);
 }

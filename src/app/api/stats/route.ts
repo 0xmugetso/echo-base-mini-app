@@ -32,31 +32,45 @@ export async function GET(request: Request) {
             }
         }
 
-        console.log(`[API] Cache MISS/STALE for ${address}. Fetching new data...`);
-
-        // 3. Fetch fresh data (Cache Miss or Stale)
-        // Run Parallel Fetches
-        const [baseStats, farcasterHoldings, fcWalletValue] = await Promise.all([
-            getBaseNativeVolume(address),
-            getFarcasterHoldings(address),
-            fidParam ? getUserWalletValue(parseInt(fidParam)) : Promise.resolve(0)
-        ]);
-
-        // Fetch Best Cast if FID provided
+        // 3. Fresh Data Fetching with individual error handling for resilience
+        let baseStats = { total_tx: 0, total_volume_out_wei: 0n, total_volume_usd: 0, total_fees_paid_wei: 0n, biggest_single_tx: 0 };
+        let farcasterHoldings = { holdings: { warplets: false, pro_og: false, based_punk: false, bankr_club: false, clanker: false, jesse: false, degen: false, brett: false, toshi: false } };
+        let fcWalletValue = 0;
         let bestCast = null;
-        if (fidParam) {
-            bestCast = await getBestCast(parseInt(fidParam));
+
+        try {
+            const results = await Promise.allSettled([
+                getBaseNativeVolume(address),
+                getFarcasterHoldings(address),
+                fidParam ? getUserWalletValue(parseInt(fidParam)) : Promise.resolve(0),
+                fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null)
+            ]);
+
+            if (results[0].status === 'fulfilled') baseStats = results[0].value;
+            else console.error('[API] baseStats failed:', results[0].reason);
+
+            if (results[1].status === 'fulfilled') farcasterHoldings = results[1].value;
+            else console.error('[API] farcasterHoldings failed:', results[1].reason);
+
+            if (results[2].status === 'fulfilled') fcWalletValue = results[2].value;
+            else console.error('[API] fcWalletValue failed:', results[2].reason);
+
+            if (results[3].status === 'fulfilled') bestCast = results[3].value;
+            else console.error('[API] bestCast failed:', results[3].reason);
+
+        } catch (err) {
+            console.error('[API] Parallel fetch failed:', err);
         }
 
-        // 4. Transform BigInt to String and Merge
+        // 4. Transform and Merge
         const storageStats = {
             ...baseStats,
             total_volume_out_wei: baseStats.total_volume_out_wei.toString(),
             total_fees_paid_wei: baseStats.total_fees_paid_wei.toString(),
-            first_tx_date: baseStats.first_tx_date || null,
+            first_tx_date: (baseStats as any).first_tx_date || null,
             farcaster: {
-                wallet_value_usd: fcWalletValue, // Now using Neynar
-                holdings: farcasterHoldings.holdings, // Keeping holdings for badges
+                wallet_value_usd: fcWalletValue,
+                holdings: farcasterHoldings.holdings,
                 best_cast: bestCast
             }
         };
