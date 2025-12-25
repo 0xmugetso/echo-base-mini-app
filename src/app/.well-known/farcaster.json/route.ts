@@ -2,14 +2,6 @@ import { NextResponse } from "next/server";
 
 /**
  * Serving the Farcaster Manifest directly for domain verification.
- * 
- * IMPORTANT FOR THE USER:
- * You MUST replace the 'accountAssociation' object below with the one provided 
- * by the Warpcast Developer Portal (https://warpcast.com/~/developers/frames).
- * 
- * 1. Register your app with URL: https://echo-base-mini-app.vercel.app
- * 2. Copy the 'accountAssociation' object from the portal.
- * 3. Paste it below.
  */
 
 export function GET() {
@@ -17,9 +9,9 @@ export function GET() {
 
   const manifest = {
     accountAssociation: {
-      header: "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDBCRjk4QkY2Yjg4QjMxRDRCQzk2NUE1RTY2RUMwNkMyOTgwMEZCM0E3OWI0M0Y1NkQ3NTg2Q0QifQ",
+      header: "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGY4NDgzMzQwMEE2QkU2ZWY4NUJDZTNFQTEzOThGMDU3ZjQxOEY5N2QifQ",
       payload: "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
-      signature: "PASTE_YOUR_SIGNATURE_FROM_WARPCAST_DEV_PORTAL_HERE"
+      signature: "8/Wz7Nq+tmuAm9y3431ompFIz63xU4LHBW0oRKlrNQ5Hc1FNFVdl15B2DnwMRIeKoz6N7FmP9YCNRSW9hyv8ths="
     },
     frame: {
       version: "1",
