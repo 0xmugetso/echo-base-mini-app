@@ -5,6 +5,7 @@ import { useAccount, useSendTransaction } from "wagmi";
 import { parseEther, stringToHex } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
 import { useMiniApp } from "@neynar/react";
+import { useToast } from "../ToastProvider";
 
 type Profile = {
   points: number;
@@ -39,21 +40,26 @@ export function TasksTab({ context }: { context?: any }) {
   // --- ACTIONS ---
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const { toast } = useToast();
+
   const handleCheckIn = async () => {
     console.log("Check-in Clicked");
     if (!profile) {
-      console.log("Profile not loaded yet");
+      toast("Profile not loaded yet", "ERROR");
       return;
     }
     setActionLoading('checkin');
+    toast("Initiating Transaction...", "PROCESS");
+
     try {
-      console.log("Initiating Transaction...");
       // 1. On-chain Tx (Proof of Check-in)
       const hash = await sendTransactionAsync({
         to: "0x438Da72724D6331A47073286333241BD788A8340", // Treasury
         value: parseEther("0"),
         data: stringToHex("ECHO_CHECKIN"),
       });
+
+      toast("TX_SUBMITTED: Waiting for verification...", "PROCESS");
 
       // 2. API Call
       const res = await fetch('/api/echo/checkin', {
@@ -63,14 +69,14 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        console.log(`CHECK-IN SUCCESS! +${data.pointsAdded} PTS`);
+        toast(`CHECK-IN SUCCESS! +${data.pointsAdded} PTS`, "SUCCESS");
         fetchProfile();
       } else {
-        console.error(data.error);
+        toast(data.error || "Verification failed", "ERROR");
       }
     } catch (e) {
       console.error(e);
-      console.error("CHECK-IN FAILED (Did you sign?)");
+      toast("CHECK-IN FAILED (Did you sign?)", "ERROR");
     } finally {
       setActionLoading(null);
     }
@@ -78,6 +84,7 @@ export function TasksTab({ context }: { context?: any }) {
 
   const handleOpenBox = async (day: number) => {
     setActionLoading(`box-${day}`);
+    toast(`Opening Day ${day} Box...`, "PROCESS");
     try {
       // 1. On-chain Tx
       const hash = await sendTransactionAsync({
@@ -85,6 +92,8 @@ export function TasksTab({ context }: { context?: any }) {
         value: parseEther("0"),
         data: stringToHex(`ECHO_BOX_DAY_${day}`),
       });
+
+      toast("TX_SUBMITTED: Verifying loot...", "PROCESS");
 
       // 2. API Call
       const res = await fetch('/api/echo/box', {
@@ -94,14 +103,14 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        console.log(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`);
+        toast(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`, "SUCCESS");
         fetchProfile();
       } else {
-        console.error(data.error);
+        toast(data.error || "Failed to open box", "ERROR");
       }
     } catch (e) {
       console.error(e);
-      console.error("BOX OPEN FAILED");
+      toast("BOX OPEN FAILED", "ERROR");
     } finally {
       setActionLoading(null);
     }
@@ -112,10 +121,8 @@ export function TasksTab({ context }: { context?: any }) {
     const url = task === 'follow_echo' ? 'https://warpcast.com/echo' : 'https://warpcast.com/khash';
     window.open(url, '_blank');
 
-    // Optimistic Update (Real verification would need backend Neynar check)
-    // For now, we assume they did it after clicking and waiting 5s? 
-    // Or just claim immediately for beta.
     setActionLoading(task);
+    toast("Verifying mission...", "PROCESS");
 
     try {
       const res = await fetch('/api/echo/action', {
@@ -125,13 +132,14 @@ export function TasksTab({ context }: { context?: any }) {
       });
       const data = await res.json();
       if (data.success) {
-        console.log(`TASK COMPLETE! +${data.pointsAdded} PTS`);
+        toast(`MISSION COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
         fetchProfile();
       } else {
-        console.error(data.error || "Already claimed!");
+        toast(data.error || "Quest already claimed!", "INFO");
       }
     } catch (e) {
       console.error(e);
+      toast("Verification error", "ERROR");
     } finally {
       setActionLoading(null);
     }

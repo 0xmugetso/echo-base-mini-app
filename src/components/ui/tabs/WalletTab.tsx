@@ -159,19 +159,36 @@ export function WalletTab() {
         </div>
       </RetroWindow>
 
-      {/* SCORES */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="border-2 border-primary bg-black p-3 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-1 opacity-20 text-primary">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+      {/* UNIFIED POWER SCORE */}
+      <div className="border-4 border-primary bg-black/80 p-4 relative overflow-hidden shadow-[8px_8px_0_0_rgba(0,82,255,0.2)]">
+        <div className="absolute top-0 right-0 p-2 opacity-10 text-primary scale-150">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+        </div>
+
+        <div className="relative z-10">
+          <p className="text-[10px] text-primary uppercase font-bold tracking-[0.2em] mb-1">TOTAL_ECHO_POWER</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-4xl font-pixel text-white tracking-widest leading-none">
+              {(activityPoints + baseScore).toLocaleString()}
+            </p>
+            <span className="text-xs text-primary font-bold">PT</span>
           </div>
-          <p className="text-[10px] text-primary uppercase font-bold">ECHO_PTS</p>
-          <p className="text-2xl font-pixel text-white">{activityPoints.toLocaleString()}</p>
+
+          {/* Breakdown */}
+          <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[9px] text-gray-500 uppercase">GRIND_PTS (EARNED)</p>
+              <p className="font-pixel text-sm text-gray-300">+{activityPoints.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-gray-500 uppercase">ONCHAIN_POWER (HISTORY)</p>
+              <p className="font-pixel text-sm text-gray-300">+{baseLoading ? "..." : baseScore.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
-        <div className="border border-white bg-black/50 p-3">
-          <p className="text-[10px] text-gray-500 uppercase font-bold">BASE_SCORE</p>
-          <p className="text-2xl font-pixel text-gray-300">{baseLoading ? "..." : baseScore.toLocaleString()}</p>
-        </div>
+
+        {/* Scanline Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-[200%] animate-scan pointer-events-none" />
       </div>
 
       {/* BADGES (PROMINENT) */}

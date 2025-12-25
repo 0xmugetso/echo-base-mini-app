@@ -169,7 +169,15 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const node = document.getElementById('nft-card');
         try {
             if (node) {
-                const dataUrl = await htmlToImage.toPng(node, { backgroundColor: '#000' });
+                // Ensure the node has width/height before capture
+                const dataUrl = await htmlToImage.toPng(node, {
+                    backgroundColor: '#000',
+                    cacheBust: true,
+                    // Neynar PFPs might need CORS, html-to-image tries to proxy them if possible
+                    // but sometimes we need to skip them if they block the whole capture.
+                    // However, we want them in the NFT.
+                });
+
                 if (download) {
                     const link = document.createElement('a');
                     link.download = `echo-stats-${neynarUser?.username || 'anon'}.png`;
@@ -177,9 +185,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     link.click();
                 }
                 return dataUrl;
+            } else {
+                console.error("[Capture] node 'nft-card' not found in DOM");
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            console.error("[Capture] html-to-image error:", e.message);
             return null;
         }
         return null;
@@ -206,27 +216,16 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const uploadRes = await uploadImage(dataUrl);
             if (!uploadRes) throw new Error("Upload failed");
 
-            // 2. Mint on Highlight (Standard Mint)
-            // Assumes Open Edition
+            // 2. Mint (Using configured AURA contract)
             const hash = await writeContractAsync({
-                address: "0xYOUR_HIGHLIGHT_CONTRACT_ADDRESS", // Placeholder
-                abi: [{
-                    inputs: [{ name: "recipient", type: "address" }],
-                    name: "mintOne", // Adjust based on actual contract
-                    outputs: [{ name: "tokenId", type: "uint256" }],
-                    stateMutability: "payable",
-                    type: "function"
-                }],
-                functionName: 'mintOne',
+                address: AURA_CONTRACT_ADDRESS,
+                abi: AURA_ABI,
+                functionName: 'mint',
                 args: [getAddress(neynarUser.custody_address)],
-                value: parseEther("0.000777"), // Optional fee
+                value: parseEther("0.000777"),
             });
 
             // 3. Link Token ID to Profile (Server-side)
-            // We need to listen for event or assume sequential?
-            // Safer: Call backend to "claim mint" and pass the image URL.
-            // Backend can verify ownership later or we update generic "pending" status.
-
             await fetch('/api/echo/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -238,8 +237,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             });
 
             console.log("MINT SUBMITTED: " + hash);
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            console.error("[Mint] Error:", e.message);
             console.error("MINT FAILED");
         } finally { setIsMinting(false); }
     };
@@ -397,7 +396,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     </div>
                     <div className="window-content bg-black flex items-center gap-4 p-3">
                         {neynarUser?.pfp_url ? (
-                            <img src={neynarUser.pfp_url} alt="Profile" className="w-12 h-12 border-2 border-white grayscale contrast-125" />
+                            <img
+                                src={neynarUser.pfp_url}
+                                alt="Profile"
+                                crossOrigin="anonymous"
+                                className="w-12 h-12 border-2 border-white grayscale contrast-125"
+                            />
                         ) : (
                             <div className="w-12 h-12 border-2 border-white bg-primary"></div>
                         )}
@@ -575,7 +579,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 <div className="flex-1 overflow-hidden relative">
                     {step === 1 && renderStep1()}
                     {step === 2 && renderStep2()}
-                    {step === 3 && renderStep3()}
+
+                    {/* Persist Step 3 in DOM for capture reliability, hide off-screen when not in use */}
+                    <div className={step === 3 ? "flex-1 h-full block" : "absolute inset-0 pointer-events-none opacity-0 h-0 overflow-hidden"}>
+                        {renderStep3()}
+                    </div>
+
                     {step === 4 && renderStep4()}
                     {step === 5 && renderStep5()}
                 </div>

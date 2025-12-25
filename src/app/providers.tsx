@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { MiniAppProvider } from '@neynar/react';
 
 import { ANALYTICS_ENABLED, RETURN_URL } from '~/lib/constants';
+import { ToastProvider } from '~/components/ui/ToastProvider';
 
 const WagmiProvider = dynamic(
   () => import('~/components/providers/WagmiProvider'),
@@ -25,7 +26,9 @@ export function Providers({
         backButtonEnabled={true}
         returnUrl={RETURN_URL}
       >
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </MiniAppProvider>
     </WagmiProvider>
   );
