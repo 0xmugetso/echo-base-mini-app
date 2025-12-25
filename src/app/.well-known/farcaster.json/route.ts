@@ -12,7 +12,7 @@ export function GET() {
     frame: {
       version: "1",
       name: "Echo",
-      iconUrl: `${appUrl}/icon.png`,
+      iconUrl: `${appUrl}/assets/echo-logo.PNG`,
       splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: "#000000",
       appUrl: appUrl,

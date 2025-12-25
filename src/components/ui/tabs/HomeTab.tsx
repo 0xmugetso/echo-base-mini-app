@@ -252,11 +252,11 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         title="FARCASTER_METRICS"
         icon={
           <Image
-            src="/assets/transparent-white.svg"
+            src="/assets/echo-logo.PNG"
             alt="Echo"
             width={48}
             height={48}
-            className="w-12 h-12 mr-0"
+            className="w-12 h-12 mr-0 object-contain"
           />
         }
       >

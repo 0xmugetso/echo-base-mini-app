@@ -14,6 +14,9 @@ const boldPixels = localFont({
 export const metadata: Metadata = {
   title: APP_NAME,
   description: APP_DESCRIPTION,
+  icons: {
+    icon: '/assets/echo-logo.PNG',
+  },
 };
 
 export default async function RootLayout({

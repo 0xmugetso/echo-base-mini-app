@@ -1,9 +1,7 @@
 import React from 'react';
 
 export const EchoLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
-    <svg viewBox="0 0 32 32" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 16H6V20H2V16ZM6 12H10V16H6V12ZM10 8H14V12H10V8ZM14 4H18V8H14V4ZM18 8H22V12H18V8ZM22 12H26V16H22V12ZM26 16H30V20H26V16ZM22 20H26V24H22V20ZM18 24H22V28H18V24ZM14 28H18V32H14V28ZM10 24H14V28H10V24ZM6 20H10V24H6V20Z" />
-    </svg>
+    <img src="/assets/echo-logo.PNG" alt="Echo Logo" className={className} />
 );
 
 export const PixelHome = ({ className = "w-6 h-6" }: { className?: string }) => (

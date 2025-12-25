@@ -47,7 +47,7 @@ export const APP_TAGS: string[] = ['neynar', 'starter-kit', 'demo'];
  * URL for the app's icon image.
  * Used in app store listings and UI elements.
  */
-export const APP_ICON_URL: string = `${APP_URL}/icon.png`;
+export const APP_ICON_URL: string = `${APP_URL}/assets/echo-logo.PNG`;
 
 /**
  * URL for the app's Open Graph image.
