@@ -23,7 +23,7 @@ export function GET() {
       "splashImageUrl": "https://echo-base-mini-app.vercel.app/splash.png",
       "splashBackgroundColor": "#6200EA",
       "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook",
-      "subtitle": "Immortalize your on-chain status. ",
+      "subtitle": "Immortalize your status. ",
       "description": "Mint your legacy or share to flex. Start exploring echo now.",
       "primaryCategory": "social",
       "tags": [
