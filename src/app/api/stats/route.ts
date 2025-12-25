@@ -60,7 +60,8 @@ export async function GET(request: Request) {
             else console.error('[API] bestCast failed:', results[3].reason);
 
             if (results[4].status === 'fulfilled' && results[4].value) {
-                (farcasterHoldings as any).cast_count = results[4].value.cast_count || 0;
+                const nUser = results[4].value;
+                (farcasterHoldings as any).cast_count = nUser.stats?.cast_count || nUser.cast_count || 0;
             }
 
         } catch (err) {

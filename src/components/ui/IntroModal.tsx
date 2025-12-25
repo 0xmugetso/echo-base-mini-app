@@ -181,9 +181,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 const dataUrl = await htmlToImage.toPng(node, {
                     backgroundColor: '#000',
                     cacheBust: true,
-                    // Neynar PFPs might need CORS, html-to-image tries to proxy them if possible
-                    // but sometimes we need to skip them if they block the whole capture.
-                    // However, we want them in the NFT.
+                    style: {
+                        transform: 'scale(1)',
+                        transformOrigin: 'top left',
+                        height: 'auto',
+                        width: '380px', // Fixed width for mobile-friendly NFTs
+                    },
+                    pixelRatio: 2,
                 });
 
                 if (download) {
@@ -232,13 +236,34 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             if (!uploadRes) throw new Error("Upload failed");
 
             // 2. Mint (Using configured AURA contract)
-            const hash = await writeContractAsync({
-                address: AURA_CONTRACT_ADDRESS,
-                abi: AURA_ABI,
-                functionName: 'mint',
-                args: [getAddress(neynarUser.custody_address)],
-                value: parseEther("0.00015"),
-            });
+            let hash: string;
+
+            if ((sdk as any)?.actions?.sendTransaction) {
+                console.log("[Mint] Using SDK sendTransaction");
+                const { encodeFunctionData } = await import('viem');
+                const data = encodeFunctionData({
+                    abi: AURA_ABI,
+                    functionName: 'mint',
+                    args: [getAddress(neynarUser.custody_address)],
+                });
+
+                const result = await (sdk as any).actions.sendTransaction({
+                    to: AURA_CONTRACT_ADDRESS,
+                    data,
+                    value: parseEther("0.00015"),
+                });
+                if (!result?.hash) throw new Error("Minting cancelled or failed");
+                hash = result.hash;
+            } else {
+                console.log("[Mint] Falling back to wagmi writeContractAsync");
+                hash = await writeContractAsync({
+                    address: AURA_CONTRACT_ADDRESS,
+                    abi: AURA_ABI,
+                    functionName: 'mint',
+                    args: [getAddress(neynarUser.custody_address)],
+                    value: parseEther("0.00015"),
+                });
+            }
 
             // 3. Link Token ID to Profile (Server-side)
             await fetch('/api/echo/profile', {

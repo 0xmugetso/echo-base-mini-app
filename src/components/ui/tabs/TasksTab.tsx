@@ -6,6 +6,7 @@ import { parseEther, stringToHex } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
 import { useMiniApp } from "@neynar/react";
 import { useToast } from "../ToastProvider";
+import sdk from "@farcaster/miniapp-sdk";
 
 type Profile = {
   points: number;
@@ -53,11 +54,25 @@ export function TasksTab({ context }: { context?: any }) {
 
     try {
       // 1. On-chain Tx (Proof of Check-in)
-      const hash = await sendTransactionAsync({
-        to: "0x438Da72724D6331A47073286333241BD788A8340", // Treasury
+      let hash: `0x${string}`;
+      const txData = {
+        to: "0x438da727a6C359d46E4922e38E901f2916A49a1f" as `0x${string}`,
         value: parseEther("0"),
-        data: stringToHex(`Echo Daily Check-in | FID: ${context?.user?.fid}`),
-      });
+        data: stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`),
+      };
+
+      if ((sdk as any)?.actions?.sendTransaction) {
+        console.log("[Checkin] Using SDK sendTransaction");
+        const result = await (sdk as any).actions.sendTransaction(txData);
+        if (!result?.hash) {
+          console.error("SDK sendTransaction did not return a hash or was cancelled.");
+          throw new Error("Transaction cancelled or failed via SDK.");
+        }
+        hash = result.hash as `0x${string}`;
+      } else {
+        console.log("[Checkin] Falling back to wagmi sendTransactionAsync");
+        hash = await sendTransactionAsync(txData);
+      }
 
       toast("TX_SUBMITTED: Waiting for verification...", "PROCESS");
 
