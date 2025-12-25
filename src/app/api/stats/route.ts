@@ -63,11 +63,13 @@ export async function GET(request: Request) {
                 const nUser = results[4].value;
                 console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
                 // Neynar User object usually has cast_count directly or under stats
-                (farcasterHoldings as any).cast_count =
-                    nUser.stats?.cast_count ||
-                    nUser.profile?.stats?.cast_count ||
-                    nUser.cast_count ||
+                const extractedCastCount =
+                    nUser.stats?.cast_count ??
+                    nUser.profile?.stats?.cast_count ??
+                    nUser.cast_count ??
                     0;
+                console.log(`[API] Extracted Cast Count for ${fidParam}: ${extractedCastCount}`);
+                (farcasterHoldings as any).cast_count = extractedCastCount;
             }
 
         } catch (err) {

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EchoNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
-    uint256 public mintPrice = 0.00015 ether;
+    uint256 public mintPrice = 0;
 
     constructor(address initialOwner) 
         ERC721("Echo Card", "ECHO") 
@@ -14,7 +14,9 @@ contract EchoNFT is ERC721URIStorage, Ownable {
     {}
 
     function mint(address to, string memory uri) public payable {
-        require(msg.value >= mintPrice, "Insufficient payment");
+        if (mintPrice > 0) {
+            require(msg.value >= mintPrice, "Insufficient payment");
+        }
         
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);

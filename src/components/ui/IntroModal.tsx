@@ -249,7 +249,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     abi: AURA_ABI,
                     functionName: 'mint',
                     args: [getAddress(neynarUser.custody_address), tokenURI],
-                    value: parseEther("0.00015"),
+                    value: 0n,
                 });
             }
 
@@ -272,7 +272,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- SUB-COMPONENTS ---
     const StatsCardContent = ({ captureId }: { captureId?: string }) => (
-        <div id={captureId} className="space-y-6 bg-black p-4" style={{ width: '380px' }}>
+        <div id={captureId} className="space-y-6 bg-black p-4 mx-auto" style={{ width: '100%', maxWidth: '380px' }}>
             <div className="window">
                 <div className="window-header">
                     <div className="flex items-center gap-2"><span>ECHO_OS_V1.0</span></div>
@@ -292,7 +292,6 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             </div>
 
             <RetroWindow title="BASE_ACTIVITY">
-                <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">CHECK_ACTIVITY<br /><span className="text-primary">DATA_BY_ECHO</span></div>
                 <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-2 gap-4">
                         <RetroStatBox label="BIGGEST TX" value={`$${formatNumber(animBiggestTx, 0)}`} />
@@ -307,7 +306,6 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             </RetroWindow>
 
             <RetroWindow title="FARCASTER_METRICS">
-                <div className="text-center font-mono text-[10px] text-gray-400 mb-4 border border-white/10 p-1">SOCIAL_LAYER<br /><span className="text-primary">BY_NEYNAR</span></div>
                 <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-2 gap-4">
                         <RetroStatBox label="SCORE" value={formatNumber(animScore, 2)} />
@@ -403,8 +401,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         <div className="flex flex-col h-full bg-black relative">
             <div className="p-4 flex flex-col items-center border-b border-white/10"><span className="font-pixel text-2xl tracking-widest text-white uppercase">YOUR STATS</span></div>
             <div className="flex-1 overflow-y-auto pb-24"><StatsCardContent captureId="nft-card" /></div>
+            <div className="absolute top-4 right-4 z-50">
+                <button onClick={onClose} className="text-white font-mono text-[10px] bg-black border border-white px-2 py-1 uppercase">[ X ]</button>
+            </div>
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20 bg-black z-20">
-                <button onClick={() => setStep(4)} className="btn btn-primary w-full py-4 text-lg font-pixel uppercase">CALCULATE ECHO {'>'}</button>
+                <button onClick={() => setStep(4)} className="btn btn-primary w-full py-4 text-lg font-pixel uppercase tracking-tight">CALCULATE ECHO {'>'}</button>
             </div>
         </div>
     );
@@ -445,10 +446,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             </div>
             <button onClick={onClose} className="absolute bottom-6 text-[10px] font-mono text-gray-600 hover:text-white uppercase">[ CLOSE_TERMINAL ]</button>
             {previewImage && (
-                <div className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4">
-                    <div className="relative w-full max-w-sm border-2 border-white bg-black p-1 shadow-[10px_10px_0_0_#fff]">
-                        <button onClick={() => setPreviewImage(null)} className="absolute -top-10 right-0 text-white font-pixel text-sm bg-black border-2 border-white px-2 py-1 uppercase tracking-tighter">CLOSE [X]</button>
-                        <img src={previewImage} className="w-full h-auto" style={{ imageRendering: 'pixelated' }} />
+                <div className="fixed inset-0 z-[100000] bg-black/98 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="relative w-full max-w-[340px] border-2 border-white bg-black p-1 shadow-[8px_8px_0_0_#fff]">
+                        <button onClick={() => setPreviewImage(null)} className="absolute -top-12 right-0 text-white font-pixel text-xs bg-black border-2 border-white px-3 py-1 uppercase hover:bg-white hover:text-black transition-colors">CLOSE_PREVIEW [X]</button>
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <img src={previewImage} className="w-full h-auto" />
+                        </div>
                     </div>
                 </div>
             )}
