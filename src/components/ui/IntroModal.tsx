@@ -200,10 +200,17 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const blob = await (await fetch(dataUrl)).blob();
             const filename = `echo-${Date.now()}.png`;
             const res = await fetch(`/api/upload?filename=${filename}`, { method: 'POST', body: blob });
-            if (!res.ok) return null;
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("[Upload] Server error:", errorData.error);
+                return null;
+            }
             const json = await res.json();
             return json.url;
-        } catch { return null; }
+        } catch (e: any) {
+            console.error("[Upload] Catch error:", e.message);
+            return null;
+        }
     }
 
     const handleMint = async () => {
