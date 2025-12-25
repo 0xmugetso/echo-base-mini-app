@@ -105,10 +105,15 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
 
+  const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0];
   const address =
     context?.user?.custody_address ||
     context?.user?.verified_addresses?.eth_addresses?.[0] ||
     "0x6bD8965a5e66EC06c29800Fb3a79B43f56D758cd";
+
+  if (isFallbackAddress && isSDKLoaded) {
+    console.warn("[Echo] Custody address missing. Origin mismatch likely blocking SDK context.");
+  }
 
   const { data: baseStats, loading: baseLoading, error: baseError } = useBaseStats(address, context?.user?.fid);
 
@@ -157,6 +162,14 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
 
       {/* IDENTITY BANNER */}
       <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
+
+      {isFallbackAddress && isSDKLoaded && (
+        <div className="border-2 border-red-500 bg-red-950/30 p-2 text-[10px] font-mono text-red-500 animate-pulse">
+          [!] WARNING: RESTRICTED_CONTEXT - ORIGIN_MISMATCH_DETECTED
+          <br />
+          Stats may show $0. Verify /.well-known/farcaster.json
+        </div>
+      )}
 
 
 
@@ -252,11 +265,11 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         title="FARCASTER_METRICS"
         icon={
           <Image
-            src="/assets/echo-logo.PNG"
+            src="/assets/transparent-white.svg"
             alt="Echo"
             width={48}
             height={48}
-            className="w-12 h-12 mr-0 object-contain"
+            className="w-12 h-12 mr-0"
           />
         }
       >

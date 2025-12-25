@@ -45,8 +45,12 @@ async function dbConnect() {
     }
     try {
         cached.conn = await cached.promise;
-    } catch (e) {
+    } catch (e: any) {
         cached.promise = null;
+        console.error("❌ MONGODB CONNECTION FATAL ERROR:", e.message);
+        if (e.message.includes("bad auth")) {
+            console.error(">>> HINT: Check your MONGODB_URI password and special characters in Vercel/Local env.");
+        }
         throw e;
     }
 
