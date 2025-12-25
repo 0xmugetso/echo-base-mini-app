@@ -56,7 +56,7 @@ export function TasksTab({ context }: { context?: any }) {
       const hash = await sendTransactionAsync({
         to: "0x438Da72724D6331A47073286333241BD788A8340", // Treasury
         value: parseEther("0"),
-        data: stringToHex("ECHO_CHECKIN"),
+        data: stringToHex(`Echo Daily Check-in | FID: ${context?.user?.fid}`),
       });
 
       toast("TX_SUBMITTED: Waiting for verification...", "PROCESS");

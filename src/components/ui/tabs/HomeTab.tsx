@@ -163,15 +163,6 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       {/* IDENTITY BANNER */}
       <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
 
-      {isFallbackAddress && isSDKLoaded && (
-        <div className="border-2 border-red-500 bg-red-950/30 p-2 text-[10px] font-mono text-red-500 animate-pulse">
-          [!] WARNING: RESTRICTED_CONTEXT - ORIGIN_MISMATCH_DETECTED
-          <br />
-          Stats may show $0. Verify /.well-known/farcaster.json
-        </div>
-      )}
-
-
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -282,8 +273,8 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           <div className="grid grid-cols-2 gap-4">
             <RetroStatBox label="NEYNAR SCORE" value={formatNumber(farcasterScore, 2)} />
             <RetroStatBox
-              label="FC WALLET ($)"
-              value={baseLoading ? "..." : `$${formatNumber(baseStats?.farcaster?.wallet_value_usd || 0, 0)}`}
+              label="TOTAL CASTS"
+              value={baseLoading ? "..." : formatNumber(baseStats?.farcaster?.cast_count)}
             />
           </div>
 

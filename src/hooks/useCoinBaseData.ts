@@ -29,6 +29,7 @@ type Stats = {
       recasts: number;
       replies: number;
     } | null;
+    cast_count?: number;
   };
 };
 
@@ -43,6 +44,7 @@ type Stats = {
 type UIStats = Omit<Stats, 'total_volume_out_wei' | 'total_fees_paid_wei'> & {
   total_volume_out_wei: bigint;
   total_fees_paid_wei: bigint;
+  baseScore: number;
 }
 
 export function useBaseStats(address?: string, fid?: number) {
@@ -78,10 +80,36 @@ export function useBaseStats(address?: string, fid?: number) {
         if (cancelled) return;
 
         // Transform strings back to BigInt for UI compatibility
+        const statsToUse = json;
+        let initialPoints = 0;
+
+        if (statsToUse) {
+          // Tier 1: Wallet Age
+          const age = statsToUse.wallet_age_days || 0;
+          if (age > 365) initialPoints += 50;
+          else if (age > 30) initialPoints += 20;
+
+          // Tier 2: Tx Count
+          const tx = statsToUse.total_tx || 0;
+          if (tx > 100) initialPoints += 50;
+          else if (tx > 10) initialPoints += 10;
+
+          // Tier 3: Farcaster Value
+          const fcVal = statsToUse.farcaster?.wallet_value_usd || 0;
+          if (fcVal > 1000) initialPoints += 100;
+          else if (fcVal > 100) initialPoints += 30;
+
+          // Tier 4: Farcaster Badges
+          const holdings = statsToUse.farcaster?.holdings || {};
+          const badgeCount = Object.values(holdings).filter(Boolean).length;
+          initialPoints += (badgeCount * 20);
+        }
+
         setData({
           ...json,
           total_volume_out_wei: BigInt(json.total_volume_out_wei || "0"),
           total_fees_paid_wei: BigInt(json.total_fees_paid_wei || "0"),
+          baseScore: initialPoints || 0
         });
       } catch (e: any) {
         if (cancelled) return;

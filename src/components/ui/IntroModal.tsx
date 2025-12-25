@@ -13,6 +13,13 @@ import { useMiniApp } from "@neynar/react";
 import { useNeynarSigner } from "../../hooks/useNeynarSigner";
 import { AURA_CONTRACT_ADDRESS, AURA_ABI } from "../../lib/contracts";
 
+const EyeIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
 type IntroModalProps = {
     isOpen: boolean;
     onClose: () => void;
@@ -29,6 +36,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [mounted, setMounted] = useState(false);
     const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
     const [pointsParam, setPointsParam] = useState(0);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // --- HOOKS ---
     const { signerStatus, createSigner, checkStatus } = useNeynarSigner();
@@ -229,7 +237,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 abi: AURA_ABI,
                 functionName: 'mint',
                 args: [getAddress(neynarUser.custody_address)],
-                value: parseEther("0.000777"),
+                value: parseEther("0.00015"),
             });
 
             // 3. Link Token ID to Profile (Server-side)
@@ -498,7 +506,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     onClick={() => setStep(4)}
                     className="btn btn-primary w-full py-4 text-lg"
                 >
-                    CALCULATE SIGMA {'>'}
+                    CALCULATE ECHO {'>'}
                 </button>
             </div>
         </div>
@@ -509,7 +517,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             <div className="text-center space-y-8 z-10 w-full max-w-sm">
 
                 <h2 className="text-3xl font-pixel text-white uppercase tracking-widest animate-pulse">
-                    CALCULATING_SIGMA
+                    CALCULATING_ECHO
                 </h2>
 
                 <div className="relative border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')]">
@@ -520,14 +528,22 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     <p className="font-mono text-[10px] text-center text-gray-500 mt-2">BASED ON YOUR ONCHAIN ACTIVITY</p>
                 </div>
 
-                {calculatedPoints !== null && (
+                <div className="flex flex-col gap-3 w-full">
+                    {calculatedPoints !== null && (
+                        <button
+                            onClick={() => setStep(5)}
+                            className="btn btn-primary w-full py-4 text-xl border-2 hover:bg-primary/80 transition-all font-pixel uppercase tracking-widest shadow-[4px_4px_0_0_theme('colors.primary')]"
+                        >
+                            ENTER ECHO OS {'>'}
+                        </button>
+                    )}
                     <button
-                        onClick={() => setStep(5)}
-                        className="btn btn-primary w-full py-4 text-xl border-2 hover:bg-primary/80 transition-all font-pixel uppercase tracking-widest shadow-[4px_4px_0_0_theme('colors.primary')]"
+                        onClick={onClose}
+                        className="text-gray-500 font-mono text-[10px] uppercase hover:text-white"
                     >
-                        ENTER ECHO OS {'>'}
+                        [ ABORT_PROCESS ]
                     </button>
-                )}
+                </div>
             </div>
 
             {/* Matrix Rain effect or grid */}
@@ -562,11 +578,37 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                         <span className="font-pixel text-base text-white">{isMinting ? "..." : "MINT"}</span>
                     </button>
                 </div>
+
+                <button
+                    onClick={async () => {
+                        const dataUrl = await captureImage(false);
+                        if (dataUrl) setPreviewImage(dataUrl);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 border border-white/20 py-2 font-mono text-[10px] text-gray-400 hover:text-white hover:border-white transition-colors"
+                >
+                    <EyeIcon className="w-4 h-4" />
+                    PREVIEW ECHO_CARD
+                </button>
             </div>
 
             <button onClick={onClose} className="absolute bottom-6 text-xs font-mono text-gray-600 hover:text-white text-center">
                 [ CLOSE TERMINAL ]
             </button>
+
+            {/* PREVIEW MODAL OVERLAY */}
+            {previewImage && (
+                <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+                    <div className="relative w-full max-w-sm border-2 border-white bg-black p-1 shadow-[10px_10px_0_0_#fff]">
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute -top-10 right-0 text-white font-pixel text-sm bg-black border-2 border-white px-2 py-1"
+                        >
+                            CLOSE [X]
+                        </button>
+                        <img src={previewImage} className="w-full h-auto" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 

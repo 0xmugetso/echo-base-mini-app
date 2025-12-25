@@ -6,17 +6,19 @@ import { APP_NAME } from "~/lib/constants";
 import sdk from "@farcaster/miniapp-sdk";
 import { useMiniApp } from "@neynar/react";
 import { type NeynarUser } from "~/hooks/useNeynarUser";
+import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { EchoLogo } from "./Icons";
 import { Tab } from "../App";
 
 interface HeaderProps {
   neynarUser?: NeynarUser | null;
   tab: Tab;
+  address?: string;
 }
 
-export function Header({ neynarUser, tab }: HeaderProps) {
+export function Header({ neynarUser, tab, address }: HeaderProps) {
   const { context } = useMiniApp();
-
+  const { data: baseStats } = useBaseStats(address, context?.user?.fid);
 
   const [echoPoints, setEchoPoints] = useState(0);
 
@@ -69,8 +71,10 @@ export function Header({ neynarUser, tab }: HeaderProps) {
           </div>
 
           <div className="text-right border-l-2 border-white pl-4">
-            <p className="text-2xl text-primary font-bold leading-none">{echoPoints}</p>
-            <p className="text-xs text-white uppercase mt-1">ECHO PTS</p>
+            <p className="text-2xl text-primary font-bold leading-none">
+              {(echoPoints || 0) + (baseStats?.baseScore || 0)}
+            </p>
+            <p className="text-xs text-white uppercase mt-1">ECHO POWER</p>
           </div>
         </div>
       </div>

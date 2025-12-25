@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/db';
 import UserStats from '../../../models/UserStats';
 import { getBaseNativeVolume, getFarcasterHoldings } from '../../../lib/covalent';
-import { getBestCast, getUserWalletValue } from '../../../lib/neynar';
+import { getBestCast, getUserWalletValue, getNeynarUser } from '../../../lib/neynar';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -43,7 +43,8 @@ export async function GET(request: Request) {
                 getBaseNativeVolume(address),
                 getFarcasterHoldings(address),
                 fidParam ? getUserWalletValue(parseInt(fidParam)) : Promise.resolve(0),
-                fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null)
+                fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null),
+                fidParam ? getNeynarUser(parseInt(fidParam)) : Promise.resolve(null)
             ]);
 
             if (results[0].status === 'fulfilled') baseStats = results[0].value;
@@ -58,6 +59,10 @@ export async function GET(request: Request) {
             if (results[3].status === 'fulfilled') bestCast = results[3].value;
             else console.error('[API] bestCast failed:', results[3].reason);
 
+            if (results[4].status === 'fulfilled' && results[4].value) {
+                (farcasterHoldings as any).cast_count = results[4].value.cast_count || 0;
+            }
+
         } catch (err) {
             console.error('[API] Parallel fetch failed:', err);
         }
@@ -71,7 +76,8 @@ export async function GET(request: Request) {
             farcaster: {
                 wallet_value_usd: fcWalletValue,
                 holdings: farcasterHoldings.holdings,
-                best_cast: bestCast
+                best_cast: bestCast,
+                cast_count: (farcasterHoldings as any).cast_count || 0
             }
         };
 

@@ -42,13 +42,8 @@ export function WalletTab() {
     fetchPoints();
   }, [user?.fid]);
 
-  // Calculate Base Score
-  const baseScore = useMemo(() => {
-    if (!baseStats) return 0;
-    const ageScore = (baseStats.wallet_age_days || 0) * 10;
-    const txScore = (baseStats.total_tx || 0) * 5;
-    return Math.floor(ageScore + txScore);
-  }, [baseStats]);
+  // Use unified Base Score from hook
+  const baseScore = baseStats?.baseScore || 0;
 
   const totalScore = activityPoints + baseScore;
 
