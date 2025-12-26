@@ -14,6 +14,7 @@ import * as htmlToImage from 'html-to-image';
 import { useMiniApp } from "@neynar/react";
 import { useNeynarSigner } from "../../hooks/useNeynarSigner";
 import { AURA_CONTRACT_ADDRESS, AURA_ABI } from "../../lib/contracts";
+import { useToast } from "./ToastProvider";
 
 const EyeIcon = ({ className }: { className?: string }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -69,6 +70,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const { sdk } = useMiniApp() as any;
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
+    const { toast } = useToast();
     // --- EFFECTS ---
     useEffect(() => {
         setMounted(true);
@@ -308,7 +310,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const imgRes = await uploadImage(dataUrl);
             if (!imgRes) throw new Error("Upload failed");
 
-            // 1. Fetch Next Token ID from Contract
+            // 1. Determine Recipient (SDK user address > Custody address)
+            const recipientAddress = (sdk as any)?.context?.user?.address || neynarUser.custody_address;
+            console.log("[Mint] Recipient Address:", recipientAddress);
+
+            // 2. Fetch Next Token ID from Contract
             let nextTokenId = 1;
             try {
                 if (publicClient) {
@@ -330,10 +336,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     fid: neynarUser.fid,
-                    address: neynarUser.custody_address,
+                    address: recipientAddress, // Sync with recipient
                     action: 'register_nft',
                     nftImage: imgRes,
-                    tokenId: nextTokenId // PASS THE ID WE EXPECT TO MINT
+                    tokenId: nextTokenId
                 })
             });
             const { tokenId } = await regRes.json();
@@ -348,7 +354,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 const data = encodeFunctionData({
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address)],
+                    args: [getAddress(recipientAddress)],
                 });
 
                 console.log("[Mint] Data:", data);
@@ -368,14 +374,16 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     address: AURA_CONTRACT_ADDRESS,
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address)],
+                    args: [getAddress(recipientAddress)],
                     value: 0n,
                 });
             }
 
             console.log("MINT SUBMITTED: " + hash);
+            toast("MINT SUCCESSFUL! CARD IS YOURS", "SUCCESS");
         } catch (e: any) {
             console.error("[Mint] Error:", e.message);
+            toast("MINT FAILED: " + e.message, "ERROR");
         } finally { setIsMinting(false); }
     };
 
