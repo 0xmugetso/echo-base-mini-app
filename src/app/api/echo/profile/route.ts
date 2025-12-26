@@ -44,7 +44,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { fid, address, action, username } = body;
+        const { action, username } = body;
+        const fid = body.fid ? Number(body.fid) : null;
+        const address = body.address;
+
+        console.log(`[PROFILE_API] Action: ${action}, FID: ${fid}, Address: ${address}`);
 
         if (!fid || !address) {
             return NextResponse.json({ error: 'Missing fid or address' }, { status: 400 });
@@ -183,15 +187,23 @@ export async function POST(request: Request) {
                 console.log(`[NFT_REG] Using Counter tokenId: ${nextTokenId}`);
             }
 
-            // Create NFT Record
-            const nftEntry = new EchoNFT({
-                tokenId: nextTokenId,
-                fid: profile.fid,
-                address: profile.address,
-                imageUrl: nftImage,
-                points: profile.points
-            });
-            await nftEntry.save();
+            if (!profile) {
+                console.error(`[NFT_REG] Profile not found for FID: ${fid}`);
+                return NextResponse.json({ error: 'Profile not found. Please register first.' }, { status: 404 });
+            }
+
+            // Create or Update NFT Record (Idempotent for redeployments)
+            const nftEntry = await EchoNFT.findOneAndUpdate(
+                { tokenId: nextTokenId },
+                {
+                    fid: profile.fid,
+                    address: profile.address,
+                    imageUrl: nftImage,
+                    points: profile.points,
+                    mintedAt: new Date()
+                },
+                { upsert: true, new: true }
+            );
 
             // Legacy support: update profile with latest
             profile.nftImage = nftImage;
@@ -207,7 +219,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ profile });
 
     } catch (e: any) {
-        console.error("Profile Error:", e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        console.error("❌ Profile API Error:", e);
+        return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 });
     }
 }
