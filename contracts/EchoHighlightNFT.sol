@@ -71,9 +71,9 @@ contract EchoHighlightNFT is ERC721, Ownable {
 
     /**
      * @notice Mint next card to recipient
-     * @dev Follows Highlight's sequential pattern
+     * @dev Public minting allowed, but internal sequence ensures unique IDs
      */
-    function mint(address to) external onlyMinter returns (uint256) {
+    function mint(address to) external returns (uint256) {
         uint256 tokenId = _nextTokenId++;
         _mint(to, tokenId);
         emit Minted(to, tokenId);
