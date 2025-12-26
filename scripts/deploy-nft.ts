@@ -82,9 +82,10 @@ async function main() {
             "https://echo-base-mini-app.vercel.app/api/echo/nft/contract" // contractURI
         ],
         chain: base,
+        gas: 3_000_000n, // Manually set gas limit to avoid estimation issues on Base
     });
 
-    console.log(`⏳ Deployment Pending: ${hash}`);
+    console.log(`⏳ Deployment Transaction Sent: ${hash}`);
     const receipt = await client.waitForTransactionReceipt({ hash });
     const contractAddress = receipt.contractAddress;
 
