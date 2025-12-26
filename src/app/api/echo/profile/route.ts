@@ -61,25 +61,21 @@ export async function POST(request: Request) {
         const { referralCode: incomingRef } = body;
 
         if (!profile) {
+            console.log(`[PROFILE_API] Creating new profile for FID: ${fid}`);
             // Check for referrer if provided
             let referrerFid = null;
             if (incomingRef) {
-                const referrer = await EchoProfile.findOne({ referralCode: incomingRef });
+                const referrer = await EchoProfile.findOne({ referralCode: incomingRef.toUpperCase() });
                 if (referrer) {
                     referrerFid = referrer.fid;
+                    console.log(`[PROFILE_API] Referrer found: ${referrerFid} for code: ${incomingRef}`);
+                } else {
+                    console.log(`[PROFILE_API] Referrer NOT found for code: ${incomingRef}`);
                 }
             }
 
             // Generate unique code for new user
-            // Simple random string for now (6 chars)
             const newRefCode = `ECHO_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-            if (incomingRef) {
-                const referrer = await EchoProfile.findOne({ referralCode: incomingRef });
-                if (referrer) {
-                    referrerFid = referrer.fid;
-                }
-            }
 
             profile = new EchoProfile({
                 fid,
@@ -188,9 +184,11 @@ export async function POST(request: Request) {
             }
 
             if (!profile) {
-                console.error(`[NFT_REG] Profile not found for FID: ${fid}`);
+                console.error(`[NFT_REG] CRITICAL: Profile not found for FID: ${fid} during NFT registration`);
                 return NextResponse.json({ error: 'Profile not found. Please register first.' }, { status: 404 });
             }
+
+            console.log(`[NFT_REG] Registering NFT for FID: ${profile.fid}, Address: ${profile.address}, TokenId: ${nextTokenId}`);
 
             // Create or Update NFT Record (Idempotent for redeployments)
             const nftEntry = await EchoNFT.findOneAndUpdate(
@@ -204,6 +202,8 @@ export async function POST(request: Request) {
                 },
                 { upsert: true, new: true }
             );
+
+            console.log(`[NFT_REG] SUCCESS: TokenId ${nextTokenId} registered for FID ${profile.fid}`);
 
             // Legacy support: update profile with latest
             profile.nftImage = nftImage;

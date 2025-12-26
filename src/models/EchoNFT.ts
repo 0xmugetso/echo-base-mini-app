@@ -18,6 +18,6 @@ const EchoNFTSchema = new Schema<IEchoNFT>({
     mintedAt: { type: Date, default: Date.now }
 });
 
-const EchoNFT = models.EchoNFT || model<IEchoNFT>('EchoNFT', EchoNFTSchema);
+const EchoNFT = mongoose.models.EchoNFT || mongoose.model<IEchoNFT>('EchoNFT', EchoNFTSchema);
 
 export default EchoNFT;

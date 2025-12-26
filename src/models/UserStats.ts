@@ -77,7 +77,6 @@ const UserStatsSchema = new Schema<IUserStats>(
     { timestamps: true }
 );
 
-// Prevent overwriting model during hot reloading
-const UserStats = models.UserStats || model<IUserStats>('UserStats', UserStatsSchema);
+const UserStats = mongoose.models.UserStats || mongoose.model<IUserStats>('UserStats', UserStatsSchema);
 
 export default UserStats;

@@ -10,6 +10,6 @@ const CounterSchema = new Schema<ICounter>({
     seq: { type: Number, default: 0 }
 });
 
-const Counter = models.Counter || model<ICounter>('Counter', CounterSchema);
+const Counter = mongoose.models.Counter || mongoose.model<ICounter>('Counter', CounterSchema);
 
 export default Counter;

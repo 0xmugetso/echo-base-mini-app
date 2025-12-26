@@ -110,7 +110,6 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
     { timestamps: true }
 );
 
-// Prevent overwriting model during hot reloading
-const EchoProfile = models.EchoProfile || model<IEchoProfile>('EchoProfile', EchoProfileSchema);
+const EchoProfile = mongoose.models.EchoProfile || mongoose.model<IEchoProfile>('EchoProfile', EchoProfileSchema);
 
 export default EchoProfile;
