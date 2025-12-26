@@ -62,16 +62,43 @@ async function main() {
     const { abi, bytecode } = await compile();
 
     const account = privateKeyToAccount(PRIVATE_KEY);
-    const client = createWalletClient({
-        account,
-        chain: base,
-        transport: http()
-    }).extend(publicActions);
+
+    // Multi-RPC fallback for reliability on Base
+    const rpcs = [
+        'https://base-mainnet.public.blastapi.io',
+        'https://rpc.ankr.com/base',
+        'https://base.llamarpc.com',
+        'https://mainnet.base.org'
+    ];
+
+    let client: any;
+    for (const rpc of rpcs) {
+        try {
+            console.log(`🌐 Testing RPC: ${rpc}`);
+            const tempClient = createWalletClient({
+                account,
+                chain: base,
+                transport: http(rpc)
+            }).extend(publicActions);
+            await tempClient.getChainId(); // Verify connection
+            client = tempClient;
+            console.log(`✅ RPC Connected: ${rpc}`);
+            break;
+        } catch (e) {
+            console.warn(`⚠️ RPC Failed: ${rpc}`);
+        }
+    }
+
+    if (!client) {
+        console.error("❌ All RPCs failed. Please check your internet or .env.local!");
+        process.exit(1);
+    }
 
     const owner = OWNER_ADDRESS ? getAddress(OWNER_ADDRESS) : account.address;
-    console.log(`🚀 Deploying EchoNFT from: ${account.address}`);
+    console.log(`🚀 Deploying EchoHighlightNFT from: ${account.address}`);
     console.log(`👤 Initial Owner: ${owner}`);
 
+    // Use a more reliable RPC if needed, or stick to default with better error handling
     const hash = await (client as any).deployContract({
         abi,
         bytecode,
@@ -82,14 +109,19 @@ async function main() {
             "https://echo-base-mini-app.vercel.app/api/echo/nft/contract" // contractURI
         ],
         chain: base,
-        gas: 3_000_000n, // Manually set gas limit to avoid estimation issues on Base
+        gas: 3_500_000n, // Slightly more room
     });
 
     console.log(`⏳ Deployment Transaction Sent: ${hash}`);
     const receipt = await client.waitForTransactionReceipt({ hash });
-    const contractAddress = receipt.contractAddress;
 
-    console.log(`✅ Contract Deployed at: ${contractAddress}`);
+    if (receipt.status === 'reverted') {
+        console.error("❌ Deployment REVERTED. Check gas or constructor args.");
+        process.exit(1);
+    }
+
+    const contractAddress = receipt.contractAddress;
+    console.log(`✅ Contract Deployed SUCCESSFULLY at: ${contractAddress}`);
 
     // Update contracts.ts
     const contractFile = path.join(process.cwd(), 'src/lib/contracts.ts');
