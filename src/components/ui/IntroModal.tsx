@@ -5,7 +5,8 @@ import { RetroWindow } from "./RetroWindow";
 import { RetroBanner } from "./RetroBanner";
 import { PixelShareIcon } from "./PixelShareIcon";
 import { PixelMintIcon } from "./PixelMintIcon";
-import { useWriteContract } from "wagmi";
+import { useWriteContract, usePublicClient } from "wagmi";
+import { readContract } from "viem/actions";
 import { parseEther, getAddress } from "viem";
 import { base } from "viem/chains";
 import { createPortal } from "react-dom";
@@ -67,7 +68,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const { signerStatus, checkStatus } = useNeynarSigner();
     const { sdk } = useMiniApp() as any;
     const { writeContractAsync } = useWriteContract();
-
+    const publicClient = usePublicClient();
     // --- EFFECTS ---
     useEffect(() => {
         setMounted(true);
@@ -307,6 +308,22 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const imgRes = await uploadImage(dataUrl);
             if (!imgRes) throw new Error("Upload failed");
 
+            // 1. Fetch Next Token ID from Contract
+            let nextTokenId = 1;
+            try {
+                if (publicClient) {
+                    const id = await publicClient.readContract({
+                        address: AURA_CONTRACT_ADDRESS,
+                        abi: AURA_ABI,
+                        functionName: 'getNextTokenId',
+                    }) as bigint;
+                    nextTokenId = Number(id);
+                    console.log("[Mint] Next Token ID from contract:", nextTokenId);
+                }
+            } catch (e) {
+                console.error("[Mint] Error fetching nextTokenId:", e);
+            }
+
             // 3. Register NFT & Get URI
             const regRes = await fetch('/api/echo/profile', {
                 method: 'POST',
@@ -315,7 +332,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     fid: neynarUser.fid,
                     address: neynarUser.custody_address,
                     action: 'register_nft',
-                    nftImage: imgRes
+                    nftImage: imgRes,
+                    tokenId: nextTokenId // PASS THE ID WE EXPECT TO MINT
                 })
             });
             const { tokenId } = await regRes.json();

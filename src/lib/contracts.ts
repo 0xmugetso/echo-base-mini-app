@@ -1,6 +1,6 @@
 
 // Replace this with your own wallet address!
-export const AURA_CONTRACT_ADDRESS = "0xacba696d7ff57a338088b7a7f2078578eedeabf2" as `0x${string}`;
+export const AURA_CONTRACT_ADDRESS = "0xe0150d653340185a96bd084bd508f9020a7ed3b3" as `0x${string}`;
 
 export const AURA_ABI = [
     {
@@ -33,6 +33,19 @@ export const AURA_ABI = [
         "name": "setBaseURI",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getNextTokenId",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

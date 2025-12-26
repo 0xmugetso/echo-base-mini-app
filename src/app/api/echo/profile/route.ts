@@ -164,16 +164,24 @@ export async function POST(request: Request) {
 
         // 3. Register NFT (Independent Mint)
         if (action === 'register_nft') {
-            const { nftImage } = body;
+            const { nftImage, tokenId: providedTokenId } = body;
             if (!nftImage) return NextResponse.json({ error: 'nftImage required' }, { status: 400 });
 
-            // Increment Token ID
-            const counter = await Counter.findOneAndUpdate(
-                { name: 'nft_token_id' },
-                { $inc: { seq: 1 } },
-                { upsert: true, new: true }
-            );
-            const nextTokenId = counter.seq;
+            let nextTokenId: number;
+
+            if (providedTokenId) {
+                nextTokenId = providedTokenId;
+                console.log(`[NFT_REG] Using provided tokenId: ${nextTokenId}`);
+            } else {
+                // Increment Token ID (Fallback/Legacy)
+                const counter = await Counter.findOneAndUpdate(
+                    { name: 'nft_token_id' },
+                    { $inc: { seq: 1 } },
+                    { upsert: true, new: true }
+                );
+                nextTokenId = counter.seq;
+                console.log(`[NFT_REG] Using Counter tokenId: ${nextTokenId}`);
+            }
 
             // Create NFT Record
             const nftEntry = new EchoNFT({

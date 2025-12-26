@@ -63,6 +63,13 @@ contract EchoHighlightNFT is ERC721, Ownable {
     }
 
     /**
+     * @notice Get the next token ID to be minted
+     */
+    function getNextTokenId() external view returns (uint256) {
+        return _nextTokenId;
+    }
+
+    /**
      * @notice Internal function to return base URI
      */
     function _baseURI() internal view override returns (string memory) {
