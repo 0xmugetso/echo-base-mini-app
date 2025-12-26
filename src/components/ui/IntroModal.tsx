@@ -5,7 +5,7 @@ import { RetroWindow } from "./RetroWindow";
 import { RetroBanner } from "./RetroBanner";
 import { PixelShareIcon } from "./PixelShareIcon";
 import { PixelMintIcon } from "./PixelMintIcon";
-import { useWriteContract, usePublicClient } from "wagmi";
+import { useWriteContract, usePublicClient, useAccount } from "wagmi";
 import { readContract } from "viem/actions";
 import { parseEther, getAddress } from "viem";
 import { base } from "viem/chains";
@@ -71,6 +71,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
     const { toast } = useToast();
+    const { address: connectedAddress } = useAccount(); // Wagmi connected address
     // --- EFFECTS ---
     useEffect(() => {
         setMounted(true);
@@ -310,9 +311,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const imgRes = await uploadImage(dataUrl);
             if (!imgRes) throw new Error("Upload failed");
 
-            // 1. Determine Recipient (SDK user address > Custody address)
-            const recipientAddress = (sdk as any)?.context?.user?.address || neynarUser.custody_address;
+            // 1. Determine Recipient (Connected Address > SDK user address > Custody address)
+            const recipientAddress = connectedAddress || (sdk as any)?.context?.user?.address || neynarUser.custody_address;
             console.log("[Mint] Recipient Address:", recipientAddress);
+            console.log("[Mint] Sources - Connected:", connectedAddress, "SDK:", (sdk as any)?.context?.user?.address, "Custody:", neynarUser.custody_address);
 
             // 2. Fetch Next Token ID from Contract
             let nextTokenId = 1;
