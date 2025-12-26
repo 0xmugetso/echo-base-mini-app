@@ -25,14 +25,14 @@ function findImports(importPath: string) {
 }
 
 async function compile() {
-    console.log("🛠️ Compiling EchoNFT.sol...");
-    const contractPath = path.resolve('contracts', 'EchoNFT.sol');
+    console.log("🛠️ Compiling EchoHighlightNFT.sol...");
+    const contractPath = path.resolve('contracts', 'EchoHighlightNFT.sol');
     const source = fs.readFileSync(contractPath, 'utf8');
 
     const input = {
         language: 'Solidity',
         sources: {
-            'EchoNFT.sol': { content: source }
+            'EchoHighlightNFT.sol': { content: source }
         },
         settings: {
             outputSelection: {
@@ -51,7 +51,7 @@ async function compile() {
         if (output.errors.some((err: any) => err.severity === 'error')) process.exit(1);
     }
 
-    const contract = output.contracts['EchoNFT.sol']['EchoNFT'];
+    const contract = output.contracts['EchoHighlightNFT.sol']['EchoHighlightNFT'];
     return {
         abi: contract.abi,
         bytecode: `0x${contract.evm.bytecode.object}` as `0x${string}`
@@ -75,7 +75,12 @@ async function main() {
     const hash = await (client as any).deployContract({
         abi,
         bytecode,
-        args: [owner],
+        args: [
+            "Echo Cards", // Name
+            "ECHO",       // Symbol
+            "https://echo-base-mini-app.vercel.app/api/echo/nft/", // baseURI
+            "https://echo-base-mini-app.vercel.app/api/echo/nft/contract" // contractURI
+        ],
         chain: base,
     });
 

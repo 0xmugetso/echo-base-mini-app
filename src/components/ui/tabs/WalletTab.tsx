@@ -107,18 +107,36 @@ export function WalletTab() {
       </RetroWindow>
 
       {/* REFERRAL PROGRAM */}
-      <RetroWindow title="REFERRAL_SYSTEM_V1" icon="users">
+      <RetroWindow title="REFERRAL_SYSTEM_V2" icon="users">
         <div className="p-2 space-y-4">
-          <div>
-            <p className="font-pixel text-lg text-white mb-1">INVITE & EARN</p>
-            <p className="text-[10px] text-gray-300 leading-tight">
-              Invite friends and earn <span className="text-primary font-bold">5% CUT</span> of all points they grind!
-              <br />
-              <span className="text-[9px] text-gray-400 mt-1 block">*Friend must complete 1 TX to activate. Updated every 12h.</span>
-            </p>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <p className="font-pixel text-lg text-white mb-1">ECHO_RECRUITMENT</p>
+              <p className="text-[10px] text-gray-400 leading-tight">
+                Invite friends and earn a cut of their grind points. Every 5 active recruits gives you a <span className="text-primary font-bold">+2% BONUS</span>.
+              </p>
+            </div>
+            <div className="bg-primary/10 border border-primary px-2 py-1 flex flex-col items-center shadow-[2px_2px_0_0_theme('colors.primary')]">
+              <span className="text-[8px] text-primary font-bold uppercase">CURRENT_RATE</span>
+              <span className="text-xl font-pixel text-white">{5 + (Math.floor((profile?.referralStats?.count || 0) / 5) * 2)}%</span>
+            </div>
           </div>
 
-          {/* Stats */}
+          {/* Tier Tracker */}
+          <div className="bg-white/5 border border-white/10 p-2">
+            <div className="flex justify-between text-[8px] text-gray-500 uppercase mb-1">
+              <span>Next Reward Tier</span>
+              <span>{(profile?.referralStats?.count || 0) % 5} / 5</span>
+            </div>
+            <div className="h-2 w-full bg-black border border-white/20 flex gap-1 p-[1px]">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className={`flex-1 ${i < ((profile?.referralStats?.count || 0) % 5) ? 'bg-primary' : 'bg-white/5'}`} />
+              ))}
+            </div>
+            <p className="text-[7px] text-gray-500 text-right mt-1 uppercase italic">* Friends must perform 1 txn to activate</p>
+          </div>
+
+          {/* Referral Stats (Invites & Earnings) */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-900 border border-gray-700 p-2 text-center">
               <p className="text-[9px] text-gray-500 uppercase">ACTIVE_REFS</p>
@@ -127,30 +145,65 @@ export function WalletTab() {
               </p>
             </div>
             <div className="bg-gray-900 border border-gray-700 p-2 text-center">
-              <p className="text-[9px] text-gray-500 uppercase">TOTAL_EARNED</p>
+              <p className="text-[9px] text-gray-500 uppercase">COMMISSION_PTS</p>
               <p className="font-pixel text-xl text-white">
-                {profile?.referralStats?.earnings || 0} <span className="text-sm text-primary">PTS</span>
+                {profile?.referralStats?.earnings || 0} <span className="text-sm text-primary">PT</span>
               </p>
             </div>
           </div>
 
-          {/* Invite Link */}
-          <div className="bg-black border border-dashed border-gray-600 p-2 flex items-center justify-between gap-2">
-            <code className="text-[10px] text-gray-300 font-mono truncate">
-              {`https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile?.referralCode || ""}`)}`}
-            </code>
+          {/* Invite Code & Link Buttons */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="flex-1 bg-black border border-dashed border-gray-600 p-2 flex items-center justify-between overflow-hidden">
+                <div>
+                  <p className="text-[7px] text-gray-500 uppercase mb-1">INVITE_CODE</p>
+                  <code className="text-lg text-primary font-pixel leading-none">
+                    {profile?.referralCode || "---"}
+                  </code>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!profile?.referralCode) return;
+                    navigator.clipboard.writeText(profile.referralCode);
+                  }}
+                  className="px-3 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-primary transition-colors h-fit flex items-center gap-1"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  COPY CODE
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 if (!profile?.referralCode) return;
                 const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
                 navigator.clipboard.writeText(deepLink);
-                console.log("DEEP LINK COPIED! SHARE ON WARPCAST.");
               }}
-              className="px-2 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-gray-200"
+              className="w-full py-2 bg-primary border-2 border-white/20 text-white text-[10px] font-bold font-pixel hover:bg-blue-600 transition-colors shadow-[4px_4px_0_0_theme('colors.primary')] flex items-center justify-center gap-2"
             >
-              COPY
+              SHARE_FULL_INVITE_LINK
             </button>
           </div>
+
+          {/* Invitee List (NEW) */}
+          {profile?.invitees && profile.invitees.length > 0 && (
+            <div className="mt-6">
+              <p className="text-[8px] text-gray-500 uppercase mb-2 border-b border-white/10 pb-1">RECENT_RECRUITS</p>
+              <div className="space-y-1">
+                {profile.invitees.map((inv: any) => (
+                  <div key={inv.fid} className="flex justify-between items-center bg-white/5 py-1 px-2 border-l-2 border-primary">
+                    <span className="text-xs font-mono text-white">@{inv.username || `UID_${inv.fid}`}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8px] text-gray-500 uppercase">REFS:</span>
+                      <span className="text-xs font-pixel text-primary">{inv.referralStats?.count || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </RetroWindow>
 

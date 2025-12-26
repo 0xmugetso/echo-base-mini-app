@@ -35,7 +35,11 @@ export async function GET(request: Request) {
             const referrer = await EchoProfile.findOne({ fid });
             if (!referrer) continue;
 
-            const totalCut = Math.floor(stats.totalGrinded * 0.05);
+            // Tiered Rate: 5% + 2% per 5 active referrals
+            const rate = 5 + (Math.floor(stats.activeCount / 5) * 2);
+            const rateDecimal = rate / 100;
+
+            const totalCut = Math.floor(stats.totalGrinded * rateDecimal);
             const alreadyPaid = referrer.referralStats?.earnings || 0;
             const newEarnings = totalCut - alreadyPaid;
 

@@ -52,17 +52,22 @@ export async function POST(request: Request) {
         profile.pointsGrinded = (profile.pointsGrinded || 0) + points;
 
         // Activate Referral if pending
+        let bonusPoints = 0;
         if (profile.referralStatus === 'pending') {
             profile.referralStatus = 'active';
-            // Optional: Grant initial referral bonus here immediately?
-            // For now, allow CRON to pick up earnings.
+            // Grant 20pt bonus to new user upon their first "onchain" action
+            if (profile.referredBy) {
+                bonusPoints = 20;
+                profile.points += bonusPoints;
+                console.log(`[CHECKIN] Activating referral bonus for FID ${fid}: +20pts`);
+            }
         }
 
         await profile.save();
 
         return NextResponse.json({
             success: true,
-            pointsAdded: points,
+            pointsAdded: points + bonusPoints,
             newStreak,
             txHash
         });

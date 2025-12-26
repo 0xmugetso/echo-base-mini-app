@@ -57,6 +57,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+    // Referral State
+    const [inviteCode, setInviteCode] = useState<string[]>(new Array(6).fill(''));
+    const [isReclaiming, setIsReclaiming] = useState(false);
+    const [inviteStatus, setInviteStatus] = useState<'idle' | 'validating' | 'success' | 'invalid'>('idle');
+    const [isNewUser, setIsNewUser] = useState(true);
+
     // --- HOOKS ---
     const { signerStatus, checkStatus } = useNeynarSigner();
     const { sdk } = useMiniApp() as any;
@@ -77,6 +83,75 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             clearInterval(interval);
         }
     }, [signerStatus.status, signerStatus.signer_uuid, checkStatus]);
+
+    // Check if user already exists
+    useEffect(() => {
+        if (neynarUser?.fid) {
+            fetch(`/api/echo/profile?fid=${neynarUser.fid}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.fid) {
+                        setIsNewUser(false);
+                    }
+                })
+                .catch(e => console.error("Profile check error", e));
+        }
+    }, [neynarUser?.fid]);
+
+    // Handle Deep Link Invite Code
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('invite') || params.get('referral');
+        if (code && code.length === 6) {
+            const arr = code.toUpperCase().split('').slice(0, 6);
+            setInviteCode(arr);
+            setInviteStatus('success'); // Assume success if coming from link for now
+        }
+    }, []);
+
+    const validateInvite = async (codeArr: string[]) => {
+        const fullCode = codeArr.join('').toUpperCase();
+        if (fullCode.length < 6) return;
+
+        setInviteStatus('validating');
+        try {
+            // Check if code exists on bankend
+            const res = await fetch(`/api/echo/profile?checkCode=${fullCode}`);
+            const data = await res.json();
+            if (data.exists) {
+                setInviteStatus('success');
+            } else {
+                setInviteStatus('invalid');
+                setTimeout(() => setInviteStatus('idle'), 2000);
+            }
+        } catch (e) {
+            setInviteStatus('invalid');
+            setTimeout(() => setInviteStatus('idle'), 2000);
+        }
+    };
+
+    const handleInputChange = (val: string, index: number) => {
+        const newCode = [...inviteCode];
+        newCode[index] = val.toUpperCase().slice(-1);
+        setInviteCode(newCode);
+
+        // Move to next input
+        if (val && index < 5) {
+            const next = document.getElementById(`ref-input-${index + 1}`);
+            next?.focus();
+        }
+
+        if (newCode.every(char => char !== '')) {
+            validateInvite(newCode);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
+            const prev = document.getElementById(`ref-input-${index - 1}`);
+            prev?.focus();
+        }
+    };
 
     // Step 2 Loader Logic
     const [loadProgress, setLoadProgress] = useState(0);
@@ -110,8 +185,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         fid: neynarUser.fid,
+                        username: neynarUser.username,
                         address: neynarUser.custody_address,
                         action: 'calculate',
+                        referralCode: inviteCode.join('').toUpperCase(),
                         manualStats: JSON.parse(JSON.stringify(baseStats, (key, value) =>
                             typeof value === 'bigint' ? value.toString() : value
                         ))
@@ -241,10 +318,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     nftImage: imgRes
                 })
             });
-            const { tokenURI } = await regRes.json();
-            if (!tokenURI) throw new Error("Metadata registration failed");
+            const { tokenId } = await regRes.json();
+            if (!tokenId) throw new Error("Metadata registration failed");
 
-            // 4. Mint (Using new signature: mint(address to, string memory uri))
+            // 4. Mint (Using new signature: mint(address to))
             let hash: string;
 
             if ((sdk as any)?.actions?.sendTransaction) {
@@ -253,7 +330,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 const data = encodeFunctionData({
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address), tokenURI],
+                    args: [getAddress(neynarUser.custody_address)],
                 });
 
                 console.log("[Mint] Sending via SDK to:", AURA_CONTRACT_ADDRESS);
@@ -261,7 +338,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     chainId: base.id,
                     to: AURA_CONTRACT_ADDRESS,
                     data,
-                    value: parseEther("0.00003"), // 10 cents
+                    value: 0n,
                 });
                 if (!result?.hash) throw new Error("Minting cancelled or failed");
                 hash = result.hash;
@@ -271,8 +348,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     address: AURA_CONTRACT_ADDRESS,
                     abi: AURA_ABI,
                     functionName: 'mint',
-                    args: [getAddress(neynarUser.custody_address), tokenURI],
-                    value: parseEther("0.00003"), // 10 cents
+                    args: [getAddress(neynarUser.custody_address)],
+                    value: 0n,
                 });
             }
 
@@ -367,21 +444,59 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         <div className="flex flex-col h-full bg-black text-white p-6 items-center justify-center relative overflow-hidden">
             <h1 className="text-7xl font-pixel text-white mb-2 tracking-widest z-10" style={{ textShadow: '4px 4px 0 #000, -2px -2px 0 #4d4dff' }}>ECHO</h1>
             <p className="font-pixel text-lg text-primary mb-8 animate-pulse z-10 uppercase">UNCOVER YOUR ONCHAIN LEGACY</p>
-            <div className="w-full max-w-xs space-y-8 z-10">
+            <div className="w-full max-w-xs space-y-6 z-10">
                 <div className="bg-black border-2 border-primary relative shadow-[4px_4px_0_0_theme('colors.primary')] p-1">
                     <div className="bg-primary px-2 py-1 flex justify-between items-center mb-1">
-                        <span className="font-bold text-xs text-white uppercase">IDENTITY_MODULE</span>
+                        <span className="font-bold text-[10px] text-white uppercase">IDENTITY_MODULE</span>
+                        {isNewUser && (
+                            <div className="bg-white text-black px-1 text-[8px] font-bold animate-pulse">NEW_USER_DETECTED</div>
+                        )}
                     </div>
-                    <div className="border border-white/20 p-6 flex flex-col items-center gap-4 bg-[#08081a]">
-                        <div className="w-24 h-24 border-2 border-white overflow-hidden relative grayscale contrast-125">
+                    <div className="border border-white/20 p-4 flex flex-col items-center gap-2 bg-[#08081a]">
+                        <div className="w-16 h-16 border-2 border-white overflow-hidden relative grayscale contrast-125">
                             {neynarUser?.pfp_url ? <img src={neynarUser.pfp_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/10" />}
                         </div>
                         <div className="text-center">
-                            <p className="font-pixel text-2xl text-white uppercase">{neynarUser?.username || "ANON"}</p>
-                            <p className="font-mono text-xs text-gray-400 mt-1">FID: {neynarUser?.fid || "---"}</p>
+                            <p className="font-pixel text-xl text-white uppercase leading-none">{neynarUser?.username || "ANON"}</p>
+                            <p className="font-mono text-[8px] text-gray-400 mt-1 uppercase">FID: {neynarUser?.fid || "---"}</p>
                         </div>
                     </div>
                 </div>
+
+                {isNewUser && (
+                    <div className="space-y-3">
+                        <div className="text-center">
+                            <p className="font-pixel text-[10px] text-primary mb-2 uppercase tracking-tight">ENTER_INVITE_CODE_FOR_+20_PTS</p>
+                            <div className="flex justify-center gap-1">
+                                {inviteCode.map((char, i) => {
+                                    const isSuccess = inviteStatus === 'success';
+                                    const isInvalid = inviteStatus === 'invalid';
+                                    return (
+                                        <input
+                                            key={i}
+                                            id={`ref-input-${i}`}
+                                            type="text"
+                                            maxLength={1}
+                                            value={char}
+                                            onChange={(e) => handleInputChange(e.target.value, i)}
+                                            onKeyDown={(e) => handleKeyDown(e, i)}
+                                            className={`w-10 h-12 bg-black border-2 text-center font-pixel text-xl transition-all duration-300 outline-none
+                                                ${isSuccess ? 'border-primary text-primary shadow-primary shadow-sm animate-bounce' :
+                                                    isInvalid ? 'border-red-500 text-red-500 animate-shake' :
+                                                        'border-white/30 text-white focus:border-primary'}`}
+                                            style={{ animationDelay: `${i * 0.1}s` }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="text-[7px] font-mono text-gray-500 text-center uppercase leading-tight italic">
+                            <p>* Bonuses activate after your first Echo transaction.</p>
+                            <p>referrals help you and your friends climb the leaderboard.</p>
+                        </div>
+                    </div>
+                )}
+
                 <button onClick={() => setStep(2)} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">INITIALIZE {'>'}</button>
             </div>
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }} />

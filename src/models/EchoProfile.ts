@@ -2,6 +2,7 @@ import mongoose, { Schema, model, models } from 'mongoose';
 
 export interface IEchoProfile {
     fid: number;
+    username?: string;
     address: string;
     points: number;
 
@@ -55,6 +56,7 @@ export interface IEchoProfile {
 const EchoProfileSchema = new Schema<IEchoProfile>(
     {
         fid: { type: Number, required: true, unique: true, index: true },
+        username: { type: String, default: null },
         address: { type: String, required: true }, // Verified address from context
         points: { type: Number, default: 0 },
         // Track points earned strictly from actions for referral calc

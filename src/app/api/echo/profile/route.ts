@@ -13,8 +13,29 @@ export async function GET(request: Request) {
 
     try {
         await dbConnect();
+
+        // 1. Check if referral code exists
+        const checkCode = searchParams.get('checkCode');
+        if (checkCode) {
+            const referrer = await EchoProfile.findOne({ referralCode: checkCode.toUpperCase() });
+            return NextResponse.json({ exists: !!referrer });
+        }
+
         const profile = await EchoProfile.findOne({ fid: parseInt(fid) });
-        return NextResponse.json(profile || { exists: false });
+
+        // 2. Fetch Invitees if profile exists
+        let invitees: any[] = [];
+        if (profile) {
+            invitees = await EchoProfile.find({ referredBy: profile.fid })
+                .select('username fid referralStats')
+                .limit(10) // Limit to 10 for performance
+                .lean();
+        }
+
+        return NextResponse.json({
+            ...(profile?.toObject() || { exists: false }),
+            invitees
+        });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
@@ -23,7 +44,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { fid, address, action } = body;
+        const { fid, address, action, username } = body;
 
         if (!fid || !address) {
             return NextResponse.json({ error: 'Missing fid or address' }, { status: 400 });
@@ -49,8 +70,16 @@ export async function POST(request: Request) {
             // Simple random string for now (6 chars)
             const newRefCode = `ECHO_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+            if (incomingRef) {
+                const referrer = await EchoProfile.findOne({ referralCode: incomingRef });
+                if (referrer) {
+                    referrerFid = referrer.fid;
+                }
+            }
+
             profile = new EchoProfile({
                 fid,
+                username,
                 address,
                 points: 0,
                 streak: { current: 0, highest: 0, lastCheckIn: null },
@@ -62,10 +91,18 @@ export async function POST(request: Request) {
                 pointsGrinded: 0
             });
             await profile.save();
-        } else if (!profile.referralCode) {
-            // Lazy Migration: Generate code for existing users
-            profile.referralCode = `ECHO_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-            await profile.save();
+        } else {
+            // Update username if provided and different
+            if (username && profile.username !== username) {
+                profile.username = username;
+                await profile.save();
+            }
+
+            if (!profile.referralCode) {
+                // Lazy Migration: Generate code for existing users
+                profile.referralCode = `ECHO_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                await profile.save();
+            }
         }
 
         // 2. Calculate Initial Points (Only if requested and points are low/default)
