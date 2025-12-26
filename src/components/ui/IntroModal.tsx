@@ -351,6 +351,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     args: [getAddress(neynarUser.custody_address)],
                 });
 
+                console.log
+
                 console.log("[Mint] Sending via SDK to:", AURA_CONTRACT_ADDRESS);
                 const result = await (sdk as any).actions.sendTransaction({
                     chainId: base.id,
