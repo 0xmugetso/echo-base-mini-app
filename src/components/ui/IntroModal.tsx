@@ -597,6 +597,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 </button>
             </div>
             <button onClick={onClose} className="absolute bottom-6 text-[10px] font-mono text-gray-600 hover:text-white uppercase">[ CLOSE_TERMINAL ]</button>
+            {/* Hidden capture target */}
+            <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -10 }}>
+                <StatsCardContent captureId="stats-window" />
+            </div>
             {previewImage && (
                 <div className="fixed inset-0 z-[100000] bg-black/98 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
                     <div className="relative w-full max-w-[340px] border-2 border-white bg-black p-1 shadow-[8px_8px_0_0_#fff]">
