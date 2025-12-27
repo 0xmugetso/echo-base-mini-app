@@ -257,20 +257,20 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- ACTION HANDLERS ---
     const captureImage = async (download = false) => {
-        const node = document.getElementById('nft-card-capture') || document.getElementById('nft-card');
+        const node = document.getElementById('stats-window');
         try {
             if (node) {
+                // Ensure the node is fully visible and rendered
                 const dataUrl = await htmlToImage.toPng(node, {
-                    backgroundColor: '#000',
+                    backgroundColor: '#000000', // Force black background
                     cacheBust: true,
-                    style: {
-                        transform: 'scale(1)',
-                        transformOrigin: 'top left',
-                        height: 'auto',
-                        width: '380px',
-                    },
-                    pixelRatio: 2,
+                    skipAutoScale: true,
+                    pixelRatio: 2, // High quality
+                    filter: (n: any) => {
+                        return !n.classList?.contains('exclude-capture');
+                    }
                 });
+
                 if (download) {
                     const link = document.createElement('a');
                     link.download = `echo-stats-${neynarUser?.username || 'anon'}.png`;
@@ -286,7 +286,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             console.error("[Capture] Error:", e.message);
             return null;
         }
-    }
+    };
 
     const uploadImage = async (dataUrl: string) => {
         try {
