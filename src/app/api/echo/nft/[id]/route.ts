@@ -26,15 +26,20 @@ export async function GET(
         const attributes = [
             { trait_type: "Points", value: nftRecord.points },
             { trait_type: "FID", value: nftRecord.fid },
-            { trait_type: "Username", value: profile?.username || "Anon" },
-            { trait_type: "Join Date", value: profile?.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : "Unknown" },
+            { trait_type: "Username", value: nftRecord.username || profile?.username || "Anon" },
+            { trait_type: "Join Date", value: nftRecord.joinDate || (profile?.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : "Unknown") },
+            // Snapshot Stats (Preferred)
+            { trait_type: "Neynar Score", value: nftRecord.neynarScore ?? 0 },
+            { trait_type: "Total Casts", value: nftRecord.castCount ?? 0 },
+            { trait_type: "Total Transactions", value: nftRecord.totalTx ?? userStats?.stats?.total_tx ?? 0 },
+            { trait_type: "Volume (USD)", value: nftRecord.totalVolume ?? Math.round(userStats?.stats?.total_volume_usd || 0) },
+            { trait_type: "Gas Paid (ETH)", value: nftRecord.gasPaid || "0" },
+            { trait_type: "Biggest Tx (USD)", value: nftRecord.biggestTx ?? userStats?.stats?.biggest_single_tx ?? 0 },
         ];
 
         if (userStats?.stats) {
             attributes.push(
-                { trait_type: "Total Transactions", value: userStats.stats.total_tx },
                 { trait_type: "Wallet Age (Days)", value: userStats.stats.wallet_age_days || 0 },
-                { trait_type: "Volume (USD)", value: Math.round(userStats.stats.total_volume_usd || 0) },
                 { trait_type: "Degen Holder", value: userStats.stats.farcaster?.holdings?.degen ? "Yes" : "No" },
                 { trait_type: "Warplets Holder", value: userStats.stats.farcaster?.holdings?.warplets ? "Yes" : "No" },
                 { trait_type: "Best Cast Likes", value: userStats.stats.farcaster?.best_cast?.likes || 0 }

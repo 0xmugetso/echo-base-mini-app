@@ -164,7 +164,7 @@ export async function POST(request: Request) {
 
         // 3. Register NFT (Independent Mint)
         if (action === 'register_nft') {
-            const { nftImage, tokenId: providedTokenId } = body;
+            const { nftImage, tokenId: providedTokenId, neynarScore, castCount, totalTx, totalVolume, gasPaid, biggestTx, username: nftUsername, joinDate } = body;
             if (!nftImage) return NextResponse.json({ error: 'nftImage required' }, { status: 400 });
 
             let nextTokenId: number;
@@ -198,7 +198,16 @@ export async function POST(request: Request) {
                     address: profile.address,
                     imageUrl: nftImage,
                     points: profile.points,
-                    mintedAt: new Date()
+                    mintedAt: new Date(),
+                    // Snapshot Fields
+                    neynarScore,
+                    castCount,
+                    totalTx,
+                    totalVolume,
+                    gasPaid,
+                    biggestTx,
+                    username: nftUsername, // Use nftUsername to avoid conflict with profile.username
+                    joinDate
                 },
                 { upsert: true, new: true }
             );

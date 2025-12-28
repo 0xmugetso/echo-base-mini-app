@@ -338,10 +338,19 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     fid: neynarUser.fid,
-                    address: recipientAddress, // Sync with recipient
+                    address: recipientAddress,
                     action: 'register_nft',
                     nftImage: imgRes,
-                    tokenId: nextTokenId
+                    tokenId: nextTokenId,
+                    // Snapshot Stats
+                    neynarScore: animScore,
+                    castCount: animCastCount,
+                    totalTx: animTotalTx,
+                    totalVolume: animVolume,
+                    gasPaid: animGasPaid,
+                    biggestTx: animBiggestTx,
+                    username: neynarUser.username,
+                    joinDate: baseStats?.first_tx_date
                 })
             });
             const { tokenId } = await regRes.json();
