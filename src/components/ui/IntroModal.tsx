@@ -451,7 +451,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                             <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
                             <div className="flex flex-wrap gap-1">
                                 {['clanker', 'toshi', 'degen', 'brett'].map(t => (
-                                    <span key={t} className={`text-[7px] border px-1 ${holdings?.[t] ? 'border-primary text-primary bg-primary/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t] ? 'border-primary text-primary bg-primary/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
                                 ))}
                             </div>
                         </div>
@@ -459,7 +459,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                             <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
                             <div className="flex flex-wrap gap-1">
                                 {['warplets', 'pro_og', 'punk', 'bankr'].map(t => (
-                                    <span key={t} className={`text-[7px] border px-1 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
                                 ))}
                             </div>
                         </div>
@@ -548,12 +548,18 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 <h2 className="text-3xl font-pixel animate-pulse">SYSTEM_SCANNING</h2>
                 <p className="font-mono text-xs text-gray-500 uppercase tracking-widest">ACCESSING BASE_CHAIN...</p>
             </div>
-            <div className="w-full max-w-xs border-4 border-white p-2 bg-black shadow-[8px_8px_0_0_#4d4dff]">
+            <div className="w-full max-w-xs border-4 border-white p-2 bg-black shadow-[8px_8px_0_0_#fff]">
                 <div className="h-6 w-full flex gap-1">
                     {Array.from({ length: 20 }).map((_, i) => (
                         <div key={i} className={`flex-1 h-full ${loadProgress > (i * 5) ? 'bg-primary' : 'bg-[#111]'}`} />
                     ))}
                 </div>
+            </div>
+            <div className="h-4 font-mono text-[10px] text-gray-400 uppercase">
+                {loadProgress < 30 ? "> INIT_CONNECTION..." :
+                    loadProgress < 60 ? "> READING_ONCHAIN_DATA..." :
+                        loadProgress < 90 ? "> ANALYZING_FARCASTER_GRAPH..." :
+                            "> SYNCHRONIZING_ASSETS..."}
             </div>
         </div>
     );
@@ -605,9 +611,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     <EyeIcon className="w-3 h-3" /> PREVIEW ECHO_CARD
                 </button>
             </div>
-            <button onClick={onClose} className="absolute bottom-6 text-[10px] font-mono text-gray-600 hover:text-white uppercase">[ CLOSE_TERMINAL ]</button>
-            {/* Hidden capture target */}
-            <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -10 }}>
+            {/* Hidden capture target - Z-indexed behind everything but fully opaque for html-to-image */}
+            <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -100, pointerEvents: 'none' }}>
                 <StatsCardContent captureId="stats-window" />
             </div>
             {previewImage && (

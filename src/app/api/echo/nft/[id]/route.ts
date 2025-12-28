@@ -24,35 +24,29 @@ export async function GET(
         const userStats = await UserStats.findOne({ address: nftRecord.address });
 
         const attributes = [
-            { trait_type: "Points", value: nftRecord.points },
             { trait_type: "FID", value: nftRecord.fid },
             { trait_type: "Username", value: nftRecord.username || profile?.username || "Anon" },
             { trait_type: "Join Date", value: nftRecord.joinDate || (profile?.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : "Unknown") },
-            // Snapshot Stats (Preferred)
-            { trait_type: "Neynar Score", value: nftRecord.neynarScore ?? 0 },
-            { trait_type: "Total Casts", value: nftRecord.castCount ?? 0 },
-            { trait_type: "Total Transactions", value: nftRecord.totalTx ?? userStats?.stats?.total_tx ?? 0 },
-            { trait_type: "Volume (USD)", value: nftRecord.totalVolume ?? Math.round(userStats?.stats?.total_volume_usd || 0) },
-            { trait_type: "Gas Paid (ETH)", value: nftRecord.gasPaid || "0" },
-            { trait_type: "Biggest Tx (USD)", value: nftRecord.biggestTx ?? userStats?.stats?.biggest_single_tx ?? 0 },
+
+            // Snapshot Stats (Rounded & Clean)
+            { trait_type: "Neynar Score", value: Math.round(nftRecord.neynarScore ?? 0) },
+            { trait_type: "Total Casts", value: Math.round(nftRecord.castCount ?? 0) },
+            { trait_type: "Total Transactions", value: Math.round(nftRecord.totalTx ?? userStats?.stats?.total_tx ?? 0) },
+            { trait_type: "Volume (USD)", value: Math.round(nftRecord.totalVolume ?? userStats?.stats?.total_volume_usd ?? 0) },
+            { trait_type: "Gas Paid (ETH)", value: parseFloat(nftRecord.gasPaid || "0").toFixed(4) }, // Keep 4 decimals for ETH as it's small
+            { trait_type: "Biggest Tx (USD)", value: Math.round(nftRecord.biggestTx ?? userStats?.stats?.biggest_single_tx ?? 0) },
         ];
 
         if (userStats?.stats) {
             attributes.push(
-                { trait_type: "Wallet Age (Days)", value: userStats.stats.wallet_age_days || 0 },
+                { trait_type: "Wallet Age (Days)", value: Math.round(userStats.stats.wallet_age_days || 0) },
                 { trait_type: "Degen Holder", value: userStats.stats.farcaster?.holdings?.degen ? "Yes" : "No" },
                 { trait_type: "Warplets Holder", value: userStats.stats.farcaster?.holdings?.warplets ? "Yes" : "No" },
-                { trait_type: "Best Cast Likes", value: userStats.stats.farcaster?.best_cast?.likes || 0 }
+                { trait_type: "Best Cast Likes", value: Math.round(userStats.stats.farcaster?.best_cast?.likes || 0) }
             );
         }
 
-        if (profile) {
-            attributes.push(
-                { trait_type: "Referrals", value: profile.referralStats?.count || 0 },
-                { trait_type: "Streak Current", value: profile.streak?.current || 0 },
-                { trait_type: "Streak Highest", value: profile.streak?.highest || 0 }
-            );
-        }
+        // Profile stats removed as requested (kept minimal)
 
         // Return standard ERC-721 Metadata
         return NextResponse.json({
