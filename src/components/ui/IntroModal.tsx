@@ -257,31 +257,39 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- ACTION HANDLERS ---
     const captureImage = async (download = false) => {
-        // Use the persistent, off-screen capture target
+        // Use the persistent capture target
         const templateNode = document.getElementById('nft-card-capture');
         if (!templateNode) {
-            console.error("[Capture] Persistent capture template not found");
+            console.error("[Capture] Template not found");
             return null;
         }
 
-        // 1. CLONE for "Clean Capture"
+        // 1. CLONE
         const clone = templateNode.cloneNode(true) as HTMLElement;
 
-        // 2. STAGE the clone off-screen but FULLY RENDERED
-        clone.id = 'stats-window-clone';
+        // 2. STAGE ON-SCREEN (Visible Flash) - Crucial for html-to-image
+        // We place it at top-left but behind a white overlay or just rely on speed
+        clone.id = 'stats-window-capture-instance';
         clone.style.position = 'fixed';
-        clone.style.top = '-9999px';
-        clone.style.left = '-9999px';
-        clone.style.zIndex = '9999';
+        clone.style.top = '0px';
+        clone.style.left = '0px';
+        clone.style.zIndex = '9999999'; // On top of everything
         clone.style.display = 'block';
         clone.style.opacity = '1';
         clone.style.pointerEvents = 'none';
         clone.style.width = '380px';
+        clone.style.transform = 'none'; // Reset transforms
+
+        // Force images to crossOrigin anonymous in the clone
+        const imgs = clone.getElementsByTagName('img');
+        for (let i = 0; i < imgs.length; i++) {
+            imgs[i].crossOrigin = "anonymous";
+        }
 
         document.body.appendChild(clone);
 
-        // 3. WAIT for basic render
-        await new Promise(r => setTimeout(r, 200)); // Increased wait slightly
+        // 3. WAIT slightly for render
+        await new Promise(r => setTimeout(r, 250));
 
         try {
             // 4. CAPTURE
@@ -290,8 +298,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 cacheBust: true,
                 skipAutoScale: true,
                 pixelRatio: 2,
-                filter: (n: any) => !n.classList?.contains('exclude-capture'),
-                fetchRequestInit: { mode: 'cors' } // Explicit CORS
+                includeQueryParams: true,
+                fetchRequestInit: {
+                    mode: 'cors',
+                    credentials: 'omit'
+                }
             });
 
             if (download) {
@@ -303,6 +314,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             return dataUrl;
         } catch (e: any) {
             console.error("[Capture] Error:", e.message);
+            toast("Capture failed: " + e.message, "ERROR");
             return null;
         } finally {
             if (document.body.contains(clone)) document.body.removeChild(clone);

@@ -245,9 +245,9 @@ export function TasksTab({ context }: { context?: any }) {
             <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
           </div>
           <button
-            disabled={isCheckedInToday() || actionLoading === 'checkin' || !profile}
+            disabled={actionLoading === 'checkin' || isCheckedInToday()}
             onClick={handleCheckIn}
-            className={`px-4 py-2 font-pixel text-xs border uppercase ${isCheckedInToday() ? 'border-gray-700 text-gray-700' : 'border-primary text-primary hover:bg-primary hover:text-black'}`}
+            className={`px-4 py-2 font-pixel text-xs border uppercase ${isCheckedInToday() ? 'border-gray-700 text-gray-700' : 'border-primary text-primary hover:bg-primary hover:text-black'} ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {isCheckedInToday() ? 'COMPLETED' : (actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX')}
           </button>
