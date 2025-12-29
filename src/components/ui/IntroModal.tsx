@@ -257,34 +257,59 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- ACTION HANDLERS ---
     const captureImage = async (download = false) => {
-        const node = document.getElementById('stats-window');
-        try {
-            if (node) {
-                // Ensure the node is fully visible and rendered
-                const dataUrl = await htmlToImage.toPng(node, {
-                    backgroundColor: '#000000', // Force black background
-                    cacheBust: true,
-                    skipAutoScale: true,
-                    pixelRatio: 2, // High quality
-                    filter: (n: any) => {
-                        return !n.classList?.contains('exclude-capture');
-                    }
-                });
+        // Find the template (it doesn't need to be visible, just exist)
+        const templateNode = document.getElementById('stats-window');
+        if (!templateNode) {
+            console.error("[Capture] No capture template found");
+            return null;
+        }
 
-                if (download) {
-                    const link = document.createElement('a');
-                    link.download = `echo-stats-${neynarUser?.username || 'anon'}.png`;
-                    link.href = dataUrl;
-                    link.click();
+        // 1. CLONE for "Clean Capture" (Solves offsets/hidden issues)
+        const clone = templateNode.cloneNode(true) as HTMLElement;
+
+        // 2. STAGE the clone off-screen but FULLY RENDERED
+        clone.id = 'stats-window-clone';
+        clone.style.position = 'fixed';
+        clone.style.top = '-9999px'; // Far off-screen
+        clone.style.left = '-9999px';
+        clone.style.zIndex = '9999'; // High z-index to avoid overlap
+        clone.style.display = 'block'; // Force display
+        clone.style.opacity = '1';
+        clone.style.pointerEvents = 'none';
+        clone.style.width = '380px'; // Force width
+
+        document.body.appendChild(clone);
+
+        // 3. WAIT for basic render (images/fonts)
+        await new Promise(r => setTimeout(r, 100));
+
+        try {
+            // 4. CAPTURE
+            const dataUrl = await htmlToImage.toPng(clone, {
+                backgroundColor: '#000000', // Force black background
+                cacheBust: true,
+                skipAutoScale: true,
+                pixelRatio: 2, // High quality
+                filter: (n: any) => {
+                    return !n.classList?.contains('exclude-capture');
                 }
-                return dataUrl;
-            } else {
-                console.error("[Capture] No capture node found");
-                return null;
+            });
+
+            if (download) {
+                const link = document.createElement('a');
+                link.download = `echo-stats-${neynarUser?.username || 'anon'}.png`;
+                link.href = dataUrl;
+                link.click();
             }
+            return dataUrl;
         } catch (e: any) {
             console.error("[Capture] Error:", e.message);
             return null;
+        } finally {
+            // 5. CLEANUP
+            if (document.body.contains(clone)) {
+                document.body.removeChild(clone);
+            }
         }
     };
 
@@ -611,8 +636,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     <EyeIcon className="w-3 h-3" /> PREVIEW ECHO_CARD
                 </button>
             </div>
-            {/* Hidden capture target - Z-indexed behind everything but fully opaque for html-to-image */}
-            <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -100, pointerEvents: 'none' }}>
+            <button onClick={onClose} className="absolute bottom-6 text-[10px] font-mono text-gray-600 hover:text-white uppercase">[ CLOSE_TERMINAL ]</button>
+            {/* Template for capture (hidden normally, cloned during capture) */}
+            <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -100 }}>
                 <StatsCardContent captureId="stats-window" />
             </div>
             {previewImage && (
