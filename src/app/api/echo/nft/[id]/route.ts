@@ -26,7 +26,7 @@ export async function GET(
         const attributes = [
             { trait_type: "FID", value: nftRecord.fid },
             { trait_type: "Username", value: nftRecord.username || profile?.username || "Anon" },
-            { trait_type: "Join Date", value: nftRecord.joinDate || (profile?.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : "Unknown") },
+            { trait_type: "Join Date", value: nftRecord.joinDate ? new Date(nftRecord.joinDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "Unknown") },
 
             // Snapshot Stats (Rounded & Clean)
             { trait_type: "Neynar Score", value: Math.round(nftRecord.neynarScore ?? 0) },

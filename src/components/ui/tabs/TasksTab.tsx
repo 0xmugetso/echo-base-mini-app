@@ -63,9 +63,14 @@ export function TasksTab({ context }: { context?: any }) {
 
       if (sdk?.actions?.sendTransaction) {
         console.log("[Checkin] Sending via Frame SDK actions");
-        const result = await sdk.actions.sendTransaction(txData);
-        if (!result?.hash) throw new Error("Transaction cancelled or failed");
-        hash = result.hash as `0x${string}`;
+        try {
+          const result = await sdk.actions.sendTransaction(txData);
+          if (!result?.hash) throw new Error("Transaction cancelled");
+          hash = result.hash as `0x${string}`;
+        } catch (sdkErr) {
+          console.warn("[Checkin] SDK Error, falling back:", sdkErr);
+          hash = await sendTransactionAsync(txData);
+        }
       } else {
         console.log("[Checkin] Falling back to wagmi sendTransactionAsync");
         hash = await sendTransactionAsync(txData);

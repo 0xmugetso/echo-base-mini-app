@@ -257,42 +257,41 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // --- ACTION HANDLERS ---
     const captureImage = async (download = false) => {
-        // Find the template (it doesn't need to be visible, just exist)
-        const templateNode = document.getElementById('stats-window');
+        // Use the persistent, off-screen capture target
+        const templateNode = document.getElementById('nft-card-capture');
         if (!templateNode) {
-            console.error("[Capture] No capture template found");
+            console.error("[Capture] Persistent capture template not found");
             return null;
         }
 
-        // 1. CLONE for "Clean Capture" (Solves offsets/hidden issues)
+        // 1. CLONE for "Clean Capture"
         const clone = templateNode.cloneNode(true) as HTMLElement;
 
         // 2. STAGE the clone off-screen but FULLY RENDERED
         clone.id = 'stats-window-clone';
         clone.style.position = 'fixed';
-        clone.style.top = '-9999px'; // Far off-screen
+        clone.style.top = '-9999px';
         clone.style.left = '-9999px';
-        clone.style.zIndex = '9999'; // High z-index to avoid overlap
-        clone.style.display = 'block'; // Force display
+        clone.style.zIndex = '9999';
+        clone.style.display = 'block';
         clone.style.opacity = '1';
         clone.style.pointerEvents = 'none';
-        clone.style.width = '380px'; // Force width
+        clone.style.width = '380px';
 
         document.body.appendChild(clone);
 
-        // 3. WAIT for basic render (images/fonts)
-        await new Promise(r => setTimeout(r, 100));
+        // 3. WAIT for basic render
+        await new Promise(r => setTimeout(r, 200)); // Increased wait slightly
 
         try {
             // 4. CAPTURE
             const dataUrl = await htmlToImage.toPng(clone, {
-                backgroundColor: '#000000', // Force black background
+                backgroundColor: '#000000',
                 cacheBust: true,
                 skipAutoScale: true,
-                pixelRatio: 2, // High quality
-                filter: (n: any) => {
-                    return !n.classList?.contains('exclude-capture');
-                }
+                pixelRatio: 2,
+                filter: (n: any) => !n.classList?.contains('exclude-capture'),
+                fetchRequestInit: { mode: 'cors' } // Explicit CORS
             });
 
             if (download) {
@@ -306,10 +305,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             console.error("[Capture] Error:", e.message);
             return null;
         } finally {
-            // 5. CLEANUP
-            if (document.body.contains(clone)) {
-                document.body.removeChild(clone);
-            }
+            if (document.body.contains(clone)) document.body.removeChild(clone);
         }
     };
 
@@ -338,7 +334,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
             // 1. Determine Recipient (Connected Address > SDK user address > Custody address)
             const recipientAddress = connectedAddress || (sdk as any)?.context?.user?.address || neynarUser.custody_address;
-            console.log("[Mint] Recipient Address:", recipientAddress);
+            console.log("[Mint] Recipient:", recipientAddress);
             console.log("[Mint] Sources - Connected:", connectedAddress, "SDK:", (sdk as any)?.context?.user?.address, "Custody:", neynarUser.custody_address);
 
             // 2. Fetch Next Token ID from Contract
@@ -354,10 +350,11 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     console.log("[Mint] Next Token ID from contract:", nextTokenId);
                 }
             } catch (e) {
-                console.error("[Mint] Error fetching nextTokenId:", e);
+                console.error("[Mint] ID Fetch Error:", e);
             }
 
             // 3. Register NFT & Get URI
+            // IMPORTANT: Send RAW STATS to avoid animation-zeroing issues
             const regRes = await fetch('/api/echo/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -367,13 +364,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     action: 'register_nft',
                     nftImage: imgRes,
                     tokenId: nextTokenId,
-                    // Snapshot Stats
-                    neynarScore: animScore,
-                    castCount: animCastCount,
-                    totalTx: animTotalTx,
-                    totalVolume: animVolume,
-                    gasPaid: animGasPaid,
-                    biggestTx: animBiggestTx,
+                    // Snapshot Stats (Raw Values)
+                    neynarScore: farcasterScore, // Raw
+                    castCount: castCount, // Raw
+                    totalTx: totalTx, // Raw
+                    totalVolume: baseVolume, // Raw
+                    gasPaid: gasPaid, // Raw
+                    biggestTx: biggestTx, // Raw
                     username: neynarUser.username,
                     joinDate: baseStats?.first_tx_date
                 })
