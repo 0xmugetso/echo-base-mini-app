@@ -20,9 +20,18 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      const requestUrl = `https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts?fid=${fid}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
+      // Refactored to avoid TS "referenced in own initializer" error
+      const baseUrl = "https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts";
+      const params = new URLSearchParams();
+      params.append("fid", fid.toString());
+      params.append("limit", "100");
+      if (cursor) {
+        params.append("cursor", cursor);
+      }
 
-      const res = await fetch(requestUrl, {
+      const finalUrl = `${baseUrl}?${params.toString()}`;
+
+      const res = await fetch(finalUrl, {
         headers: {
           'accept': 'application/json',
           'x-api-key': NEYNAR_API_KEY
