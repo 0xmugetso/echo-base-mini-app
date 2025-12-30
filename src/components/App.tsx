@@ -15,35 +15,17 @@ export enum Tab {
   Wallet = "wallet",
 }
 
-export interface AppProps {
-  title?: string;
-}
+const TabContent = ({ isActive, children }: { isActive: boolean, children: React.ReactNode }) => {
+  return (
+    <div className={`${isActive ? 'block animate-in fade-in slide-in-from-bottom-2 duration-300' : 'hidden'}`}>
+      {children}
+    </div>
+  );
+};
 
 export default function App(
   { title }: AppProps = { title: "Neynar Starter Kit" }
 ) {
-  const {
-    isSDKLoaded,
-    context,
-    setInitialTab,
-    setActiveTab,
-    currentTab,
-  } = useMiniApp();
-
-  const { user: neynarUser } = useNeynarUser(context || undefined);
-
-  // Scroll to top on tab change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentTab]);
-
-  const TabContent = ({ isActive, children }: { isActive: boolean, children: React.ReactNode }) => {
-    return (
-      <div className={`${isActive ? 'block animate-in fade-in slide-in-from-bottom-2 duration-300' : 'hidden'}`}>
-        {children}
-      </div>
-    );
-  };
 
   if (!isSDKLoaded) {
     return (

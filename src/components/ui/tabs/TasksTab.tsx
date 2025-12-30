@@ -69,6 +69,77 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
     if (actionLoading === 'checkin') return;
 
     setActionLoading('checkin');
+
+    // ---------------------------------------------------------
+    // AGENT TRANSACTION FLOW (Primary for Farcaster Native)
+    // ---------------------------------------------------------
+    if ((sdk as any)?.actions?.openUrl) {
+      toast("Initializing Agent Transaction...", "PROCESS");
+      console.log("[Checkin] Starting Agent Flow...");
+      try {
+        // 1. Create Agent Frame
+        const agentRes = await fetch('/api/echo/agent/tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fid: neynarUser?.fid || context?.user?.fid,
+            data: stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`)
+          })
+        });
+        const agentData = await agentRes.json();
+
+        if (!agentData.success || !agentData.url) throw new Error("Agent creation failed");
+
+        console.log("[Checkin] Agent URL:", agentData.url);
+
+        // 2. Open Frame
+        await (sdk as any).actions.openUrl(agentData.url);
+        toast("Sign in the opened Window...", "PROCESS");
+
+        // 3. Poll for Completion (Optimistic UI)
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await fetch(`/api/echo/agent/status?frame_id=${agentData.id}`);
+            const statusData = await statusRes.json();
+            const tf = statusData?.transaction_frame;
+
+            console.log(`[Checkin] Polling Attempt ${attempts}:`, tf?.status);
+
+            if (tf?.status === 'filled' || tf?.status === 'paid' || tf?.transaction?.hash) {
+              clearInterval(pollInterval);
+              const hash = tf?.transaction?.hash;
+
+              if (hash) {
+                toast("TX Verified! Finalizing...", "PROCESS");
+                await finalizeCheckIn(hash);
+              } else {
+                toast("Frame Signed! Processing...", "PROCESS");
+                // Fallback: If status is 'paid' but no hash yet, maybe wait or assume success if API allows?
+                // For now, we strictly need a hash for the /checkin API.
+              }
+            }
+          } catch (err) { console.error("Polling error", err); }
+
+          if (attempts > 20) { // 60s timeout
+            clearInterval(pollInterval);
+            toast("Polling timed out. Check manually.", "INFO");
+            setActionLoading(null);
+          }
+        }, 3000);
+
+        return; // Exit main flow, polling handles rest
+
+      } catch (e) {
+        console.warn("Agent Flow Failed, falling back to Wagmi...", e);
+        toast("Agent failed, using Wallet fallback...", "INFO");
+      }
+    }
+
+    // ---------------------------------------------------------
+    // WAGMI FALLBACK (Legacy/Web)
+    // ---------------------------------------------------------
     toast("Requesting Wallet Signature...", "PROCESS");
 
     try {
@@ -80,26 +151,26 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
         data: stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`),
       };
 
-      if (sdk?.actions?.sendTransaction) {
-        console.log("[Checkin] Attempting Frame SDK...");
-        try {
-          const result = await sdk.actions.sendTransaction(txData);
-          if (!result?.hash) throw new Error("Cancelled");
-          hash = result.hash as `0x${string}`;
-        } catch (sdkErr) {
-          console.warn("SDK Failed, trying Wagmi Fallback...");
-          toast("Frame Signer failed, try Wallet...", "INFO");
-          hash = await sendTransactionAsync(txData);
-        }
-      } else {
-        console.log("[Checkin] Using Wagmi...");
-        toast("Please sign in your wallet...", "PROCESS");
-        hash = await sendTransactionAsync(txData);
-      }
+      console.log("[Checkin] Using Wagmi...");
+      toast("Please sign in your wallet...", "PROCESS");
+      hash = await sendTransactionAsync(txData);
 
       toast("Verifying Transaction...", "PROCESS");
+      await finalizeCheckIn(hash);
 
-      // 2. API Call
+    } catch (e: any) {
+      console.error(e);
+      if (e.message?.includes("User rejected")) {
+        toast("Signature Cancelled", "INFO");
+      } else {
+        toast("Transaction Failed. Try again.", "ERROR");
+      }
+      setActionLoading(null);
+    }
+  };
+
+  const finalizeCheckIn = async (hash: string) => {
+    try {
       const targetFid = neynarUser?.fid || context?.user?.fid;
       const res = await fetch('/api/echo/checkin', {
         method: 'POST',
@@ -110,18 +181,12 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
 
       if (data.success) {
         toast(`✅ CHECK-IN COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
-        // Force refresh all data
         await fetchProfile();
       } else {
         toast(`❌ Verification Failed: ${data.error}`, "ERROR");
       }
-    } catch (e: any) {
-      console.error(e);
-      if (e.message?.includes("User rejected")) {
-        toast("Signature Cancelled", "INFO");
-      } else {
-        toast("Transaction Failed. Try again.", "ERROR");
-      }
+    } catch (e) {
+      toast("Backend Verification Error", "ERROR");
     } finally {
       setActionLoading(null);
     }
