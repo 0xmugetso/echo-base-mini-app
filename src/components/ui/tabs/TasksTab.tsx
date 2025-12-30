@@ -433,5 +433,6 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
 
         </div>
       </div>
-      );
+    </div>
+  );
 }
