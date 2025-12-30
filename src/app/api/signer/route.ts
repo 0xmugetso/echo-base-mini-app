@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
     try {
         const client = getNeynarClient();
-        const signer = await client.lookupSigner(signer_uuid);
+        const signer = await client.lookupSigner({ signerUuid: signer_uuid });
 
         return NextResponse.json({
             status: signer.status,
