@@ -227,9 +227,13 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
     }
   };
 
-  const handleSocialTask = async (task: 'follow_echo' | 'follow_khash') => {
+  const handleSocialTask = async (task: 'follow_echo' | 'follow_khash' | 'follow_mugetso') => {
     // Open URL
-    const url = task === 'follow_echo' ? 'https://warpcast.com/echo' : 'https://warpcast.com/khash';
+    let url = '';
+    if (task === 'follow_echo') url = 'https://warpcast.com/echo';
+    else if (task === 'follow_khash') url = 'https://warpcast.com/khash';
+    else if (task === 'follow_mugetso') url = 'https://farcaster.xyz/mugetso';
+
     window.open(url, '_blank');
 
     setActionLoading(task);
@@ -332,77 +336,102 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
 
       {/* 3. DAILY ACTIONS */}
       <div className="space-y-3">
-        {/* Check In */}
-        <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-          <div>
-            <h3 className="font-pixel text-lg text-white">DAILY_CHECK_IN</h3>
-            <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
+        <div className="space-y-3">
+          {/* Check In */}
+          <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+            <div>
+              <h3 className="font-pixel text-lg text-white">DAILY_CHECK_IN</h3>
+              <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isCheckedInToday() && (
+                <button disabled className="px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
+                  COMPLETED
+                </button>
+              )}
+
+              {isCheckedInToday() ? (
+                <RetroTimer />
+              ) : (
+                <button
+                  disabled={actionLoading === 'checkin'}
+                  onClick={handleCheckIn}
+                  className={`px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {isCheckedInToday() ? (
-            <div className="w-32">
-              <RetroTimer />
+          {/* LIMITED MISSION */}
+          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
+            <div className="flex justify-between items-center relative z-10">
+              <div>
+                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
+                <p className="font-mono text-[10px] text-gray-400">FOLLOW @MUGETSO • +30 PTS</p>
+              </div>
+              <button
+                onClick={() => handleSocialTask('follow_mugetso')}
+                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
+                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500"
+              >
+                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? 'VERIFYING...' : 'FOLLOW & CLAIM')}
+              </button>
             </div>
-          ) : (
+          </div>
+
+          {/* Daily Echo Cast */}
+          <div className="border-2 border-white bg-black p-4 flex justify-between items-center relative overflow-hidden">
+            <div>
+              <h3 className="font-pixel text-lg text-white">DAILY_ECHO</h3>
+              <p className="font-mono text-[10px] text-gray-400">+10 PTS • CAST ON FARCASTER</p>
+            </div>
             <button
-              disabled={actionLoading === 'checkin'}
-              onClick={handleCheckIn}
-              className={`px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => alert("Check 'Actions' Tab to Cast!")}
+              className="px-4 py-2 font-pixel text-xs border border-gray-500 text-gray-500 cursor-not-allowed"
             >
-              {actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX'}
+              GO TO ACTIONS
             </button>
-          )}
-        </div>
-
-        {/* Daily Echo Cast */}
-        <div className="border-2 border-white bg-black p-4 flex justify-between items-center relative overflow-hidden">
-          <div>
-            <h3 className="font-pixel text-lg text-white">DAILY_ECHO</h3>
-            <p className="font-mono text-[10px] text-gray-400">+10 PTS • CAST ON FARCASTER</p>
           </div>
-          <button
-            onClick={() => alert("Coming Soon: Need to update Cast API to use EchoProfile points logic!")}
-            className="px-4 py-2 font-pixel text-xs border border-gray-500 text-gray-500 cursor-not-allowed"
-          >
-            CLAIM (WIP)
-          </button>
+
+          {/* SOCIAL TASKS */}
+          <RetroWindow title="ONE_TIME_QUESTS" icon="star">
+            <div className="space-y-2">
+              {/* Follow Echo */}
+              <div className="flex justify-between items-center border-b border-white/10 pb-2 last:border-0 last:pb-0">
+                <div>
+                  <p className="font-bold text-xs">FOLLOW @ECHO</p>
+                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
+                </div>
+                <button
+                  onClick={() => handleSocialTask('follow_echo')}
+                  disabled={actionLoading === 'follow_echo'} // Needs 'claimed' check from profile in future
+                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
+                >
+                  {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
+                </button>
+              </div>
+              {/* Follow Dev */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-xs">FOLLOW @KHASH</p>
+                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
+                </div>
+                <button
+                  onClick={() => handleSocialTask('follow_khash')}
+                  disabled={actionLoading === 'follow_khash'}
+                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
+                >
+                  {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
+                </button>
+              </div>
+            </div>
+          </RetroWindow>
+
         </div>
-
-        {/* SOCIAL TASKS */}
-        <RetroWindow title="ONE_TIME_QUESTS" icon="star">
-          <div className="space-y-2">
-            {/* Follow Echo */}
-            <div className="flex justify-between items-center border-b border-white/10 pb-2 last:border-0 last:pb-0">
-              <div>
-                <p className="font-bold text-xs">FOLLOW @ECHO</p>
-                <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-              </div>
-              <button
-                onClick={() => handleSocialTask('follow_echo')}
-                disabled={actionLoading === 'follow_echo'} // Needs 'claimed' check from profile in future
-                className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-              >
-                {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
-              </button>
-            </div>
-            {/* Follow Dev */}
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="font-bold text-xs">FOLLOW @KHASH</p>
-                <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-              </div>
-              <button
-                onClick={() => handleSocialTask('follow_khash')}
-                disabled={actionLoading === 'follow_khash'}
-                className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-              >
-                {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
-              </button>
-            </div>
-          </div>
-        </RetroWindow>
-
       </div>
-    </div>
-  );
+      );
 }

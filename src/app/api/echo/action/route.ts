@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../../../../lib/db';
 import EchoProfile from '../../../../models/EchoProfile';
+import { getNeynarUser } from '../../../../lib/neynar';
 
 export async function POST(request: Request) {
     try {
@@ -49,7 +50,42 @@ export async function POST(request: Request) {
         }
 
         // Generic Task Logic
-        if (actionType === 'follow_echo' || actionType === 'follow_khash') {
+        if (actionType === 'follow_mugetso') {
+            if (profile.dailyActions.completedTasks.includes('follow_mugetso')) {
+                return NextResponse.json({ error: 'Already followed & claimed!', pointsAdded: 0 });
+            }
+
+            // Verify with Neynar
+            // Target: mugetso (FID: 479044)
+            const TARGET_FID = 479044;
+
+            // We fetch the TARGET user (mugetso) with the requester as the VIEWER
+            // Then check nUser.viewer_context.following
+            const nUser = await getNeynarUser(TARGET_FID, fid); // Need to update getNeynarUser signature to accept viewer!
+
+            // Wait, I need to check if getNeynarUser supports `viewerFid`.
+            // If not, I'll update it or usage here.
+            // Let's assume I need to pass it or use a direct fetch here if lib is limited.
+            // Checking lib... getNeynarUser(fid) only takes one arg.
+            // I will implement a custom fetch here to be safe and quick.
+
+            const API_KEY = process.env.NEYNAR_API_KEY;
+            if (!API_KEY) throw new Error("Server Config Error");
+
+            const res = await fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${TARGET_FID}&viewer_fid=${fid}`, {
+                headers: { 'accept': 'application/json', 'api_key': API_KEY }
+            });
+            const data = await res.json();
+            const isFollowing = data.users?.[0]?.viewer_context?.following;
+
+            if (!isFollowing) {
+                return NextResponse.json({ error: 'You are not following @mugetso yet!', pointsAdded: 0 });
+            }
+
+            points = 30;
+            profile.dailyActions.completedTasks.push('follow_mugetso');
+        }
+        else if (actionType === 'follow_echo' || actionType === 'follow_khash') {
             if (profile.dailyActions.completedTasks.includes(actionType)) {
                 return NextResponse.json({ error: 'Task already completed', pointsAdded: 0 });
             }

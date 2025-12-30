@@ -139,48 +139,72 @@ export async function POST(request: Request) {
             console.log(`[PROFILE_CALC] Stats Source: ${manualStats ? 'MANUAL' : (statsToUse ? 'DB' : 'NONE')}`);
             if (statsToUse) console.log(`[PROFILE_CALC] Stats Data:`, JSON.stringify(statsToUse).slice(0, 200));
 
-            let initialPoints = 10; // Base welcome bonus
+            // ---------------------------------------------------------
+            // 2. Calculate Onchain Power (0-1000 Scale)
+            // ---------------------------------------------------------
+            // This score reflects the wallet's legacy and activity. 
+            // It is SEPARATE from "Grind Points" (Echo Points).
+
+            let onchainScore = 0;
 
             if (statsToUse) {
-                // Tier 1: Wallet Age
+                // A. Wallet Age (Max 300)
+                // 1 year = 100 pts, 3 years = 300 pts
                 const age = statsToUse.wallet_age_days || 0;
-                if (age > 365) initialPoints += 50;
-                else if (age > 30) initialPoints += 20;
+                onchainScore += Math.min(Math.floor(age / 3.65), 300);
 
-                // Tier 2: Tx Count
+                // B. Transaction Count (Max 300)
+                // 100 tx = 50 pts, 1000 tx = 300 pts
                 const tx = statsToUse.total_tx || 0;
-                if (tx > 100) initialPoints += 50;
-                else if (tx > 10) initialPoints += 10;
+                onchainScore += Math.min(Math.floor(tx * 0.3), 300);
 
-                // Tier 3: Farcaster Value
+                // C. Farcaster Value / Volume (Max 300)
+                // $1000 = 100 pts, $5000 = 300 pts
                 const fcVal = statsToUse.farcaster?.wallet_value_usd || 0;
-                if (fcVal > 1000) initialPoints += 100;
-                else if (fcVal > 100) initialPoints += 30;
+                const volume = statsToUse.total_volume_usd || 0;
+                const valueMetric = Math.max(fcVal, volume);
+                onchainScore += Math.min(Math.floor(valueMetric / 10), 300);
 
-                // Tier 4: Farcaster Badges
+                // D. Badges / Holdings (Max 100)
                 const holdings = statsToUse.farcaster?.holdings || {};
                 const badgeCount = Object.values(holdings).filter(Boolean).length;
-                initialPoints += (badgeCount * 20);
+                onchainScore += Math.min(badgeCount * 25, 100);
+            } else {
+                // Minimal fallback for fresh wallets connected manually
+                onchainScore = 10;
             }
 
-            // Tier 5: Activity (Real Casts)
-            // Cap at 100 points for casting (approx 500 casts)
-            const activityPoints = Math.min(Math.floor(realCastCount / 5), 100);
-            initialPoints += activityPoints;
-            console.log(`[PROFILE_CALC] Activity Bonus: ${realCastCount} casts -> ${activityPoints} pts`);
+            console.log(`[PROFILE_CALC] Onchain Score: ${onchainScore}/1000`);
 
-            // Cap at 500 but ensure we don't lower existing points (e.g. from referrals)
-            const newScore = Math.min(initialPoints, 500);
-            if (profile.points < newScore) {
-                profile.points = newScore;
-            }
+            // Save Onchain Score to Profile for persistence (if we add a field)
+            // For now, we return it to be displayed. 
+            // Ideally we should save it. Let's add 'baseScore' to profile schema later if needed.
+            // For this session, we'll return it and let the Frontend sum it up.
+            // BUT: If the user refreshes, we need this stored.
+            // Hack: Store it in a new field if possible, or assume frontend calls 'calculate' on load.
+            // User 'profile.points' should be ONLY grind points.
+            // The previous logic was `profile.points = newScore` which merged them.
+            // We need to STOP merging. `profile.points` is strictly actions (like intro, daily cast).
 
-            // Save the cast count to profile for UI reference if needed? 
-            // Model doesn't have 'castCount' on root, maybe add later.
+            // If this is the FIRST calculation (Intro), we might want to give them some starting 'Grind Points' too?
+            // User said: "110 got calculated... and 10 added for check in". 
+            // So Intro gave 110 (Grind) + 30 (Onchain) ? No, currently it was mixed.
+
+            // Proposal:
+            // profile.points = Earned Points (Referrals, Daily, Intro Task)
+            // profile.onchainScore = persistent score based on stats (New Field? or just returned?)
+
+            // We will save it to `profile.onchainScore` if schema allows, otherwise just return it.
+            // Looking at `EchoProfile`, I don't see `onchainScore`.
+            // I'll assume we return it and the frontend manages the display sum.
 
             await profile.save();
-            // Return realCastCount so UI can show it
-            return NextResponse.json({ profile, calculated: true, initialPoints, realCastCount });
+            return NextResponse.json({
+                profile,
+                calculated: true,
+                onchainScore: Math.floor(onchainScore),
+                realCastCount
+            });
         }
 
         // 3. Register NFT (Independent Mint)
