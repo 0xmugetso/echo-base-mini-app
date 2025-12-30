@@ -14,8 +14,7 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      // SDK v2 method for /feed/user/casts
-      const data = await client.fetchAllCastsCreatedByUser({
+      const data = await client.fetchCastsForUser({
         fid,
         limit: 150,
         cursor
