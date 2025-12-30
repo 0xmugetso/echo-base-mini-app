@@ -1,50 +1,26 @@
 import { NextResponse } from 'next/server';
+import { getNeynarClient } from '~/lib/neynar';
 
-const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
-
-// POST: Create Signer & Register Signed Key
+// POST: Create Signer
 export async function POST(request: Request) {
-    if (!NEYNAR_API_KEY) {
-        return NextResponse.json({ error: 'Server Config Error: Missing API Key' }, { status: 500 });
-    }
-
     try {
-        // 1. Create Signer
-        console.log("[Signer] Creating signer...");
-        const createRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
-            method: "POST",
-            headers: {
-                accept: "application/json",
-                api_key: NEYNAR_API_KEY,
-            },
-        });
+        const client = getNeynarClient();
+        console.log("[Signer] Creating signer via SDK...");
 
-        if (!createRes.ok) {
-            const err = await createRes.text();
-            console.error("[Signer] Creation failed:", err);
-            return NextResponse.json({ error: `Failed to create signer: ${err}` }, { status: createRes.status });
-        }
-
-        const createData = await createRes.json();
-        console.log("[Signer] Neynar Response:", JSON.stringify(createData));
-
-        const { signer_uuid, public_key } = createData;
-
-        // Fallback construction for Hosted Signer if API doesn't return explicit field
-        const fallbackUrl = `https://app.neynar.com/login?signer_uuid=${signer_uuid}&client_id=${process.env.NEXT_PUBLIC_NEYNAR_CLIENT_ID}`;
+        const signer = await client.createSigner();
+        console.log("[Signer] SDK Response:", JSON.stringify(signer));
 
         return NextResponse.json({
-            signer_uuid,
-            public_key,
-            // Prefer API returned URL, otherwise construct the Hosted Auth URL.
-            // NEVER use the raw warpcast deeplink as we don't hold the app key.
-            approval_url: (createData as any).signer_approval_url || (createData as any).link || fallbackUrl
+            signer_uuid: signer.signer_uuid,
+            public_key: signer.public_key,
+            approval_url: signer.signer_approval_url || (signer as any).link
         });
 
-
     } catch (error: any) {
-        console.error("[Signer] API Error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        console.error("[Signer] SDK Error:", error);
+        // Fallback for clearer error messaging
+        const msg = error.response?.data?.message || error.message;
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
 
@@ -53,24 +29,21 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const signer_uuid = searchParams.get('signer_uuid');
 
-    if (!signer_uuid || !NEYNAR_API_KEY) {
-        return NextResponse.json({ error: 'Missing uuid or key' }, { status: 400 });
+    if (!signer_uuid) {
+        return NextResponse.json({ error: 'Missing signer_uuid' }, { status: 400 });
     }
 
     try {
-        const res = await fetch(`https://api.neynar.com/v2/farcaster/signer?signer_uuid=${signer_uuid}`, {
-            method: "GET",
-            headers: {
-                accept: "application/json",
-                api_key: NEYNAR_API_KEY,
-            },
+        const client = getNeynarClient();
+        const signer = await client.lookupSigner(signer_uuid);
+
+        return NextResponse.json({
+            status: signer.status,
+            fid: signer.fid,
+            user: (signer as any).user
         });
-
-        const data = await res.json();
-        const status = data.status || data.signer_status; // Handle potential schema variations
-
-        return NextResponse.json({ status, fid: data.fid, user: data.user });
-    } catch (error) {
+    } catch (error: any) {
+        console.error("[Signer] Status Check Error:", error);
         return NextResponse.json({ error: "Failed to fetch status" }, { status: 500 });
     }
 }
