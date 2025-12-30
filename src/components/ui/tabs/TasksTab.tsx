@@ -12,7 +12,7 @@ type Profile = {
   points: number;
   streak: { current: number; highest: number; lastCheckIn: string };
   rewards: { claimedBoxes: { day3: boolean; day7: boolean; day14: boolean; day30: boolean } };
-  dailyActions: { lastCastDate: string };
+  dailyActions: { lastCastDate: string; completedTasks: string[] };
 };
 
 export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: any }) {
