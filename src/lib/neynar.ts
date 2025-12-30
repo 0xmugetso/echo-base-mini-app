@@ -51,3 +51,54 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
     return 0;
   }
 }
+
+type SendNotificationResult =
+  | { state: "success" }
+  | { state: "error"; error: string }
+  | { state: "rate_limit" };
+
+export async function sendNeynarMiniAppNotification({
+  fid,
+  title,
+  body,
+}: {
+  fid: number;
+  title: string;
+  body: string;
+}): Promise<SendNotificationResult> {
+  if (!NEYNAR_API_KEY) {
+    return { state: "error", error: "Missing NEYNAR_API_KEY" };
+  }
+
+  try {
+    const response = await fetch(
+      "https://api.neynar.com/v2/farcaster/frame/notification",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": NEYNAR_API_KEY,
+        },
+        body: JSON.stringify({
+          fid,
+          title,
+          body,
+        }),
+      }
+    );
+
+    if (response.ok) {
+      return { state: "success" };
+    }
+
+    if (response.status === 429) {
+      return { state: "rate_limit" };
+    }
+
+    const data = await response.json();
+    return { state: "error", error: data.message || "Failed to send notification" };
+
+  } catch (error: any) {
+    return { state: "error", error: error.message };
+  }
+}
