@@ -57,10 +57,19 @@ export function ActionsTab({ context }: ActionTabProps) {
   };
 
   const handlePublish = async () => {
-    if (!isValid) return;
+    // DEBUG: Confirm click
+    console.log("Publish clicked. Valid:", isValid, "Signer:", signerStatus);
+
+    if (!isValid) {
+      if (!isLengthValid) toast(`Length invalid: ${length} chars (Need ${MIN_CHARS}-${MAX_CHARS})`, "ERROR");
+      else if (!hasTag) toast("Missing @base tag!", "ERROR");
+      else if (!hasHash) toast("Missing #echocast tag!", "ERROR");
+      return;
+    }
 
     // 1. Check Signer
     if (signerStatus.status !== 'approved') {
+      toast("Signer not ready. Requesting access...", "PROCESS");
       createSigner();
       return;
     }
@@ -83,7 +92,7 @@ export function ActionsTab({ context }: ActionTabProps) {
       const castData = await castRes.json();
 
       if (!castData.success || !castData.hash) {
-        throw new Error(castData.error || "Cast failed");
+        throw new Error(castData.error || "Unknown Cast Error");
       }
 
       const txHash = castData.hash;
