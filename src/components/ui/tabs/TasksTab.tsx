@@ -14,29 +14,44 @@ type Profile = {
   dailyActions: { lastCastDate: string };
 };
 
-export function TasksTab({ context }: { context?: any }) {
+export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: any }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Wagmi & Neynar
   const { address } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
-  const { signerStatus, createSigner } = useNeynarSigner();
   const { sdk } = useMiniApp() as any;
 
   // --- FETCH PROFILE ---
   const fetchProfile = async () => {
-    if (!context?.user?.fid) return;
+    const targetFid = neynarUser?.fid || context?.user?.fid;
+    console.log("[TasksTab] Fetching for FID:", targetFid);
+
+    if (!targetFid) {
+      console.warn("[TasksTab] No FID found");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
+      const res = await fetch(`/api/echo/profile?fid=${targetFid}`);
       const data = await res.json();
-      if (data && !data.error) setProfile(data);
+      if (data && !data.error) {
+        setProfile(data);
+        console.log("[TasksTab] Profile Loaded:", data.username);
+      } else {
+        console.error("[TasksTab] Profile API Error:", data.error);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchProfile(); }, [context?.user?.fid]);
+  useEffect(() => {
+    if (neynarUser?.fid || context?.user?.fid) {
+      fetchProfile();
+    }
+  }, [context?.user?.fid, neynarUser?.fid]);
 
   // --- ACTIONS ---
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -85,10 +100,11 @@ export function TasksTab({ context }: { context?: any }) {
       toast("Verifying Transaction...", "PROCESS");
 
       // 2. API Call
+      const targetFid = neynarUser?.fid || context?.user?.fid;
       const res = await fetch('/api/echo/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: context?.user?.fid, txHash: hash })
+        body: JSON.stringify({ fid: targetFid, txHash: hash })
       });
       const data = await res.json();
 
