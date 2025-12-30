@@ -12,12 +12,24 @@ export async function POST(request: Request) {
         console.log("[Signer] Created UUID:", signer.signer_uuid);
 
         // 2. Generate Signed Key Request (Crucial for approval URL)
-        // This registers the key on behalf of the app and gets the approval link
-        const signedKey = await client.createSignedKeyRequest({
-            signerUuid: signer.signer_uuid,
-            publicKey: signer.public_key
+        // Use raw fetch since SDK method name is ambiguous/version-dependent
+        const signedKeyRes = await fetch("https://api.neynar.com/v2/farcaster/signer/signed_key", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "api_key": process.env.NEYNAR_API_KEY!
+            },
+            body: JSON.stringify({
+                signer_uuid: signer.signer_uuid
+            })
         });
 
+        if (!signedKeyRes.ok) {
+            const txt = await signedKeyRes.text();
+            throw new Error(`Signed Key Registration Failed: ${txt}`);
+        }
+
+        const signedKey = await signedKeyRes.json();
         console.log("[Signer] Signed Key Response:", JSON.stringify(signedKey));
 
         return NextResponse.json({
