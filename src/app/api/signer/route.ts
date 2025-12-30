@@ -25,38 +25,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Failed to create signer: ${err}` }, { status: createRes.status });
         }
 
-        const createData = await createRes.json();
+        console.log("[Signer] Neynar Response:", JSON.stringify(createData));
+
         const { signer_uuid, public_key } = createData;
 
-        // 2. Register Signed Key (Since we don't have a private key for the app, 
-        // we normally rely on the user scanning the QR. 
-        // Wait, with Managed Signers, we usually just need the signer_uuid and then show the user the approval_url.
-        // Actually, Neynar returns an `authorization_url` or we construct it.
-        // Let's check docs again carefully.
-        // Docs: "The app registers the signed key... and gets an approval URL."
-        // AND "Example gist" uses signature.
-        // BUT "Managed Signers" (Write via API) usually abstracts holding the custody key if using Neynar's "Sign In with Neynar"
-        // However, here we are adding a signer to an EXISTING user (the user using the mini-app).
-        // The "Standard Flow" is: 
-        // 1. Create Signer -> get signer_uuid, public_key
-        // 2. Register Signed Key -> requires App FID and App Mnemonic/Key to sign the public_key.
-        // Ah, does the user have the App's Private Key?
-        // If not, we can rely on the "deeplink" flow where the user approves the specific signer public key.
-
-        // Simpler fallback for now: Just return the signer_uuid and let the frontend construct the Warpcast deeplink?
-        // Warpcast Deeplink: https://warpcast.com/~/add-signer?public_key={public_key}
-        // This is the standard "Add Signer" flow.
-
-        // Let's proceed with just returning the signer data. 
-        // The frontend will generate the QR code for `https://warpcast.com/~/add-signer?public_key=${public_key}`
-        // And verify via polling.
+        // Fallback construction for Hosted Signer if API doesn't return explicit field
+        const fallbackUrl = `https://app.neynar.com/login?signer_uuid=${signer_uuid}&client_id=${process.env.NEXT_PUBLIC_NEYNAR_CLIENT_ID}`;
 
         return NextResponse.json({
             signer_uuid,
             public_key,
-            // Use Neynar's Hosted Approval URL (safest for Managed Signers)
-            // Field is `signer_approval_url`
-            approval_url: (createData as any).signer_approval_url || (createData as any).link || `https://warpcast.com/~/add-signer?public_key=${public_key}`
+            // Prefer API returned URL, otherwise construct the Hosted Auth URL.
+            // NEVER use the raw warpcast deeplink as we don't hold the app key.
+            approval_url: (createData as any).signer_approval_url || (createData as any).link || fallbackUrl
         });
 
 

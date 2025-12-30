@@ -329,7 +329,28 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
           </div>
           <div className="text-right">
             <p className="font-mono text-[10px] text-gray-500">TOTAL PTS</p>
-            <p className="font-pixel text-2xl text-white">{profile?.points || 0}</p>
+            <div className="flex items-center gap-2 justify-end">
+              <p className="font-pixel text-2xl text-white">{profile?.points || 0}</p>
+              <button
+                onClick={async () => {
+                  toast("SYNCING DATA...", "PROCESS");
+                  await fetch('/api/echo/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'calculate',
+                      fid: neynarUser?.fid || context?.user?.fid,
+                      address: (context?.user?.verifications?.[0] || '0x0000000000000000000000000000000000000000')
+                    })
+                  });
+                  await fetchProfile();
+                  toast("DATA SYNCED", "SUCCESS");
+                }}
+                className="text-[10px] text-gray-500 hover:text-white border border-gray-800 hover:border-white px-1"
+              >
+                ↻
+              </button>
+            </div>
           </div>
         </div>
 
