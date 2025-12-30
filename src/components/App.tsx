@@ -38,9 +38,8 @@ export default function App(
   }, [currentTab]);
 
   const TabContent = ({ isActive, children }: { isActive: boolean, children: React.ReactNode }) => {
-    if (!isActive) return null;
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className={`${isActive ? 'block animate-in fade-in slide-in-from-bottom-2 duration-300' : 'hidden'}`}>
         {children}
       </div>
     );

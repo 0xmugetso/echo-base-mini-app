@@ -587,11 +587,31 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     );
 
     const renderStep2 = () => (
-        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-8">
-            <div className="space-y-4 text-center">
-                <h2 className="text-3xl font-pixel animate-pulse">SYSTEM_SCANNING</h2>
-                <p className="font-mono text-xs text-gray-500 uppercase tracking-widest">ACCESSING BASE_CHAIN...</p>
+        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-8 relative overflow-hidden">
+            {/* Inline Glitch Keyframes */}
+            <style>{`
+                @keyframes glitch {
+                    0% { transform: translate(0) }
+                    20% { transform: translate(-2px, 2px) }
+                    40% { transform: translate(-2px, -2px) }
+                    60% { transform: translate(2px, 2px) }
+                    80% { transform: translate(2px, -2px) }
+                    100% { transform: translate(0) }
+                }
+            `}</style>
+
+            <div className="space-y-4 text-center relative z-10">
+                {/* Glitch Animated Logo */}
+                <h1 className="text-6xl font-pixel text-white tracking-widest relative inline-block">
+                    <span className="relative z-10">ECHO</span>
+                    <span className="absolute top-0 left-0 -ml-[2px] text-red-500 opacity-70 animate-[glitch_0.3s_infinite_reverse]" style={{ animation: 'glitch 0.3s infinite reverse' }}>ECHO</span>
+                    <span className="absolute top-0 left-0 ml-[2px] text-blue-500 opacity-70 animate-[glitch_0.3s_infinite]" style={{ animation: 'glitch 0.3s infinite' }}>ECHO</span>
+                </h1>
+
+                <h2 className="text-xl font-pixel text-gray-400 animate-pulse mt-4">SYSTEM_SCANNING</h2>
+                <p className="font-mono text-xs text-gray-600 uppercase tracking-widest">ACCESSING BASE_CHAIN...</p>
             </div>
+
             <div className="w-full max-w-xs border-4 border-white p-2 bg-black shadow-[8px_8px_0_0_#fff]">
                 <div className="h-6 w-full flex gap-1">
                     {Array.from({ length: 20 }).map((_, i) => (
