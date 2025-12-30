@@ -1,0 +1,18 @@
+{
+    "accountAssociation": {
+        "header": "eyJmaWQiOjg4OTQ5MiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGNhQjY1QzM1MDUxZmZiNDY3M0Q5NTRBMjRCNmIyMjg4NTBCNzMyM0gifQ",
+        "payload": "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
+        "signature": "MHg5NjBlZmMzZDIyZTY5NzY1MDQ4ZThiOTk2NzQ3OTdlNzI4M2ExOGFlMjZkMzdhMjdlNTU2ZGY4YjZkZDE3YjQ2N2Q1OTgxNTM4Njg3YmFkZmU2ZGE0ZGY3ZGUwZTIwNDRkZTA0NjM3ODA3ZmY5N2FkNmY0MzRiYjBiN2YyOTM3NzFi"
+    },
+    "frame": {
+        "version": "1",
+        "name": "Echo",
+        "iconUrl": "https://echo-base-mini-app.vercel.app/echo-logo.png",
+        "homeUrl": "https://echo-base-mini-app.vercel.app",
+        "imageUrl": "https://echo-base-mini-app.vercel.app/assets/banner_skull.jpg",
+        "buttonTitle": "Launch Echo",
+        "splashImageUrl": "https://echo-base-mini-app.vercel.app/echo-logo.png",
+        "splashBackgroundColor": "#000000",
+        "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook"
+    }
+}
