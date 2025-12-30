@@ -3,66 +3,37 @@ import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function fetchUserCastCount(fid: number): Promise<number> {
-  if (!NEYNAR_API_KEY) {
-    console.error("NEYNAR_API_KEY missing");
-    return 0;
-  }
-
-  let cursor: string | null = null;
+  const client = getNeynarClient();
+  let cursor: string | undefined;
   let totalCasts = 0;
   let hasMore = true;
-
-  // Safety limit to prevent timeouts on huge profiles
-  const MAX_PAGES = 20;
+  const MAX_PAGES = 50; // Increased limit for better accuracy
   let page = 0;
 
-  console.log(`[NEYNAR] Counting casts for FID: ${fid}...`);
+  console.log(`[NEYNAR] SDK: Counting casts for FID: ${fid}...`);
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      // Use 'casts' endpoint with includes to get everything
-      const baseUrl = "https://api.neynar.com/v2/farcaster/feed/user/casts";
-      const params = new URLSearchParams();
-      params.append("fid", fid.toString());
-      params.append("limit", "150");
-      params.append("include_replies", "true");
-      params.append("include_recasts", "true");
-      if (cursor) {
-        params.append("cursor", cursor);
-      }
-
-      const finalUrl = `${baseUrl}?${params.toString()}`;
-
-      const res = await fetch(finalUrl, {
-        headers: {
-          'accept': 'application/json',
-          'x-api-key': NEYNAR_API_KEY
-        }
+      // SDK v2 method for /feed/user/casts
+      const data = await client.fetchAllCastsCreatedByUser({
+        fid,
+        limit: 150,
+        cursor
       });
 
-      if (!res.ok) {
-        console.error(`[NEYNAR] Error fetching casts: ${res.statusText}`);
-        break;
-      }
-
-      const data = await res.json();
       const casts = data.casts || [];
-      console.log(`[NEYNAR] Page ${page}: Fetched ${casts.length} casts`);
-
       totalCasts += casts.length;
+      console.log(`[NEYNAR] Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
 
-      cursor = data.next?.cursor;
+      cursor = data.next?.cursor || undefined;
       if (!cursor) hasMore = false;
-
       page++;
     }
-
-    console.log(`[NEYNAR] Total Casts for ${fid}: ${totalCasts} (Pages: ${page})`);
     return totalCasts;
 
   } catch (e) {
-    console.error("[NEYNAR] Cast count failed", e);
-    return 0;
+    console.error("[NEYNAR] SDK Cast count failed", e);
+    return totalCasts; // Return whatever we counted so far
   }
 }
 
