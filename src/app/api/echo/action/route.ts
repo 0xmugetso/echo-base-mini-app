@@ -61,13 +61,8 @@ export async function POST(request: Request) {
 
             // We fetch the TARGET user (mugetso) with the requester as the VIEWER
             // Then check nUser.viewer_context.following
-            const nUser = await getNeynarUser(TARGET_FID, fid); // Need to update getNeynarUser signature to accept viewer!
 
-            // Wait, I need to check if getNeynarUser supports `viewerFid`.
-            // If not, I'll update it or usage here.
-            // Let's assume I need to pass it or use a direct fetch here if lib is limited.
-            // Checking lib... getNeynarUser(fid) only takes one arg.
-            // I will implement a custom fetch here to be safe and quick.
+            // Manual fetch to support viewer_fid
 
             const API_KEY = process.env.NEYNAR_API_KEY;
             if (!API_KEY) throw new Error("Server Config Error");
