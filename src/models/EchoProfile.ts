@@ -5,6 +5,7 @@ export interface IEchoProfile {
     username?: string;
     address: string;
     points: number;
+    castCount?: number;
 
     // Streak Info
     streak: {
@@ -59,6 +60,7 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
         username: { type: String, default: null },
         address: { type: String, required: true }, // Verified address from context
         points: { type: Number, default: 0 },
+        castCount: { type: Number, default: 0 }, // Synced from Neynar
         // Track points earned strictly from actions for referral calc
         pointsGrinded: { type: Number, default: 0 },
 

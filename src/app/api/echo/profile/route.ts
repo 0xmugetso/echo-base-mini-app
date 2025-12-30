@@ -198,6 +198,11 @@ export async function POST(request: Request) {
             // Looking at `EchoProfile`, I don't see `onchainScore`.
             // I'll assume we return it and the frontend manages the display sum.
 
+            // SAVE STATS
+            if (realCastCount > 0) {
+                profile.castCount = realCastCount;
+            }
+
             await profile.save();
             return NextResponse.json({
                 profile,
