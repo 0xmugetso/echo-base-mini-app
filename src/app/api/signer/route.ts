@@ -55,8 +55,8 @@ export async function POST(request: Request) {
             signer_uuid,
             public_key,
             // Use Neynar's Hosted Approval URL (safest for Managed Signers)
-            // It usually comes in `link` field from the API
-            approval_url: (createData as any).link || `https://app.neynar.com/login?signer_uuid=${signer_uuid}&client_id=${process.env.NEXT_PUBLIC_NEYNAR_CLIENT_ID}`
+            // Field is `signer_approval_url`
+            approval_url: (createData as any).signer_approval_url || (createData as any).link || `https://warpcast.com/~/add-signer?public_key=${public_key}`
         });
 
 

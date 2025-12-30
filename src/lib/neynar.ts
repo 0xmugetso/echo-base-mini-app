@@ -47,6 +47,7 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
       const data = await res.json();
       const casts = data.casts || [];
+      console.log(`[NEYNAR] Page ${page}: Fetched ${casts.length} casts`);
 
       totalCasts += casts.length;
 
