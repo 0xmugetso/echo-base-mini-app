@@ -78,7 +78,7 @@ export default function App(
         />
 
         <main className="flex-1 p-4">
-          <TabContent isActive={currentTab === Tab.Home}>
+          <TabContent isActive={currentTab === Tab.Home || !currentTab}>
             <HomeTab neynarUser={neynarUser} context={context} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Actions}>

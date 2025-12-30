@@ -21,13 +21,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     const toast = useCallback((message: string, type: ToastType = 'INFO') => {
         const id = Math.random().toString(36).substr(2, 9);
-        setToasts(prev => [...prev, { id, message, type }]);
 
-        if (type !== 'PROCESS') {
-            setTimeout(() => {
-                setToasts(prev => prev.filter(t => t.id !== id));
-            }, 4000);
-        }
+        setToasts(prev => {
+            // Remove older PROCESS toasts to prevent stacking "status updates"
+            const filtered = prev.filter(t => t.type !== 'PROCESS' || type !== 'PROCESS');
+            // Limit stack size
+            const cut = filtered.slice(-2);
+            return [...cut, { id, message, type }];
+        });
+
+        // Auto-dismiss everything eventually, even PROCESS (safety valve)
+        const duration = type === 'PROCESS' ? 8000 : 4000;
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, duration);
     }, []);
 
     return (
@@ -53,14 +60,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         <span className="uppercase tracking-tight leading-none">{t.message}</span>
 
                         {/* Close Cross */}
-                        {t.type !== 'PROCESS' && (
-                            <button
-                                onClick={() => setToasts(prev => prev.filter(toast => toast.id !== t.id))}
-                                className="ml-2 text-gray-500 hover:text-white"
-                            >
-                                [X]
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setToasts(prev => prev.filter(toast => toast.id !== t.id))}
+                            className="ml-2 text-gray-500 hover:text-white"
+                        >
+                            [X]
+                        </button>
                     </div>
                 ))}
             </div>

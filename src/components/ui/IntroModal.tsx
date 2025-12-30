@@ -443,14 +443,21 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     };
 
     const handleShare = async () => {
+        toast("GENERATING SHARE IMAGE...", "PROCESS");
         const dataUrl = await captureImage(false);
         const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
         const text = `Verifying my Onchain History on Echo.\n\nScore: ${formatNumber(farcasterScore, 2)}\nVol: $${formatNumber(baseVolume, 0)}\n\n@echo`;
         const url = "https://echo-base-mini-app.vercel.app";
         let intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
         if (imageUrl) intentUrl += `&embeds[]=${encodeURIComponent(imageUrl)}`;
-        if (sdk?.actions?.openUrl) sdk.actions.openUrl(intentUrl);
-        else window.open(intentUrl, "_blank");
+
+        if (sdk?.actions?.openUrl) {
+            sdk.actions.openUrl(intentUrl);
+            toast("OPENING CAST...", "SUCCESS");
+        } else {
+            window.open(intentUrl, "_blank");
+            toast("OPENING WINDOW...", "SUCCESS");
+        }
     }
 
     // --- SUB-COMPONENTS ---

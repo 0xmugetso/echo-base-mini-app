@@ -43,10 +43,8 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
   }, [context?.user?.fid]);
 
   const totalDisplayScore = useMemo(() => {
-    const grind = Number(echoPoints) || 0;
-    const multi = Number(baseStats?.baseScore) || 0;
-    return grind + multi;
-  }, [echoPoints, baseStats?.baseScore]);
+    return Number(echoPoints) || 0;
+  }, [echoPoints]);
 
   return (
     <div className="p-4 relative">

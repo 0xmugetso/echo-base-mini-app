@@ -7,6 +7,7 @@ import { RetroWindow } from "../RetroWindow";
 import { RetroBanner } from "../RetroBanner";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { truncateAddress } from "../../../lib/truncateAddress";
+import { useToast } from "../ToastProvider";
 
 export function WalletTab() {
   const { context } = useMiniApp();
@@ -18,6 +19,7 @@ export function WalletTab() {
   const [profile, setProfile] = useState<any>(null); // Quick 'any' for now, ideally EchoProfile type
   const [activityPoints, setActivityPoints] = useState(0);
 
+  const { toast } = useToast();
   // Fetch Base Stats for Base Score
   const user = (context?.user as any);
   const userAddress = address || user?.custody_address || user?.verified_addresses?.eth_addresses?.[0];
@@ -166,6 +168,7 @@ export function WalletTab() {
                   onClick={() => {
                     if (!profile?.referralCode) return;
                     navigator.clipboard.writeText(profile.referralCode);
+                    toast("CODE COPIED", "SUCCESS");
                   }}
                   className="px-3 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-primary transition-colors h-fit flex items-center gap-1"
                 >
@@ -180,6 +183,7 @@ export function WalletTab() {
                 if (!profile?.referralCode) return;
                 const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
                 navigator.clipboard.writeText(deepLink);
+                toast("LINK COPIED TO CLIPBOARD", "SUCCESS");
               }}
               className="w-full py-2 bg-primary border-2 border-white/20 text-white text-[10px] font-bold font-pixel hover:bg-blue-600 transition-colors shadow-[4px_4px_0_0_theme('colors.primary')] flex items-center justify-center gap-2"
             >

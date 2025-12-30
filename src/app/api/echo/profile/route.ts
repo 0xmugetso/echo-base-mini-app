@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { fetchUserCastCount } from '~/lib/neynar';
 import dbConnect from '../../../../lib/db';
 import EchoProfile from '../../../../models/EchoProfile';
 import UserStats from '../../../../models/UserStats';
@@ -105,6 +106,12 @@ export async function POST(request: Request) {
             }
         }
 
+
+
+        // ... (existing imports)
+
+        // Inside POST function, 'calculate' block:
+
         // 2. Calculate Initial Points (Idempotent Recalculation)
         if (action === 'calculate') {
             console.log(`[PROFILE_CALC] Starting calc for FID: ${fid}, Address: ${address}`);
@@ -122,6 +129,13 @@ export async function POST(request: Request) {
                 statsToUse = userStats?.stats;
             }
 
+            // NEW: Fetch Real Cast Count via Neynar
+            let realCastCount = 0;
+            try {
+                realCastCount = await fetchUserCastCount(fid);
+            } catch (err) { console.error("Cast count error", err); }
+
+
             console.log(`[PROFILE_CALC] Stats Source: ${manualStats ? 'MANUAL' : (statsToUse ? 'DB' : 'NONE')}`);
             if (statsToUse) console.log(`[PROFILE_CALC] Stats Data:`, JSON.stringify(statsToUse).slice(0, 200));
 
@@ -132,28 +146,28 @@ export async function POST(request: Request) {
                 const age = statsToUse.wallet_age_days || 0;
                 if (age > 365) initialPoints += 50;
                 else if (age > 30) initialPoints += 20;
-                console.log(`[PROFILE_CALC] Age Bonus: ${age} days -> Points: ${initialPoints}`);
 
                 // Tier 2: Tx Count
                 const tx = statsToUse.total_tx || 0;
                 if (tx > 100) initialPoints += 50;
                 else if (tx > 10) initialPoints += 10;
-                console.log(`[PROFILE_CALC] TX Bonus: ${tx} txs -> Points: ${initialPoints}`);
 
                 // Tier 3: Farcaster Value
                 const fcVal = statsToUse.farcaster?.wallet_value_usd || 0;
                 if (fcVal > 1000) initialPoints += 100;
                 else if (fcVal > 100) initialPoints += 30;
-                console.log(`[PROFILE_CALC] FC Val Bonus: $${fcVal} -> Points: ${initialPoints}`);
 
                 // Tier 4: Farcaster Badges
                 const holdings = statsToUse.farcaster?.holdings || {};
                 const badgeCount = Object.values(holdings).filter(Boolean).length;
                 initialPoints += (badgeCount * 20);
-                console.log(`[PROFILE_CALC] Badge Bonus: ${badgeCount} badges -> Points: ${initialPoints}`);
-            } else {
-                console.log("[PROFILE_CALC] No Stats provided or found, defaulting to 10.");
             }
+
+            // Tier 5: Activity (Real Casts)
+            // Cap at 100 points for casting (approx 500 casts)
+            const activityPoints = Math.min(Math.floor(realCastCount / 5), 100);
+            initialPoints += activityPoints;
+            console.log(`[PROFILE_CALC] Activity Bonus: ${realCastCount} casts -> ${activityPoints} pts`);
 
             // Cap at 500 but ensure we don't lower existing points (e.g. from referrals)
             const newScore = Math.min(initialPoints, 500);
@@ -161,8 +175,12 @@ export async function POST(request: Request) {
                 profile.points = newScore;
             }
 
+            // Save the cast count to profile for UI reference if needed? 
+            // Model doesn't have 'castCount' on root, maybe add later.
+
             await profile.save();
-            return NextResponse.json({ profile, calculated: true, initialPoints });
+            // Return realCastCount so UI can show it
+            return NextResponse.json({ profile, calculated: true, initialPoints, realCastCount });
         }
 
         // 3. Register NFT (Independent Mint)

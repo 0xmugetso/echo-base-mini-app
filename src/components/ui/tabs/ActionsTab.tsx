@@ -5,6 +5,7 @@ import { RetroWindow } from '../RetroWindow';
 import { RetroBanner } from '../RetroBanner';
 import { useNeynarSigner } from '~/hooks/useNeynarSigner';
 import Image from 'next/image';
+import { useToast } from '../ToastProvider';
 
 type ActionTabProps = {
   context?: any;
@@ -18,6 +19,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   const [history, setHistory] = useState<any[]>([]);
 
   const { signerStatus, createSigner } = useNeynarSigner();
+  const { toast } = useToast();
 
   // Limits
   const MIN_CHARS = 100;
@@ -64,67 +66,43 @@ export function ActionsTab({ context }: ActionTabProps) {
     }
 
     setStatus('PUBLISHING');
+    toast("INITIATING BROADCAST...", "PROCESS");
 
     try {
-      // 2. Publish to Farcaster
-      const neynarRes = await fetch('https://api.neynar.com/v2/farcaster/cast', {
+      // 2. Publish to Farcaster via Backend (Secure Proxy)
+      const castRes = await fetch('/api/echo/cast', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api_key': 'NEYNAR_API_DOCS', // Using Public/Docs key for demo, ideally ENV
-          // In real app, this should be proxied or use a real key. 
-          // However, we need the signer UUID from the hook context.
-          // Wait, useNeynarSigner doesn't expose the UUID directly in the hook I made?
-          // I need to update the hook to verify, OR just open warpcast if we don't have write access.
-          // The prompt says "make sure i can cast it using neynar's api".
-          // I will assume for now we use a secure proxy or public key if allowed.
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signer_uuid: localStorage.getItem('neynar_signer_uuid'),
+          signer_uuid: signerStatus.signer_uuid,
           text: text,
           parent: 'https://warpcast.com/~/channel/base', // Optional channel
         })
       });
-      // NOTE: The above direct call will fail if CORS/Secrets. 
-      // Better approach: Call our own backend to proxify OR just assume we have a Client for it.
-      // For this specific turn, I'll mock the 'Publish' logic via the API Route if needed, 
-      // OR use the correct managed signer flow. 
-      // Actually, let's use the local API to proxy this or just assume success for the UI flow 
-      // if we are in "Implementation" mode.
 
-      // MOCKING SUCCESS FOR NOW to unblock UI logic (User will need valid key in env)
-      // In reality, we'd use the proper SDK or backend route.
+      const castData = await castRes.json();
 
-      // Let's call our OWN backend to verify.
+      if (!castData.success || !castData.hash) {
+        throw new Error(castData.error || "Cast failed");
+      }
 
-      // ... Wait, I can't client-side publish securely without exposing API Key.
-      // I will simulate the publish delay, then call my backend to "record" it.
-      // The USER PROMPT said "check char count... make sure i can cast it using neynar's api".
-      // I'll assume I should use a backend route for the actual Neynar call to be safe.
-
-      // Temporary: For this iteration, I'll simulate the "Casting" and just focus on the 'Record' part
-      // provided the user actually posts. 
-      // EDIT: User says "after cast succesfuly submitted".
-      // I will use `window.open` as a fallback if API fails, BUT I will try to implement the API call.
-
-      // FOR THIS STEP: I'll trust the validation and call my backend to "claim".
-      // Ideally we publish -> get hash -> claim.
-
-      // Simulating Hash for now:
-      const mockHash = "0x" + Math.random().toString(16).slice(2);
-
-      await new Promise(r => setTimeout(r, 1500)); // Sim Publish
+      const txHash = castData.hash;
       setStatus('CLAIMING');
+      toast("CAST SENT! VERIFYING REWARD...", "PROCESS");
 
       // 3. Claim Points
-      const score = calculateScore();
+      // Calculate score based on user effort
+      const lengthScore = text.length > 200 ? 5 : 3;
+      const tagScore = (text.includes('@base') ? 2 : 0) + (text.includes('#echocast') ? 3 : 0);
+      const score = Math.min(10, lengthScore + tagScore);
+
       const claimRes = await fetch('/api/echo/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fid: context?.user?.fid,
           actionType: 'daily_cast',
-          castHash: mockHash,
+          castHash: txHash,
           castText: text,
           castScore: score
         })
@@ -133,17 +111,19 @@ export function ActionsTab({ context }: ActionTabProps) {
       const data = await claimRes.json();
       if (data.success) {
         setStatus('SUCCESS');
-        setLastCast({ points: score, hash: mockHash, text });
+        setLastCast({ points: score, hash: txHash, text });
         fetchHistory();
+        toast(`MISSION COMPLETE! +${score} PTS`, "SUCCESS");
       } else {
         console.error(data.error);
         setStatus('IDLE');
+        toast("Verification Failed: " + data.error, "ERROR");
       }
 
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       setStatus('IDLE');
-      alert("CAST FAILED");
+      toast("TRANSMISSION FAILED: " + (e.message || "Unknown error"), "ERROR");
     }
   };
 
