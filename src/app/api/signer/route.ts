@@ -58,12 +58,12 @@ export async function POST(request: Request) {
             // It usually comes in `link` field from the API
             approval_url: (createData as any).link || `https://app.neynar.com/login?signer_uuid=${signer_uuid}&client_id=${process.env.NEXT_PUBLIC_NEYNAR_CLIENT_ID}`
         });
-    });
 
-} catch (error: any) {
-    console.error("[Signer] API Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-}
+
+    } catch (error: any) {
+        console.error("[Signer] API Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
 }
 
 // GET: Check Signer Status
