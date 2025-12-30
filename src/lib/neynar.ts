@@ -20,9 +20,9 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      const url = `https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts?fid=${fid}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
+      const requestUrl = `https://api.neynar.com/v2/farcaster/feed/user/replies_and_recasts?fid=${fid}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
 
-      const res = await fetch(url, {
+      const res = await fetch(requestUrl, {
         headers: {
           'accept': 'application/json',
           'x-api-key': NEYNAR_API_KEY
@@ -112,8 +112,8 @@ export async function getUserWalletValue(fid: number): Promise<number> {
 export async function getBestCast(fid: number): Promise<any> {
   if (!NEYNAR_API_KEY) return null;
   try {
-    const url = `https://api.neynar.com/v2/farcaster/feed/user/popular?fid=${fid}&limit=1`;
-    const res = await fetch(url, { headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY } });
+    const requestUrl = `https://api.neynar.com/v2/farcaster/feed/user/popular?fid=${fid}&limit=1`;
+    const res = await fetch(requestUrl, { headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY } });
     const data = await res.json();
     return data.casts?.[0] || null;
   } catch { return null; }
@@ -122,8 +122,8 @@ export async function getBestCast(fid: number): Promise<any> {
 export async function getNeynarUser(fid: number): Promise<any> {
   if (!NEYNAR_API_KEY) return null;
   try {
-    const url = `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`;
-    const res = await fetch(url, { headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY } });
+    const requestUrl = `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`;
+    const res = await fetch(requestUrl, { headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY } });
     const data = await res.json();
     return data.users?.[0] || null;
   } catch { return null; }
