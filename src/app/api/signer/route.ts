@@ -25,6 +25,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Failed to create signer: ${err}` }, { status: createRes.status });
         }
 
+        const createData = await createRes.json();
         console.log("[Signer] Neynar Response:", JSON.stringify(createData));
 
         const { signer_uuid, public_key } = createData;
