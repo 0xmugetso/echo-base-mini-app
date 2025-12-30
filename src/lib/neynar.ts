@@ -142,5 +142,5 @@ export function getNeynarClient() {
   if (!NEYNAR_API_KEY) {
     throw new Error("Make sure NEYNAR_API_KEY is set in your .env file");
   }
-  return new NeynarAPIClient(NEYNAR_API_KEY);
+  return new NeynarAPIClient({ apiKey: NEYNAR_API_KEY });
 }
