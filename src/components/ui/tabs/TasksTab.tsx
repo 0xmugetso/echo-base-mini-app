@@ -9,7 +9,9 @@ import { useMiniApp } from "@neynar/react";
 import { useToast } from "../ToastProvider";
 
 type Profile = {
+  fid: number;
   points: number;
+  castCount?: number;
   streak: { current: number; highest: number; lastCheckIn: string };
   rewards: { claimedBoxes: { day3: boolean; day7: boolean; day14: boolean; day30: boolean } };
   dailyActions: { lastCastDate: string; completedTasks: string[] };
