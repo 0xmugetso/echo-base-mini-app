@@ -56,7 +56,20 @@ export async function GET(request: Request) {
             if (results[2].status === 'fulfilled') fcWalletValue = results[2].value;
             else console.error('[API] fcWalletValue failed:', results[2].reason);
 
-            if (results[3].status === 'fulfilled') bestCast = results[3].value;
+            if (results[3].status === 'fulfilled' && results[3].value) {
+                const rawCast = results[3].value as any;
+                // Transform Neynar V2 cast object to match UserStats schema
+                bestCast = {
+                    hash: rawCast.hash,
+                    text: rawCast.text,
+                    impressions: rawCast.viewer_context?.likes ? 0 : (rawCast.reactions?.likes_count || 0), // Fallback or approximation
+                    // Neynar V2 usually has { count: N } or plain properties depending on endpoint.
+                    // Checking standard V2 feed/user/popular structure:
+                    likes: rawCast.reactions?.likes_count || rawCast.likes?.count || 0,
+                    recasts: rawCast.reactions?.recasts_count || rawCast.recasts?.count || 0,
+                    replies: rawCast.replies?.count || 0
+                };
+            }
             else console.error('[API] bestCast failed:', results[3].reason);
 
             if (results[4].status === 'fulfilled' && results[4].value) {
