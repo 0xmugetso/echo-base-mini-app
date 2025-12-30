@@ -32,23 +32,26 @@ export default function App(
 
   const { user: neynarUser } = useNeynarUser(context || undefined);
 
+  // Scroll to top on tab change
   useEffect(() => {
-    if (isSDKLoaded) {
-      setInitialTab(Tab.Home);
-    }
-  }, [isSDKLoaded, setInitialTab]);
+    window.scrollTo(0, 0);
+  }, [currentTab]);
 
-  const handleTabChange = (tab: Tab) => {
-    if (tab === currentTab) return;
-    setActiveTab(tab);
+  const TabContent = ({ isActive, children }: { isActive: boolean, children: React.ReactNode }) => {
+    if (!isActive) return null;
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {children}
+      </div>
+    );
   };
 
   if (!isSDKLoaded) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0f0f0f] text-white">
         <div className="text-center space-y-3">
-          <div className="spinner h-10 w-10 mx-auto mb-2 border-white border-t-transparent"></div>
-          <p className="tracking-[0.08em] text-sm uppercase">Loading dashboard...</p>
+          <div className="spinner h-10 w-10 mx-auto mb-2 border-white border-t-transparent animate-spin"></div>
+          <p className="tracking-[0.08em] text-sm uppercase animate-pulse">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -76,18 +79,18 @@ export default function App(
         />
 
         <main className="flex-1 p-4">
-          <div className={currentTab === Tab.Home ? "block" : "hidden"}>
+          <TabContent isActive={currentTab === Tab.Home}>
             <HomeTab neynarUser={neynarUser} context={context} />
-          </div>
-          <div className={currentTab === Tab.Actions ? "block" : "hidden"}>
+          </TabContent>
+          <TabContent isActive={currentTab === Tab.Actions}>
             <ActionsTab />
-          </div>
-          <div className={currentTab === Tab.Context ? "block" : "hidden"}>
-            <TasksTab />
-          </div>
-          <div className={currentTab === Tab.Wallet ? "block" : "hidden"}>
+          </TabContent>
+          <TabContent isActive={currentTab === Tab.Context}>
+            <TasksTab context={context} />
+          </TabContent>
+          <TabContent isActive={currentTab === Tab.Wallet}>
             <WalletTab />
-          </div>
+          </TabContent>
         </main>
       </div>
 

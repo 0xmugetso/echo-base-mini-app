@@ -44,13 +44,17 @@ export function TasksTab({ context }: { context?: any }) {
   const { toast } = useToast();
 
   const handleCheckIn = async () => {
-    console.log("Check-in Clicked");
     if (!profile) {
-      toast("Profile not loaded yet", "ERROR");
+      toast("Error: Profile loading...", "ERROR");
+      fetchProfile(); // Retry fetch
       return;
     }
+
+    // Prevent double clicking
+    if (actionLoading === 'checkin') return;
+
     setActionLoading('checkin');
-    toast("Initiating Transaction...", "PROCESS");
+    toast("Requesting Wallet Signature...", "PROCESS");
 
     try {
       // 1. On-chain Tx (Proof of Check-in)
@@ -62,21 +66,23 @@ export function TasksTab({ context }: { context?: any }) {
       };
 
       if (sdk?.actions?.sendTransaction) {
-        console.log("[Checkin] Sending via Frame SDK actions");
+        console.log("[Checkin] Attempting Frame SDK...");
         try {
           const result = await sdk.actions.sendTransaction(txData);
-          if (!result?.hash) throw new Error("Transaction cancelled");
+          if (!result?.hash) throw new Error("Cancelled");
           hash = result.hash as `0x${string}`;
         } catch (sdkErr) {
-          console.warn("[Checkin] SDK Error, falling back:", sdkErr);
+          console.warn("SDK Failed, trying Wagmi Fallback...");
+          toast("Frame Signer failed, try Wallet...", "INFO");
           hash = await sendTransactionAsync(txData);
         }
       } else {
-        console.log("[Checkin] Falling back to wagmi sendTransactionAsync");
+        console.log("[Checkin] Using Wagmi...");
+        toast("Please sign in your wallet...", "PROCESS");
         hash = await sendTransactionAsync(txData);
       }
 
-      toast("TX_SUBMITTED: Waiting for verification...", "PROCESS");
+      toast("Verifying Transaction...", "PROCESS");
 
       // 2. API Call
       const res = await fetch('/api/echo/checkin', {
@@ -85,15 +91,21 @@ export function TasksTab({ context }: { context?: any }) {
         body: JSON.stringify({ fid: context?.user?.fid, txHash: hash })
       });
       const data = await res.json();
+
       if (data.success) {
-        toast(`CHECK-IN SUCCESS! +${data.pointsAdded} PTS`, "SUCCESS");
-        fetchProfile();
+        toast(`✅ CHECK-IN COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
+        // Force refresh all data
+        await fetchProfile();
       } else {
-        toast(data.error || "Verification failed", "ERROR");
+        toast(`❌ Verification Failed: ${data.error}`, "ERROR");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast("CHECK-IN FAILED (Did you sign?)", "ERROR");
+      if (e.message?.includes("User rejected")) {
+        toast("Signature Cancelled", "INFO");
+      } else {
+        toast("Transaction Failed. Try again.", "ERROR");
+      }
     } finally {
       setActionLoading(null);
     }
