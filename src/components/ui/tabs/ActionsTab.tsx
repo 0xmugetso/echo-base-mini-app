@@ -198,7 +198,6 @@ export function ActionsTab({ context }: ActionTabProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* SIGNER STATUS / CONNECT BUTTON */}
                 {signerStatus.status !== 'approved' && (
                   <div className={`p-3 border-2 ${signerStatus.status === 'pending_approval' ? 'border-yellow-500 bg-yellow-900/20' : 'border-red-900 bg-red-900/10'} mb-4`}>
                     <div className="flex justify-between items-center mb-2">
@@ -210,7 +209,30 @@ export function ActionsTab({ context }: ActionTabProps) {
 
                     {signerStatus.status === 'pending_approval' && signerStatus.approval_url ? (
                       <button
-                        onClick={() => window.open(signerStatus.approval_url, '_blank')}
+                        onClick={async () => {
+                          // Reference Implementation Logic
+                          // Use sdk.actions.openUrl for better mini-app support
+                          // And replace the deeplink scheme if needed
+                          const url = signerStatus.approval_url;
+                          console.log("Opening approval URL:", url);
+
+                          try {
+                            // Try SDK Action first (if in mini-app)
+                            // Replace strictly as per reference if it matches the pattern
+                            const targetUrl = url.includes('client.farcaster.xyz')
+                              ? url.replace('https://client.farcaster.xyz/deeplinks/signed-key-request', 'https://farcaster.xyz/~/connect')
+                              : url;
+
+                            if ((window as any).farcaster?.actions?.openUrl) {
+                              await (window as any).farcaster.actions.openUrl(targetUrl);
+                            } else {
+                              window.open(targetUrl, '_blank');
+                            }
+                          } catch (e) {
+                            console.error("Open URL failed", e);
+                            window.open(url, '_blank'); // Fallback
+                          }
+                        }}
                         className="w-full py-3 bg-yellow-500 text-black font-pixel text-sm hover:bg-yellow-400 animate-pulse"
                       >
                         TAP TO APPROVE ACCESS
@@ -218,13 +240,13 @@ export function ActionsTab({ context }: ActionTabProps) {
                     ) : (
                       <button
                         onClick={async () => {
-                          setIsLoading(true); // Set loading true
+                          setIsLoading(true);
                           toast("Requesting Access...", "PROCESS");
                           await createSigner();
-                          setIsLoading(false); // Set loading false after createSigner completes
+                          setIsLoading(false);
                         }}
                         className="w-full py-2 border border-dashed border-gray-600 text-gray-400 font-pixel text-xs hover:border-white hover:text-white"
-                        disabled={isLoading} // Disable button while loading
+                        disabled={isLoading}
                       >
                         {isLoading ? 'GENERATING...' : 'REQUEST PERMISSION'}
                       </button>
