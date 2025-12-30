@@ -214,6 +214,10 @@ export function ActionsTab({ context }: ActionTabProps) {
                           // Use sdk.actions.openUrl for better mini-app support
                           // And replace the deeplink scheme if needed
                           const url = signerStatus.approval_url;
+                          if (!url) {
+                            console.error("No approval URL found");
+                            return;
+                          }
                           console.log("Opening approval URL:", url);
 
                           try {
