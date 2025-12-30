@@ -48,6 +48,29 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
     finally { setLoading(false); }
   };
 
+  // Force Calculation to fetch latest Cast Count
+  useEffect(() => {
+    if (profile && (profile.castCount === undefined || profile.castCount === 0)) {
+      const triggerCalc = async () => {
+        try {
+          console.log("[TasksTab] Triggering Stat Calculation...");
+          await fetch('/api/echo/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'calculate',
+              fid: profile.fid,
+              address: (context?.user?.verifications?.[0] || '0x0000000000000000000000000000000000000000')
+            })
+          });
+          // Re-fetch after short delay
+          setTimeout(fetchProfile, 2000);
+        } catch (e) { console.error("Calc trigger failed", e); }
+      };
+      triggerCalc();
+    }
+  }, [profile?.fid]); // Only run when profile loaded/changed
+
   useEffect(() => {
     if (neynarUser?.fid || context?.user?.fid) {
       fetchProfile();
