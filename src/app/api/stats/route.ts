@@ -58,19 +58,19 @@ export async function GET(request: Request) {
 
             if (results[3].status === 'fulfilled' && results[3].value) {
                 const rawCast = results[3].value as any;
-                // Transform Neynar V2 cast object to match UserStats schema
+                // ... logic
                 bestCast = {
                     hash: rawCast.hash,
                     text: rawCast.text,
-                    impressions: rawCast.viewer_context?.likes ? 0 : (rawCast.reactions?.likes_count || 0), // Fallback or approximation
-                    // Neynar V2 usually has { count: N } or plain properties depending on endpoint.
-                    // Checking standard V2 feed/user/popular structure:
+                    impressions: rawCast.viewer_context?.likes ? 0 : (rawCast.reactions?.likes_count || 0),
                     likes: rawCast.reactions?.likes_count || rawCast.likes?.count || 0,
                     recasts: rawCast.reactions?.recasts_count || rawCast.recasts?.count || 0,
                     replies: rawCast.replies?.count || 0
                 };
             }
-            else console.error('[API] bestCast failed:', results[3].reason);
+            else if (results[3].status === 'rejected') {
+                console.error('[API] bestCast failed:', results[3].reason);
+            }
 
             if (results[4].status === 'fulfilled' && results[4].value) {
                 const nUser = results[4].value as any; // Cast to any to access dynamic props
