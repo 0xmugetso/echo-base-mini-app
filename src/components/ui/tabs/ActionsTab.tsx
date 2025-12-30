@@ -70,7 +70,11 @@ export function ActionsTab({ context }: ActionTabProps) {
     // 1. Check Signer
     if (signerStatus.status !== 'approved') {
       toast("Signer not ready. Requesting access...", "PROCESS");
-      createSigner();
+      const newSigner = await createSigner();
+      if (newSigner?.approval_url) {
+        toast("Opening Farcaster to approve...", "PROCESS");
+        window.open(newSigner.approval_url, '_blank');
+      }
       return;
     }
 

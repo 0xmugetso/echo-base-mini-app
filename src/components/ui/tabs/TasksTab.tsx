@@ -344,9 +344,9 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
               <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-2 min-w-[120px]">
               {isCheckedInToday() && (
-                <button disabled className="px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
+                <button disabled className="w-full px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
                   COMPLETED
                 </button>
               )}
@@ -357,7 +357,7 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
                 <button
                   disabled={actionLoading === 'checkin'}
                   onClick={handleCheckIn}
-                  className={`px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX'}
                 </button>

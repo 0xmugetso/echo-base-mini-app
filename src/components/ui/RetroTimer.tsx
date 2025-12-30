@@ -33,24 +33,15 @@ export function RetroTimer() {
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center p-2 bg-black border-2 border-gray-800 rounded-lg shadow-[inset_0_0_10px_rgba(0,0,0,1)] relative overflow-hidden group">
-            {/* GLOW EFFECT BACKGROUND */}
-            <div className="absolute inset-0 bg-red-900/10 animate-pulse pointer-events-none" />
-
-            {/* LABEL */}
-            <span className="text-[8px] font-mono text-gray-500 mb-1 tracking-widest uppercase z-10">Next Refresh</span>
-
-            {/* DIGITAL CLOCK */}
-            <div className="relative z-10 font-mono text-xl md:text-2xl font-bold tracking-widest text-red-500 flex items-center gap-1" style={{ textShadow: '0 0 5px rgba(239, 68, 68, 0.8), 0 0 10px rgba(239, 68, 68, 0.4)' }}>
+        <div className="flex items-center gap-1 font-mono text-sm text-gray-400 bg-gray-900/50 px-2 py-1 rounded border border-gray-800 w-full justify-center">
+            <span className="text-[10px] uppercase opacity-70 mr-1">RESET:</span>
+            <div className="flex font-bold text-white tracking-widest">
                 {timeLeft.split('').map((char, i) => (
-                    <span key={i} className={`${char === ':' ? 'animate-pulse text-red-400' : 'bg-black/50 px-[1px] rounded'}`}>
+                    <span key={i} className={`${char === ':' ? 'animate-pulse text-gray-500' : ''}`}>
                         {char}
                     </span>
                 ))}
             </div>
-
-            {/* VINTAGE SCANLINE */}
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]" />
         </div>
     );
 }
