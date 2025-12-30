@@ -272,18 +272,19 @@ export function ActionsTab({ context }: ActionTabProps) {
                 >
                   {status === 'IDLE' ? (isValid ? 'TRANSMIT_CAST' : 'AWAITING_INPUT') : status === 'PUBLISHING' ? 'BROADCASTING...' : 'VERIFYING...'}
                 </button>
+              </div>
             )}
 
-                {/* FOOTER ACTION */}
-                <div className="text-center mt-2">
-                  <button
-                    onClick={() => setViewHistory(true)}
-                    className="text-[10px] font-mono text-gray-500 hover:text-white border-b border-dashed border-gray-700 hover:border-white transition-colors"
-                  >
-                    [ VIEW_ACCESS_LOG ]
-                  </button>
-                </div>
-              </div>
+            {/* FOOTER ACTION */}
+            <div className="text-center mt-2">
+              <button
+                onClick={() => setViewHistory(true)}
+                className="text-[10px] font-mono text-gray-500 hover:text-white border-b border-dashed border-gray-700 hover:border-white transition-colors"
+              >
+                [ VIEW_ACCESS_LOG ]
+              </button>
+            </div>
+          </div>
         </RetroWindow>
       ) : (
         /* HISTORY VIEW */
