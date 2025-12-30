@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { RetroWindow } from "../RetroWindow";
 import { RetroBanner } from "../RetroBanner";
+import { RetroTimer } from "../RetroTimer";
 import { useAccount, useSendTransaction } from "wagmi";
 import { parseEther, stringToHex } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
@@ -332,18 +333,25 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
       {/* 3. DAILY ACTIONS */}
       <div className="space-y-3">
         {/* Check In */}
-        <div className={`border-2 p-4 flex justify-between items-center transition-all ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+        <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
           <div>
             <h3 className="font-pixel text-lg text-white">DAILY_CHECK_IN</h3>
             <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
           </div>
-          <button
-            disabled={actionLoading === 'checkin' || isCheckedInToday()}
-            onClick={handleCheckIn}
-            className={`px-4 py-2 font-pixel text-xs border uppercase ${isCheckedInToday() ? 'border-gray-700 text-gray-700' : 'border-primary text-primary hover:bg-primary hover:text-black'} ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isCheckedInToday() ? 'COMPLETED' : (actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX')}
-          </button>
+
+          {isCheckedInToday() ? (
+            <div className="w-32">
+              <RetroTimer />
+            </div>
+          ) : (
+            <button
+              disabled={actionLoading === 'checkin'}
+              onClick={handleCheckIn}
+              className={`px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX'}
+            </button>
+          )}
         </div>
 
         {/* Daily Echo Cast */}
