@@ -69,11 +69,9 @@ export function ActionsTab({ context }: ActionTabProps) {
 
     // 1. Check Signer
     if (signerStatus.status !== 'approved') {
-      toast("Signer not ready. Requesting access...", "PROCESS");
-      const newSigner = await createSigner();
-      if (newSigner?.approval_url) {
-        toast("Opening Farcaster to approve...", "PROCESS");
-        window.open(newSigner.approval_url, '_blank');
+      toast("Signer required. Please connect above.", "INFO");
+      if (signerStatus.status !== 'pending_approval') {
+        await createSigner();
       }
       return;
     }
@@ -198,15 +196,50 @@ export function ActionsTab({ context }: ActionTabProps) {
                 <p className="text-[10px] text-gray-500 mt-4">NEXT MISSION: 24H</p>
               </div>
             ) : (
-              <>
+              <div className="space-y-4">
+                {/* SIGNER STATUS / CONNECT BUTTON */}
+                {signerStatus.status !== 'approved' && (
+                  <div className={`p-3 border-2 ${signerStatus.status === 'pending_approval' ? 'border-yellow-500 bg-yellow-900/20' : 'border-red-900 bg-red-900/10'} mb-4`}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-pixel text-xs text-gray-400">SIGNER_STATUS</span>
+                      <span className={`font-mono text-xs ${signerStatus.status === 'pending_approval' ? 'text-yellow-500 animate-pulse' : 'text-red-500'}`}>
+                        {signerStatus.status === 'pending_approval' ? 'PENDING APPROVAL' : 'DISCONNECTED'}
+                      </span>
+                    </div>
+
+                    {signerStatus.status === 'pending_approval' && signerStatus.approval_url ? (
+                      <button
+                        onClick={() => window.open(signerStatus.approval_url, '_blank')}
+                        className="w-full py-3 bg-yellow-500 text-black font-pixel text-sm hover:bg-yellow-400 animate-pulse"
+                      >
+                        TAP TO APPROVE ACCESS
+                      </button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          setIsLoading(true); // Set loading true
+                          toast("Requesting Access...", "PROCESS");
+                          await createSigner();
+                          setIsLoading(false); // Set loading false after createSigner completes
+                        }}
+                        className="w-full py-2 border border-dashed border-gray-600 text-gray-400 font-pixel text-xs hover:border-white hover:text-white"
+                        disabled={isLoading} // Disable button while loading
+                      >
+                        {isLoading ? 'GENERATING...' : 'REQUEST PERMISSION'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* INPUT */}
                 <div className="relative group">
                   <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={castText}
+                    onChange={(e) => setCastText(e.target.value)}
                     disabled={status !== 'IDLE'}
-                    placeholder="> INIT_MESSAGE..."
-                    className="w-full h-32 bg-black border-2 border-gray-700 p-3 text-sm font-mono text-white focus:border-primary focus:outline-none resize-none transition-colors"
+                    placeholder="TYPE YOUR ECHO..."
+                    className="w-full h-32 bg-black border-2 border-gray-800 p-4 font-mono text-white focus:border-primary focus:outline-none resize-none"
+                    maxLength={MAX_CHARS} // Changed to MAX_CHARS for consistency
                   />
                   {/* Char Count */}
                   <div className={`absolute bottom-2 right-2 text-[10px] font-bold ${isLengthValid ? 'text-primary' : 'text-red-500'}`}>
