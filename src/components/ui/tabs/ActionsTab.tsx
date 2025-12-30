@@ -12,11 +12,12 @@ type ActionTabProps = {
 };
 
 export function ActionsTab({ context }: ActionTabProps) {
-  const [text, setText] = useState('');
+  const [castText, setCastText] = useState('');
   const [status, setStatus] = useState<'IDLE' | 'VALIDATING' | 'PUBLISHING' | 'CLAIMING' | 'SUCCESS'>('IDLE');
   const [lastCast, setLastCast] = useState<any>(null);
   const [viewHistory, setViewHistory] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { signerStatus, createSigner } = useNeynarSigner();
   const { toast } = useToast();
@@ -26,9 +27,9 @@ export function ActionsTab({ context }: ActionTabProps) {
   const MAX_CHARS = 250;
 
   // Checks
-  const length = text.length;
-  const hasTag = text.toLowerCase().includes('@base');
-  const hasHash = text.toLowerCase().includes('#echocast');
+  const length = castText.length;
+  const hasTag = castText.toLowerCase().includes('@base');
+  const hasHash = castText.toLowerCase().includes('#echocast');
   const isLengthValid = length >= MIN_CHARS && length <= MAX_CHARS;
   const isValid = hasTag && hasHash && isLengthValid;
 
@@ -86,7 +87,7 @@ export function ActionsTab({ context }: ActionTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signer_uuid: signerStatus.signer_uuid,
-          text: text,
+          text: castText,
           parent: 'https://warpcast.com/~/channel/base', // Optional channel
         })
       });
@@ -103,8 +104,8 @@ export function ActionsTab({ context }: ActionTabProps) {
 
       // 3. Claim Points
       // Calculate score based on user effort
-      const lengthScore = text.length > 200 ? 5 : 3;
-      const tagScore = (text.includes('@base') ? 2 : 0) + (text.includes('#echocast') ? 3 : 0);
+      const lengthScore = castText.length > 200 ? 5 : 3;
+      const tagScore = (castText.includes('@base') ? 2 : 0) + (castText.includes('#echocast') ? 3 : 0);
       const score = Math.min(10, lengthScore + tagScore);
 
       const claimRes = await fetch('/api/echo/action', {
@@ -114,7 +115,7 @@ export function ActionsTab({ context }: ActionTabProps) {
           fid: context?.user?.fid,
           actionType: 'daily_cast',
           castHash: txHash,
-          castText: text,
+          castText: castText,
           castScore: score
         })
       });
@@ -122,7 +123,7 @@ export function ActionsTab({ context }: ActionTabProps) {
       const data = await claimRes.json();
       if (data.success) {
         setStatus('SUCCESS');
-        setLastCast({ points: score, hash: txHash, text });
+        setLastCast({ points: score, hash: txHash, text: castText });
         fetchHistory();
         toast(`MISSION COMPLETE! +${score} PTS`, "SUCCESS");
       } else {
@@ -271,19 +272,18 @@ export function ActionsTab({ context }: ActionTabProps) {
                 >
                   {status === 'IDLE' ? (isValid ? 'TRANSMIT_CAST' : 'AWAITING_INPUT') : status === 'PUBLISHING' ? 'BROADCASTING...' : 'VERIFYING...'}
                 </button>
-              </>
             )}
 
-            {/* FOOTER ACTION */}
-            <div className="text-center mt-2">
-              <button
-                onClick={() => setViewHistory(true)}
-                className="text-[10px] font-mono text-gray-500 hover:text-white border-b border-dashed border-gray-700 hover:border-white transition-colors"
-              >
-                [ VIEW_ACCESS_LOG ]
-              </button>
-            </div>
-          </div>
+                {/* FOOTER ACTION */}
+                <div className="text-center mt-2">
+                  <button
+                    onClick={() => setViewHistory(true)}
+                    className="text-[10px] font-mono text-gray-500 hover:text-white border-b border-dashed border-gray-700 hover:border-white transition-colors"
+                  >
+                    [ VIEW_ACCESS_LOG ]
+                  </button>
+                </div>
+              </div>
         </RetroWindow>
       ) : (
         /* HISTORY VIEW */
