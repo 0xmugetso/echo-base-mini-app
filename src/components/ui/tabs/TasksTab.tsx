@@ -291,7 +291,12 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
     if (!profile?.streak?.lastCheckIn) return false;
     const last = new Date(profile.streak.lastCheckIn);
     const now = new Date();
-    return last.toDateString() === now.toDateString();
+
+    // Compare UTC Date strings (YYYY-MM-DD)
+    const lastDate = `${last.getUTCFullYear()}-${last.getUTCMonth()}-${last.getUTCDate()}`;
+    const nowDate = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
+
+    return lastDate === nowDate;
   };
 
   const BoxButton = ({ day, label }: { day: number, label: string }) => {

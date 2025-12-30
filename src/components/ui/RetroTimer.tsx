@@ -6,12 +6,11 @@ export function RetroTimer() {
     useEffect(() => {
         const calculateTimeLeft = () => {
             const now = new Date();
-            // Set target to next midnight (00:00:00 of tomorrow)
-            const tomorrow = new Date(now);
-            tomorrow.setDate(now.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
+            // Calculate next UTC Midnight
+            const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
+            const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
 
-            const diff = tomorrow.getTime() - now.getTime();
+            const diff = tomorrowUTC.getTime() - nowUTC.getTime();
 
             if (diff <= 0) return "00:00:00";
 
