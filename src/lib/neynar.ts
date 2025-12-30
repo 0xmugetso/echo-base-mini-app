@@ -7,7 +7,7 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
   let cursor: string | undefined;
   let totalCasts = 0;
   let hasMore = true;
-  const MAX_PAGES = 50; // Increased limit for better accuracy
+  const MAX_PAGES = 1000; // High limit to ensure we get everything
   let page = 0;
 
   console.log(`[NEYNAR] SDK: Counting casts for FID: ${fid}...`);
