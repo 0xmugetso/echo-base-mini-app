@@ -159,24 +159,34 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // Step 2 Loader Logic
     const [loadProgress, setLoadProgress] = useState(0);
+
+
+    // Reset when entering step 2
+    useEffect(() => {
+        if (step === 2) setLoadProgress(0);
+    }, [step]);
+
+    // Animation Effect
     useEffect(() => {
         if (step !== 2) return;
-        setLoadProgress(0);
-        let current = 0;
+
+        let current = loadProgress; // Start from current to avoid jump
         const interval = setInterval(() => {
             const isWaiting = loading || !baseStats;
             const target = isWaiting ? 90 : 100;
+
             if (current >= 100) {
                 clearInterval(interval);
                 setTimeout(() => setStep(3), 500);
             } else if (current < target) {
-                const jump = Math.random() * 8;
+                // Random jump for "hacker" feel
+                const jump = Math.random() * 15;
                 current = Math.min(current + jump, target);
                 setLoadProgress(current);
             }
-        }, 100);
+        }, 150); // Slower interval for smoother chunks
         return () => clearInterval(interval);
-    }, [step, loading, baseStats]);
+    }, [step, loading, baseStats]); // Keep deps, but logic handles continuity
 
     // Step 4 Calculation Logic
     useEffect(() => {

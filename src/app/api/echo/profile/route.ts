@@ -105,9 +105,8 @@ export async function POST(request: Request) {
             }
         }
 
-        // 2. Calculate Initial Points (Only if requested and points are low/default)
-        // Treating 10 as "default/failed" state to allow retries.
-        if (action === 'calculate' && profile.points <= 10) {
+        // 2. Calculate Initial Points (Idempotent Recalculation)
+        if (action === 'calculate') {
             console.log(`[PROFILE_CALC] Starting calc for FID: ${fid}, Address: ${address}`);
 
             const { manualStats } = body;
@@ -156,10 +155,14 @@ export async function POST(request: Request) {
                 console.log("[PROFILE_CALC] No Stats provided or found, defaulting to 10.");
             }
 
-            // Cap at 500
-            profile.points = Math.min(initialPoints, 500);
+            // Cap at 500 but ensure we don't lower existing points (e.g. from referrals)
+            const newScore = Math.min(initialPoints, 500);
+            if (profile.points < newScore) {
+                profile.points = newScore;
+            }
+
             await profile.save();
-            return NextResponse.json({ profile, calculated: true, initialPoints: profile.points });
+            return NextResponse.json({ profile, calculated: true, initialPoints });
         }
 
         // 3. Register NFT (Independent Mint)

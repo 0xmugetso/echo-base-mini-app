@@ -60,14 +60,15 @@ export async function GET(request: Request) {
             else console.error('[API] bestCast failed:', results[3].reason);
 
             if (results[4].status === 'fulfilled' && results[4].value) {
-                const nUser = results[4].value;
-                console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
-                // Neynar User object usually has cast_count directly or under stats
-                const extractedCastCount =
-                    nUser.stats?.cast_count ??
-                    nUser.profile?.stats?.cast_count ??
-                    nUser.cast_count ??
-                    0;
+                const nUser = results[4].value as any; // Cast to any to access dynamic props
+                // console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
+
+                // Robust extraction
+                let extractedCastCount = 0;
+                if (typeof nUser.cast_count === 'number') extractedCastCount = nUser.cast_count;
+                else if (nUser.stats && typeof nUser.stats.cast_count === 'number') extractedCastCount = nUser.stats.cast_count;
+                else if (nUser.profile?.stats?.cast_count) extractedCastCount = nUser.profile.stats.cast_count;
+
                 console.log(`[API] Extracted Cast Count for ${fidParam}: ${extractedCastCount}`);
                 (farcasterHoldings as any).cast_count = extractedCastCount;
             }
