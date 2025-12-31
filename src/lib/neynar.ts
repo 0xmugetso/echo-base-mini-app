@@ -59,8 +59,8 @@ async function fetchUserCastCountRaw(fid: number): Promise<number> {
     const MAX = 200; // Safety
 
     while (hasMore && page < MAX) {
-      const url = `https://api.neynar.com/v2/farcaster/feed/user/casts?fid=${fid}&limit=150&include_replies=true&include_recasts=true${cursor ? `&cursor=${cursor}` : ''}`;
-      const res = await fetch(url, { headers: { 'api_key': NEYNAR_API_KEY } });
+      const requestUrl = `https://api.neynar.com/v2/farcaster/feed/user/casts?fid=${fid}&limit=150&include_replies=true&include_recasts=true${cursor ? `&cursor=${cursor}` : ''}`;
+      const res = await fetch(requestUrl, { headers: { 'api_key': NEYNAR_API_KEY } });
       if (!res.ok) break;
 
       const data = await res.json();
