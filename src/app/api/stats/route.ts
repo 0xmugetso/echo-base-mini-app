@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/db';
 import UserStats from '../../../models/UserStats';
 import { getBaseNativeVolume, getFarcasterHoldings } from '../../../lib/covalent';
-import { getBestCast, getUserWalletValue, getNeynarUser } from '../../../lib/neynar';
+import { getBestCast, getUserWalletValue, getNeynarUser, fetchUserCastCount } from '../../../lib/neynar';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
