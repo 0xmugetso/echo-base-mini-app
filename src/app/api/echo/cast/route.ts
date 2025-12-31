@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getNeynarClient } from '~/lib/neynar';
 
 export async function POST(req: Request) {
     try {
@@ -8,44 +9,33 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing signer_uuid or text" }, { status: 400 });
         }
 
-        const API_KEY = process.env.NEYNAR_API_KEY;
-        if (!API_KEY) {
-            return NextResponse.json({ error: "Server config error: Missing API Key" }, { status: 500 });
-        }
-
         console.log(`[CAST] Publishing cast with signer ${signer_uuid}...`);
 
-        const response = await fetch("https://api.neynar.com/v2/farcaster/cast", {
-            method: "POST",
-            headers: {
-                "accept": "application/json",
-                "api_key": API_KEY,
-                "content-type": "application/json"
-            },
-            body: JSON.stringify({
-                signer_uuid,
-                text,
-                parent: parent || (channelId ? `https://warpcast.com/~/channel/${channelId}` : undefined),
-            }),
+        const client = getNeynarClient();
+
+        const cast = await client.publishCast({
+            signerUuid: signer_uuid,
+            text,
+            parent: parent || (channelId ? channelId : undefined),
+            // SDK might handle 'channelId' differently in 'parent' param depending on version, 
+            // but standard 'parent' as string hash/url works.
         });
 
-        const data = await response.json();
+        // SDK v2 return type structure check
+        const castHash = cast.cast?.hash || (cast as any).hash;
 
-        if (!response.ok) {
-            console.error("[CAST] Neynar API Error:", data);
-            return NextResponse.json({ error: data.message || "Failed to publish cast" }, { status: response.status });
-        }
-
-        console.log("[CAST] Success:", data.cast?.hash);
+        console.log("[CAST] Success:", castHash);
 
         return NextResponse.json({
             success: true,
-            hash: data.cast?.hash,
-            cast: data.cast
+            hash: castHash,
+            cast: cast
         });
 
     } catch (error: any) {
-        console.error("[CAST] Server Error:", error);
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+        console.error("[CAST] SDK Error:", error);
+        // Extract helpful message
+        const msg = error.response?.data?.message || error.message || "Failed to publish";
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }

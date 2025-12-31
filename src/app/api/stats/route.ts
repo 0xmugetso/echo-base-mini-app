@@ -90,6 +90,17 @@ export async function GET(request: Request) {
             console.error('[API] Parallel fetch failed:', err);
         }
 
+        // Calculate Real Cast Count using robust pagination
+        let realCastCount = 0;
+        if (fidParam) {
+            try {
+                realCastCount = await fetchUserCastCount(parseInt(fidParam));
+                console.log(`[API] Robust Cast Count for ${fidParam}: ${realCastCount}`);
+            } catch (e) {
+                console.error("[API] Cast count fetch failed", e);
+            }
+        }
+
         // 4. Transform and Merge
         const storageStats = {
             ...baseStats,
@@ -100,7 +111,7 @@ export async function GET(request: Request) {
                 wallet_value_usd: fcWalletValue,
                 holdings: farcasterHoldings.holdings,
                 best_cast: bestCast,
-                cast_count: (farcasterHoldings as any).cast_count || 0
+                cast_count: realCastCount // Use robust count
             }
         };
 
