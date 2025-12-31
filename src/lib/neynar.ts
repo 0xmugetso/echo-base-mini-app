@@ -14,25 +14,68 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
   try {
     while (hasMore && page < MAX_PAGES) {
+      // Try SDK with force-included params (ignoring strict types for reliability)
       const data = await client.fetchCastsForUser({
         fid,
         limit: 150,
-        cursor
-      });
+        cursor,
+        includeReplies: true, // Force include
+        includeRecasts: true
+      } as any);
 
       const casts = data.casts || [];
       totalCasts += casts.length;
-      console.log(`[NEYNAR] Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
+      console.log(`[NEYNAR] SDK Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
 
       cursor = data.next?.cursor || undefined;
       if (!cursor) hasMore = false;
       page++;
     }
+
+    // Fallback: If SDK returned 0, try Raw Fetch (in case of SDK version mismatch)
+    if (totalCasts === 0) {
+      console.log("[NEYNAR] SDK returned 0. Attempting Raw Fetch Fallback...");
+      const rawCount = await fetchUserCastCountRaw(fid);
+      console.log(`[NEYNAR] Raw Fetch Result: ${rawCount}`);
+      return rawCount;
+    }
+
     return totalCasts;
 
   } catch (e) {
-    console.error("[NEYNAR] SDK Cast count failed", e);
-    return totalCasts; // Return whatever we counted so far
+    console.error("[NEYNAR] SDK Cast count failed, trying raw...", e);
+    return await fetchUserCastCountRaw(fid);
+  }
+}
+
+// Internal Raw Fetch Helper
+async function fetchUserCastCountRaw(fid: number): Promise<number> {
+  if (!NEYNAR_API_KEY) return 0;
+  try {
+    let cursor: string | null = null;
+    let total = 0;
+    let hasMore = true;
+    let page = 0;
+    const MAX = 200; // Safety
+
+    while (hasMore && page < MAX) {
+      const url = `https://api.neynar.com/v2/farcaster/feed/user/casts?fid=${fid}&limit=150&include_replies=true&include_recasts=true${cursor ? `&cursor=${cursor}` : ''}`;
+      const res = await fetch(url, { headers: { 'api_key': NEYNAR_API_KEY } });
+      if (!res.ok) break;
+
+      const data = await res.json();
+      const list = data.casts || [];
+      total += list.length;
+      console.log(`[NEYNAR] RAW Page ${page}: +${list.length} (Total: ${total})`);
+
+      cursor = data.next?.cursor;
+      if (!cursor) hasMore = false;
+      page++;
+    }
+    return total;
+  } catch (e) {
+    console.error("Raw fetch failed", e);
+    return 0;
   }
 }
 
