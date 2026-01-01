@@ -235,6 +235,7 @@ export function ActionsTab({ context }: ActionTabProps) {
                           } catch (e) {
                             console.error("Open URL failed", e);
                             window.open(url, '_blank'); // Fallback
+                            toast("Redirect failed: " + (e as any).message, "ERROR");
                           }
                         }}
                         className="w-full py-3 bg-yellow-500 text-black font-pixel text-sm hover:bg-yellow-400 animate-pulse"

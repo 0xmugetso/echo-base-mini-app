@@ -238,15 +238,18 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
         body: JSON.stringify({ fid: context?.user?.fid, day, txHash: hash })
       });
       const data = await res.json();
+      console.log(`[BOX] Response for Day ${day}:`, data);
+
       if (data.success) {
         toast(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`, "SUCCESS");
-        fetchProfile();
+        await fetchProfile();
       } else {
-        toast(data.error || "Failed to open box", "ERROR");
+        console.error(`[BOX] Failed:`, data);
+        toast(`Failed: ${data.error || "Unknown Error"}`, "ERROR");
       }
-    } catch (e) {
-      console.error(e);
-      toast("BOX OPEN FAILED", "ERROR");
+    } catch (e: any) {
+      console.error("[BOX] Exception:", e);
+      toast(`BOX ERROR: ${e.message}`, "ERROR");
     } finally {
       setActionLoading(null);
     }
