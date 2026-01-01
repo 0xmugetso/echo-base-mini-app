@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendDirectCast } from '@/lib/direct-casts';
+import { sendDirectCast } from '~/lib/direct-casts';
 
 export async function PUT(req: NextRequest) {
     try {

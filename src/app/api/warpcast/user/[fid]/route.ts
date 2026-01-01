@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getWarpcastUser } from '@/lib/warpcast';
+import { getWarpcastUser } from '~/lib/warpcast';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ fid: string }> }) {
     const fid = (await params).fid;

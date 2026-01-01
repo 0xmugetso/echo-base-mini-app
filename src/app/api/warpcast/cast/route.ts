@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { publishWarpcastCast } from '@/lib/warpcast';
+import { publishWarpcastCast } from '~/lib/warpcast';
 
 export async function POST(req: NextRequest) {
     try {
