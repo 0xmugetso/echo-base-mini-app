@@ -3,7 +3,7 @@ import { RetroWindow } from "../RetroWindow";
 import { RetroBanner } from "../RetroBanner";
 import { RetroTimer } from "../RetroTimer";
 import { useAccount, useSendTransaction } from "wagmi";
-import { parseEther, stringToHex } from "viem";
+import { parseEther, stringToHex, getAddress } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
 import { useMiniApp } from "@neynar/react";
 import { useToast } from "../ToastProvider";
@@ -224,7 +224,7 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
     try {
       // 1. On-chain Tx
       const hash = await sendTransactionAsync({
-        to: "0x438Da72724D6331A47073286333241BD788A8340",
+        to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
         value: parseEther("0"),
         data: stringToHex(`ECHO_BOX_DAY_${day}`),
       });

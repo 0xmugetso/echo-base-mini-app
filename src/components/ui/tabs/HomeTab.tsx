@@ -147,6 +147,13 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const following = neynarUser?.following_count ?? null;
   const fid = neynarUser?.fid || context?.user?.fid;
 
+  /* DEBUG LOGS */
+  useEffect(() => {
+    if (baseStats) {
+      console.log("[HomeTab] Full Stats:", baseStats);
+      console.log("[HomeTab] Cast Count Value:", baseStats?.farcaster?.cast_count);
+    }
+  }, [baseStats]);
 
   return (
     <div className="space-y-4 pb-4 relative min-h-[400px]">
