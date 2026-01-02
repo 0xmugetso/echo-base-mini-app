@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { RetroWindow } from '../RetroWindow';
 import { RetroBanner } from '../RetroBanner';
-import { useNeynarSigner } from '~/hooks/useNeynarSigner';
+import { useFarcasterSigner } from '~/hooks/useFarcasterSigner';
 import Image from 'next/image';
 import { useToast } from '../ToastProvider';
 
@@ -19,7 +19,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   const [history, setHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signerStatus, createSigner } = useNeynarSigner();
+  const { signer, signerStatus, createSigner } = useFarcasterSigner(); // Changed hook
   const { toast } = useToast();
 
   // Limits
@@ -69,7 +69,7 @@ export function ActionsTab({ context }: ActionTabProps) {
     }
 
     // 1. Check Signer
-    if (signerStatus.status !== 'approved') {
+    if (signerStatus.status !== 'approved' || !signer) {
       toast("Signer required. Please connect above.", "INFO");
       if (signerStatus.status !== 'pending_approval') {
         await createSigner();
@@ -81,14 +81,60 @@ export function ActionsTab({ context }: ActionTabProps) {
     toast("INITIATING BROADCAST...", "PROCESS");
 
     try {
-      // 2. Publish to Farcaster via Backend (Secure Proxy)
-      const castRes = await fetch('/api/echo/cast', {
+      // 2. Sign and Publish to Farcaster via Backend
+      // We need to construct the cast add message locally
+      const { makeCastAdd, CastType } = await import('@farcaster/core');
+
+      // Need user FID from status
+      if (!signerStatus.fid) throw new Error("Signer FID missing");
+
+      // Construct Cast
+      const castAdd = await makeCastAdd({
+        text: castText,
+        embeds: [],
+        embedsDeprecated: [],
+        mentions: [],
+        mentionsPositions: [],
+        parentUrl: 'https://warpcast.com/~/channel/base',
+        type: CastType.CAST,
+      }, {
+        fid: signerStatus.fid,
+        network: 1, // Mainnet
+      }, signer);
+
+      if (castAdd.isErr()) {
+        throw new Error("Failed to sign cast: " + castAdd.error.message);
+      }
+
+      const message = castAdd.value;
+      // Convert message to hex or JSON to send to API
+      // Our API at /api/warpcast/cast needs to support receiving a signed message OR we can just use the generic one if we trust the server.
+      // BUT WAIT: The server 'publishWarpcastCast' uses the App Secret directly if no signature provided?
+      // No, the previous implementation of publishWarpcastCast tried to just POST body. 
+      // To strictly follow "Native Signer", we should POST the SIGNED MESSAGE to the Hub.
+      // But we don't have a Hub proxy set up. Warpcast API v2 accepts signed messages?
+      // Actually, standard practice is: Miniapp -> Sign -> Backend -> Submit to Hub.
+      // Or: Miniapp -> Sign -> Submit to Hub (if public/CORS allowed).
+
+      // Let's modify the backend to accept the signed message and post it relative to the user?
+      // OR simpler: Since we have the App Secret, maybe we CAN just post simple text? 
+      // The user specifically said "go through the entire suggested flow... not neynar". Suggested flow uses local key.
+
+      // So we must submit the signed message.
+      // I will send the `Message` object to a new API endpoint handling signed messages, or update the existing one.
+
+      // For now, let's assume we update `/api/warpcast/cast` to accept `signedMessage`.
+
+      // Convert BigInts to string for JSON serialization
+      const serializedMessage = JSON.parse(JSON.stringify(message, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+
+      const castRes = await fetch('/api/warpcast/cast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signer_uuid: signerStatus.signer_uuid,
-          text: castText,
-          parent: 'https://warpcast.com/~/channel/base', // Optional channel
+          signedMessage: serializedMessage
         })
       });
 
