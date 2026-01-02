@@ -130,9 +130,14 @@ export async function publishWarpcastCast(
  * @param name Optional name for the key.
  */
 export async function createSignedKeyRequest(publicKey: string, name: string = 'Echo Mini App'): Promise<SignedKeyRequestResponse['result']['signedKeyRequest'] | null> {
-    if (!process.env.WARPCAST_DC_SECRET) return null;
+    if (!process.env.WARPCAST_DC_SECRET) {
+        console.error('[Warpcast] Missing WARPCAST_DC_SECRET');
+        throw new Error("Server Error: Missing WARPCAST_DC_SECRET");
+    }
 
     try {
+        console.log(`[Warpcast] Creating signer for ${publicKey} with secret length ${process.env.WARPCAST_DC_SECRET.length}`);
+
         const response = await fetch(`${WARPCAST_API_BASE}/signed-key-requests`, {
             method: 'POST',
             headers: {
@@ -144,13 +149,14 @@ export async function createSignedKeyRequest(publicKey: string, name: string = '
 
         const data = await response.json();
         if (!response.ok) {
-            console.error('[Warpcast] Create Signer failed:', data);
-            return null;
+            console.error('[Warpcast] Create Signer failed:', JSON.stringify(data));
+            const msg = data.errors?.[0]?.message || 'Unknown Warpcast Error';
+            throw new Error(`Warpcast API Error: ${msg}`);
         }
         return data.result.signedKeyRequest;
-    } catch (e) {
+    } catch (e: any) {
         console.error('[Warpcast] Create Signer error:', e);
-        return null;
+        throw e; // Re-throw to be caught by API route
     }
 }
 

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
         if (!publicKey) return NextResponse.json({ error: "Missing publicKey" }, { status: 400 });
 
         const result = await createSignedKeyRequest(publicKey, name);
-        if (!result) return NextResponse.json({ error: "Failed to create signed key request" }, { status: 500 });
+        // Result is guaranteed if no error thrown
 
         return NextResponse.json(result);
     } catch (e: any) {
