@@ -1,4 +1,5 @@
 const WARPCAST_API_BASE = 'https://api.warpcast.com/v2';
+import type { Hex } from 'viem';
 
 interface WarpcastUserResponse {
     result: {
