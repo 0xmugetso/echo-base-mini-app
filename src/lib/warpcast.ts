@@ -141,10 +141,46 @@ export async function createSignedKeyRequest(publicKey: string, name: string = '
         throw new Error("Server Error: Missing WARPCAST_APP_FID");
     }
 
+    if (!process.env.FARCASTER_DEVELOPER_MNEMONIC) {
+        console.error('[Warpcast] Missing FARCASTER_DEVELOPER_MNEMONIC');
+        throw new Error("Server Error: Missing FARCASTER_DEVELOPER_MNEMONIC");
+    }
+
+    const { mnemonicToAccount } = await import("viem/accounts");
     const requestFid = parseInt(process.env.WARPCAST_APP_FID, 10);
+    const account = mnemonicToAccount(process.env.FARCASTER_DEVELOPER_MNEMONIC);
+
+    // EIP-712 Domain and Types for SignedKeyRequest
+    const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
+        name: 'Farcaster SignedKeyRequestValidator',
+        version: '1',
+        chainId: 10,
+        verifyingContract: '0x00000000fc700472606ed4fa22623acf62c60553',
+    } as const;
+
+    const SIGNED_KEY_REQUEST_TYPE = [
+        { name: 'requestFid', type: 'uint256' },
+        { name: 'key', type: 'bytes' },
+        { name: 'deadline', type: 'uint256' },
+    ] as const;
+
+    // Generate Signature
+    const deadline = Math.floor(Date.now() / 1000) + 86400; // 24 hours
+    const signature = await account.signTypedData({
+        domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
+        types: {
+            SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
+        },
+        primaryType: 'SignedKeyRequest',
+        message: {
+            requestFid: BigInt(requestFid),
+            key: publicKey as `0x${string}`,
+            deadline: BigInt(deadline),
+        },
+    });
 
     try {
-        console.log(`[Warpcast] Creating signer for ${publicKey} with secret length ${process.env.WARPCAST_DC_SECRET.length} and App FID ${requestFid}`);
+        console.log(`[Warpcast] Creating signer for ${publicKey} with App FID ${requestFid}`);
 
         const response = await fetch(`${WARPCAST_API_BASE}/signed-key-requests`, {
             method: 'POST',
@@ -152,7 +188,13 @@ export async function createSignedKeyRequest(publicKey: string, name: string = '
                 'Authorization': `Bearer ${process.env.WARPCAST_DC_SECRET}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ key: publicKey, name, requestFid })
+            body: JSON.stringify({
+                key: publicKey,
+                name,
+                requestFid,
+                deadline,
+                signature
+            })
         });
 
         const data = await response.json();
