@@ -135,8 +135,15 @@ export async function createSignedKeyRequest(publicKey: string, name: string = '
         throw new Error("Server Error: Missing WARPCAST_DC_SECRET");
     }
 
+    if (!process.env.WARPCAST_APP_FID) {
+        console.error('[Warpcast] Missing WARPCAST_APP_FID');
+        throw new Error("Server Error: Missing WARPCAST_APP_FID");
+    }
+
+    const requestFid = parseInt(process.env.WARPCAST_APP_FID, 10);
+
     try {
-        console.log(`[Warpcast] Creating signer for ${publicKey} with secret length ${process.env.WARPCAST_DC_SECRET.length}`);
+        console.log(`[Warpcast] Creating signer for ${publicKey} with secret length ${process.env.WARPCAST_DC_SECRET.length} and App FID ${requestFid}`);
 
         const response = await fetch(`${WARPCAST_API_BASE}/signed-key-requests`, {
             method: 'POST',
@@ -144,7 +151,7 @@ export async function createSignedKeyRequest(publicKey: string, name: string = '
                 'Authorization': `Bearer ${process.env.WARPCAST_DC_SECRET}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ key: publicKey, name })
+            body: JSON.stringify({ key: publicKey, name, requestFid })
         });
 
         const data = await response.json();
