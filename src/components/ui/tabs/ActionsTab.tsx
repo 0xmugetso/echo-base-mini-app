@@ -1,4 +1,6 @@
 'use client';
+// Force redeploy with type fixes
+
 
 import { useState, useEffect } from 'react';
 import { RetroWindow } from '../RetroWindow';
