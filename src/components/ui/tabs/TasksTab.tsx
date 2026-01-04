@@ -407,13 +407,13 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
               )}
               {/* Onchain Row if present */}
               {profile?.onchainScore && profile.onchainScore > 0 && (
-                <tr className="bg-primary/10 border-t-2 border-primary/20">
-                  <td className="py-2 pl-2 text-primary font-bold">LEGACY</td>
+                <tr className="bg-yellow-500/10 border-t-2 border-yellow-500/20">
+                  <td className="py-2 pl-2 text-yellow-500 font-bold">LEGACY</td>
                   <td className="py-2">
-                    <div className="uppercase font-pixel text-primary">ONCHAIN_REPUTATION</div>
-                    <div className="text-[8px] text-primary/70 italic">Verified wallet activity score</div>
+                    <div className="uppercase font-pixel text-yellow-500">ONCHAIN_REPUTATION</div>
+                    <div className="text-[8px] text-yellow-500/70 italic">Verified wallet activity score</div>
                   </td>
-                  <td className="py-2 text-right pr-2 font-pixel text-primary">
+                  <td className="py-2 text-right pr-2 font-pixel text-yellow-500">
                     +{profile.onchainScore}
                   </td>
                 </tr>
@@ -498,6 +498,24 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* LIMITED MISSION - YELLOW STYLE */}
+          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
+            <div className="flex justify-between items-center relative z-10">
+              <div>
+                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
+                <p className="font-mono text-[10px] text-gray-400 uppercase tracking-tighter">FOLLOW @MUGETSO • +30 PTS</p>
+              </div>
+              <button
+                onClick={() => handleSocialTask('follow_mugetso')}
+                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
+                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500 transition-all shadow-[2px_2px_0_0_#000]"
+              >
+                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? '...' : 'CLAIM')}
+              </button>
             </div>
           </div>
 

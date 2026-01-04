@@ -13,6 +13,9 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
+    const fid = (fidParam && fidParam !== 'undefined') ? parseInt(fidParam) : null;
+    console.log(`[STATS_API] Request for ${address}, FID: ${fid}`);
+
     try {
         await dbConnect();
 
@@ -92,12 +95,13 @@ export async function GET(request: Request) {
 
         // Calculate Real Cast Count using robust pagination
         let realCastCount = 0;
-        if (fidParam) {
+        if (fid) {
             try {
-                realCastCount = await fetchUserCastCount(parseInt(fidParam));
-                console.log(`[API] Robust Cast Count for ${fidParam}: ${realCastCount}`);
+                console.log(`[STATS_API] Fetching robust cast count for FID: ${fid}`);
+                realCastCount = await fetchUserCastCount(fid);
+                console.log(`[STATS_API] Robust Cast Count Result: ${realCastCount}`);
             } catch (e) {
-                console.error("[API] Cast count fetch failed", e);
+                console.error("[STATS_API] Cast count fetch failed", e);
             }
         }
 
@@ -111,9 +115,11 @@ export async function GET(request: Request) {
                 wallet_value_usd: fcWalletValue,
                 holdings: farcasterHoldings.holdings,
                 best_cast: bestCast,
-                cast_count: realCastCount // Use robust count
+                cast_count: Number(realCastCount || 0) // Ensure number
             }
         };
+
+        console.log(`[API] Returning stats for ${address}: Cast Count = ${storageStats.farcaster.cast_count}`);
 
         // 5. Update or Insert DB
         userDoc = await UserStats.findOneAndUpdate(

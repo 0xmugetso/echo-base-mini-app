@@ -303,57 +303,47 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
             )}
           </div>
 
-          {/* HOLDINGS SCROLLER [REFACTORED] */}
-          <div className="flex flex-col gap-4">
-
-            {/* TOKENS SECTION */}
-            <div className="border border-white/20 p-3 relative bg-white/5">
-              <span className="absolute -top-2 left-2 bg-black px-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">TOKEN_CACHE</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {/* Logic: Show owned items with full opacity/color, others dimmed */}
-                {[
-                  { id: 'clanker', label: 'CLANKER', color: 'text-blue-400' },
-                  { id: 'toshi', label: 'TOSHI', color: 'text-cyan-400' },
-                  { id: 'degen', label: 'DEGEN', color: 'text-purple-400' },
-                  { id: 'brett', label: 'BRETT', color: 'text-blue-500' },
-                  { id: 'jesse', label: 'JESSE', color: 'text-green-400' },
-                ].map(token => {
-                  const isOwned = baseStats?.farcaster?.holdings?.[token.id as keyof typeof baseStats.farcaster.holdings];
-                  return (
-                    <div
-                      key={token.id}
-                      className={`px-2 py-1 text-[10px] font-mono border ${isOwned ? `border-white ${token.color} bg-white/10` : 'border-dashed border-gray-700 text-gray-700'}`}
-                    >
-                      {token.label}
-                    </div>
-                  );
-                })}
-              </div>
+          {/* [REDESIGNED] EARNED BADGES SECTION */}
+          <div className="space-y-4 mt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-primary/30" />
+              <h3 className="font-pixel text-xs text-primary uppercase tracking-[0.2em]">EARNED_BADGES</h3>
+              <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-primary/30" />
             </div>
 
-            {/* NFTs SECTION */}
-            <div className="border border-white/20 p-3 relative bg-white/5">
-              <span className="absolute -top-2 left-2 bg-black px-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">NFT_COLLECTION</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {[
-                  { id: 'warplets', label: 'WARPLETS', color: 'text-orange-400' },
-                  { id: 'pro_og', label: 'PRO_OG', color: 'text-yellow-400' },
-                  { id: 'based_punk', label: 'BASED_PUNK', color: 'text-blue-400' },
-                  { id: 'bankr_club', label: 'BANKR', color: 'text-red-400' },
-                ].map(nft => {
-                  const isOwned = baseStats?.farcaster?.holdings?.[nft.id as keyof typeof baseStats.farcaster.holdings];
-                  return (
-                    <div
-                      key={nft.id}
-                      className={`px-2 py-1 text-[10px] font-mono border ${isOwned ? `border-white ${nft.color} bg-white/10` : 'border-dashed border-gray-700 text-gray-700'}`}
-                    >
-                      {nft.label}
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { id: 'clanker', label: 'CLANKER', color: 'from-blue-600 to-blue-900', icon: '⚡' },
+                { id: 'toshi', label: 'TOSHI', color: 'from-cyan-500 to-cyan-800', icon: '🐱' },
+                { id: 'degen', label: 'DEGEN', color: 'from-purple-600 to-purple-900', icon: '🎩' },
+                { id: 'pro_og', label: 'PRO_OG', color: 'from-yellow-500 to-yellow-800', icon: '👑' },
+                { id: 'warplets', label: 'WARP', color: 'from-orange-500 to-orange-800', icon: '🌀' },
+                { id: 'based_punk', label: 'PUNK', color: 'from-blue-400 to-blue-700', icon: '🎸' },
+                { id: 'bankr_club', label: 'BANKR', color: 'from-red-500 to-red-800', icon: '🏦' },
+                { id: 'jesse', label: 'JESSE', color: 'from-green-500 to-green-800', icon: '✨' },
+              ].map((badge) => {
+                const isOwned = baseStats?.farcaster?.holdings?.[badge.id as keyof typeof baseStats.farcaster.holdings];
+                return (
+                  <div
+                    key={badge.id}
+                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-500 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_10px_rgba(255,255,255,0.2)]` : 'border-white/10 bg-black grayscale opacity-40'}`}
+                  >
+                    {/* Badge Shine */}
+                    {isOwned && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+
+                    <span className="text-lg">{badge.icon}</span>
+                    <span className="text-[7px] font-pixel text-center px-1 leading-tight">{badge.label}</span>
+
+                    {!isOwned && <div className="absolute inset-0 flex items-center justify-center"><span className="text-[10px] opacity-20">?</span></div>}
+                  </div>
+                );
+              })}
             </div>
 
+            <p className="text-[8px] text-center text-gray-600 font-mono uppercase tracking-widest leading-relaxed">
+              Tokens & Collections detected via Base Network indexing.<br />
+              Hold 10,000+ units or specific NFTs to unlock.
+            </p>
           </div>
         </div>
       </RetroWindow>

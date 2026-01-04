@@ -209,7 +209,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     })
                 });
                 const data = await res.json();
-                if (data.profile) setCalculatedPoints(data.profile.points);
+                if (data.profile) {
+                    setCalculatedPoints((data.profile.points || 0) + (data.profile.onchainScore || 0));
+                }
             } catch (e) {
                 console.error("Calculation Error", e);
             }
@@ -660,10 +662,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const renderStep4 = () => (
         <div className="flex flex-col h-full bg-black text-white items-center justify-center p-6 relative">
             <div className="text-center space-y-8 z-10 w-full max-w-sm">
-                <h2 className="text-3xl font-pixel animate-pulse uppercase">CALCULATING_ECHO</h2>
-                <div className="border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')]">
-                    <p className="font-mono text-xs text-gray-400 mb-2 uppercase">INITIAL_POINTS</p>
-                    <div className="text-8xl font-pixel text-primary">{Math.floor(animPoints)}</div>
+                <h2 className="text-3xl font-pixel animate-pulse uppercase text-primary">CALCULATING_ECHO_POWER</h2>
+                <div className="border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')] relative">
+                    <div className="absolute -top-3 left-4 bg-black px-2 text-[10px] text-gray-400 uppercase font-mono">Total Echo Power</div>
+                    <div className="text-8xl font-pixel text-white text-shadow-glow">
+                        {Math.floor(animPoints)}
+                    </div>
+                    <p className="mt-4 text-[10px] text-gray-500 font-mono uppercase">Earned Points + Onchain reputation</p>
                 </div>
                 {calculatedPoints !== null && (
                     <button onClick={() => setStep(5)} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">ENTER ECHO OS {'>'}</button>
