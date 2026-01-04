@@ -7,6 +7,7 @@ import { Footer } from "~/components/ui/Footer";
 import { HomeTab, ActionsTab, TasksTab, WalletTab } from "~/components/ui/tabs";
 import { USE_WALLET } from "~/lib/constants";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
+import { useNeynarUser } from "../hooks/useNeynarUser";
 
 export enum Tab {
   Home = "home",
