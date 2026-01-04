@@ -104,6 +104,23 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+
+  const fetchProfile = async () => {
+    const targetFid = neynarUser?.fid || context?.user?.fid;
+    if (!targetFid) return;
+    try {
+      const res = await fetch(`/api/echo/profile?fid=${targetFid}`);
+      const data = await res.json();
+      if (data && !data.error) setProfile(data);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    const interval = setInterval(fetchProfile, 30000); // Sync every 30s
+    return () => clearInterval(interval);
+  }, [neynarUser?.fid, context?.user?.fid]);
 
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0];
   const address =
@@ -355,6 +372,58 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
             </div>
 
           </div>
+        </div>
+      </RetroWindow>
+
+      {/* POINTS HISTORY TABLE */}
+      <RetroWindow title="POINTS_LOG.HIST" icon={<span className="text-primary text-xs mr-2">Σ</span>}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b-2 border-white/20 text-[10px] font-mono text-gray-500 uppercase">
+                <th className="py-2 pl-2">DATE</th>
+                <th className="py-2">ACTIVITY</th>
+                <th className="py-2 text-right pr-2">PTS</th>
+              </tr>
+            </thead>
+            <tbody className="text-[11px] font-mono">
+              {profile?.dailyActions?.pointsHistory?.length > 0 ? (
+                profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-2 pl-2 text-gray-400">
+                      {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
+                    </td>
+                    <td className="py-2">
+                      <div className="uppercase font-bold text-white">{item.action.replace(/_/g, ' ')}</div>
+                      <div className="text-[8px] text-gray-500 italic lowercase">{item.description}</div>
+                    </td>
+                    <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
+                      +{item.points}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
+                    NO_HISTORY_FOUND
+                  </td>
+                </tr>
+              )}
+              {/* Onchain Row if present */}
+              {profile?.onchainScore > 0 && (
+                <tr className="bg-primary/10 border-t-2 border-primary/20">
+                  <td className="py-2 pl-2 text-primary font-bold">LEGACY</td>
+                  <td className="py-2">
+                    <div className="uppercase font-pixel text-primary">ONCHAIN_REPUTATION</div>
+                    <div className="text-[8px] text-primary/70">calculated based on wallet age & activity</div>
+                  </td>
+                  <td className="py-2 text-right pr-2 font-pixel text-primary">
+                    +{profile.onchainScore}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </RetroWindow>
     </div>

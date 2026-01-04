@@ -17,7 +17,7 @@ type Profile = {
   dailyActions: { lastCastDate: string; completedTasks: string[] };
 };
 
-export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: any }) {
+export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -292,14 +292,9 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
   // --- RENDER HELPERS ---
   const isCheckedInToday = () => {
     if (!profile?.streak?.lastCheckIn) return false;
-    const last = new Date(profile.streak.lastCheckIn);
-    const now = new Date();
-
-    // Compare UTC Date strings (YYYY-MM-DD)
-    const lastDate = `${last.getUTCFullYear()}-${last.getUTCMonth()}-${last.getUTCDate()}`;
-    const nowDate = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
-
-    return lastDate === nowDate;
+    const last = new Date(profile.streak.lastCheckIn).toISOString().split('T')[0];
+    const now = new Date().toISOString().split('T')[0];
+    return last === now;
   };
 
   const BoxButton = ({ day, label }: { day: number, label: string }) => {
@@ -438,17 +433,28 @@ export function TasksTab({ context, neynarUser }: { context?: any, neynarUser?: 
           </div>
 
           {/* Daily Echo Cast */}
-          <div className="border-2 border-white bg-black p-4 flex justify-between items-center relative overflow-hidden">
+          <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
             <div>
               <h3 className="font-pixel text-lg text-white">DAILY_ECHO</h3>
-              <p className="font-mono text-[10px] text-gray-400">+10 PTS • CAST ON FARCASTER</p>
+              <p className="font-mono text-[10px] text-gray-400">+5-10 PTS • CAST ON FARCASTER</p>
             </div>
-            <button
-              onClick={() => alert("Check 'Actions' Tab to Cast!")}
-              className="px-4 py-2 font-pixel text-xs border border-gray-500 text-gray-500 cursor-not-allowed"
-            >
-              GO TO ACTIONS
-            </button>
+            <div className="flex flex-col items-end gap-2 min-w-[120px]">
+              {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
+                <>
+                  <button disabled className="w-full px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
+                    COMPLETED
+                  </button>
+                  <RetroTimer />
+                </>
+              ) : (
+                <button
+                  onClick={() => setActiveTab?.('actions')}
+                  className="w-full px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black"
+                >
+                  GO TO CAST
+                </button>
+              )}
+            </div>
           </div>
 
           {/* SOCIAL TASKS */}

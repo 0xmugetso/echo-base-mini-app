@@ -49,6 +49,14 @@ export async function POST(request: Request) {
         // Grant Reward
         profile.points += points;
         profile.rewards.claimedBoxes[claimKey] = true;
+
+        profile.dailyActions.pointsHistory.push({
+            action: `box_day${day}`,
+            points: points,
+            date: new Date(),
+            description: `Opened Day ${day} Mystery Box (${tier})`
+        });
+
         await profile.save();
 
         return NextResponse.json({

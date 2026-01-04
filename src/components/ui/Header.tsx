@@ -29,7 +29,8 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
         const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
         const data = await res.json();
         if (data && data.points !== undefined) {
-          setEchoPoints(data.points);
+          const total = (Number(data.points) || 0) + (Number(data.onchainScore) || 0);
+          setEchoPoints(total);
         }
       } catch (e) {
         console.error("Points fetch failed", e);

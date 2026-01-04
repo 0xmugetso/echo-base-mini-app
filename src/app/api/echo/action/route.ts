@@ -47,6 +47,12 @@ export async function POST(request: Request) {
                 likes: 0,
                 recasts: 0
             });
+            profile.dailyActions.pointsHistory.push({
+                action: 'daily_cast',
+                points: points,
+                date: new Date(),
+                description: 'Daily Cast on Farcaster'
+            });
         }
 
         // Generic Task Logic
@@ -79,6 +85,12 @@ export async function POST(request: Request) {
 
             points = 30;
             profile.dailyActions.completedTasks.push('follow_mugetso');
+            profile.dailyActions.pointsHistory.push({
+                action: 'follow_mugetso',
+                points: points,
+                date: new Date(),
+                description: 'Followed @mugetso'
+            });
         }
         else if (actionType === 'follow_echo' || actionType === 'follow_khash') {
             if (profile.dailyActions.completedTasks.includes(actionType)) {
@@ -86,6 +98,12 @@ export async function POST(request: Request) {
             }
             points = 50;
             profile.dailyActions.completedTasks.push(actionType);
+            profile.dailyActions.pointsHistory.push({
+                action: actionType,
+                points: points,
+                date: new Date(),
+                description: `Followed @${actionType === 'follow_echo' ? 'echo' : 'khash'}`
+            });
         }
 
         if (points > 0) {

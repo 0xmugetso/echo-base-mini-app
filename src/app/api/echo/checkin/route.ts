@@ -14,15 +14,13 @@ export async function POST(request: Request) {
         await dbConnect();
         const profile = await EchoProfile.findOne({ fid });
 
-        if (!profile) {
-            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-        }
-
         const now = new Date();
         const lastCheckIn = profile.streak.lastCheckIn ? new Date(profile.streak.lastCheckIn) : null;
+        const nowUtcStr = now.toISOString().split('T')[0];
+        const lastUtcStr = lastCheckIn ? lastCheckIn.toISOString().split('T')[0] : null;
 
         // Check if already checked in today (UTC)
-        if (lastCheckIn && lastCheckIn.toDateString() === now.toDateString()) {
+        if (lastUtcStr === nowUtcStr) {
             return NextResponse.json({ error: 'Already checked in today', profile }, { status: 400 });
         }
 
@@ -51,6 +49,13 @@ export async function POST(request: Request) {
         profile.points += points;
         profile.pointsGrinded = (profile.pointsGrinded || 0) + points;
 
+        profile.dailyActions.pointsHistory.push({
+            action: 'checkin',
+            points: points,
+            date: now,
+            description: `Daily Check-in (Streak: ${newStreak})`
+        });
+
         // Activate Referral if pending
         let bonusPoints = 0;
         if (profile.referralStatus === 'pending') {
@@ -59,6 +64,12 @@ export async function POST(request: Request) {
             if (profile.referredBy) {
                 bonusPoints = 20;
                 profile.points += bonusPoints;
+                profile.dailyActions.pointsHistory.push({
+                    action: 'referral_activation',
+                    points: bonusPoints,
+                    date: now,
+                    description: 'New User Referral Bonus'
+                });
                 console.log(`[CHECKIN] Activating referral bonus for FID ${fid}: +20pts`);
             }
         }

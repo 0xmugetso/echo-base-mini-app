@@ -199,15 +199,28 @@ export async function POST(request: Request) {
             // I'll assume we return it and the frontend manages the display sum.
 
             // SAVE STATS
-            if (realCastCount > 0) {
-                profile.castCount = realCastCount;
+            // NEW: Persist Onchain Score
+            profile.onchainScore = Math.floor(onchainScore);
+
+            // Logic to award Welcome Points if this is the first calculation
+            if (!profile.dailyActions.completedTasks.includes('welcome_bonus')) {
+                const welcomePoints = 50;
+                profile.points += welcomePoints;
+                profile.pointsGrinded = (profile.pointsGrinded || 0) + welcomePoints;
+                profile.dailyActions.completedTasks.push('welcome_bonus');
+                profile.dailyActions.pointsHistory.push({
+                    action: 'welcome_bonus',
+                    points: welcomePoints,
+                    date: new Date(),
+                    description: 'Welcome Bonus for Joining Echo'
+                });
             }
 
             await profile.save();
             return NextResponse.json({
                 profile,
                 calculated: true,
-                onchainScore: Math.floor(onchainScore),
+                onchainScore: profile.onchainScore,
                 realCastCount
             });
         }

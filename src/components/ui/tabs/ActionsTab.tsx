@@ -7,6 +7,7 @@ import { RetroWindow } from '../RetroWindow';
 import { RetroBanner } from '../RetroBanner';
 import Image from 'next/image';
 import { useToast } from '../ToastProvider';
+import { RetroTimer } from '../RetroTimer';
 
 type ActionTabProps = {
   context?: any;
@@ -209,7 +210,10 @@ export function ActionsTab({ context }: ActionTabProps) {
                   <span className="text-xs">↗</span>
                 </button>
 
-                <p className="text-[10px] text-gray-500 mt-4">NEXT MISSION: 24H</p>
+                <p className="text-[10px] text-gray-500 mt-4 uppercase">NEXT_MISSION_IN:</p>
+                <div className="flex justify-center mt-1">
+                  <RetroTimer />
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

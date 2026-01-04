@@ -553,7 +553,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     </div>
                 </div>
 
-                {isNewUser && (
+                {!isNewUser ? (
+                    <div className="bg-black border-2 border-primary p-4 text-center space-y-2 shadow-[4px_4px_0_0_theme('colors.primary')]">
+                        <div className="text-primary text-xl font-pixel animate-pulse">WELCOME_BACK</div>
+                        <p className="text-[10px] text-gray-400 font-mono uppercase italic">SYSTEM RECOGNIZES YOUR SIGNATURE.</p>
+                    </div>
+                ) : (
                     <div className="space-y-3">
                         <div className="text-center">
                             <p className="font-pixel text-[10px] text-primary mb-2 uppercase tracking-tight">ENTER_INVITE_CODE_FOR_+20_PTS</p>
@@ -594,7 +599,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     );
 
     const renderStep2 = () => (
-        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-8 relative overflow-hidden">
+        <div className="flex flex-col h-full bg-black text-white p-8 items-center justify-center space-y-6 relative overflow-hidden">
             {/* Inline Glitch Keyframes */}
             <style>{`
                 @keyframes glitch {
@@ -606,6 +611,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     100% { transform: translate(0) }
                 }
             `}</style>
+
+            <div className="w-full max-w-sm mb-4 animate-in fade-in slide-in-from-top duration-500">
+                <RetroBanner src="/assets/banner_hand.jpg" alt="Neural Link" />
+            </div>
 
             <div className="space-y-4 text-center relative z-10">
                 {/* Glitch Animated Logo */}
@@ -622,7 +631,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             <div className="w-full max-w-xs border-4 border-white p-2 bg-black shadow-[8px_8px_0_0_#fff]">
                 <div className="h-6 w-full flex gap-1">
                     {Array.from({ length: 20 }).map((_, i) => (
-                        <div key={i} className={`flex-1 h-full ${loadProgress > (i * 5) ? 'bg-primary' : 'bg-[#111]'}`} />
+                        <div key={i} className={`flex-1 h-full transition-all duration-500 ${loadProgress > (i * 5) ? 'bg-primary' : 'bg-[#111]'}`} />
                     ))}
                 </div>
             </div>

@@ -5,6 +5,7 @@ export interface IEchoProfile {
     username?: string;
     address: string;
     points: number;
+    onchainScore?: number;
     castCount?: number;
 
     // Streak Info
@@ -49,6 +50,12 @@ export interface IEchoProfile {
             likes?: number;
             recasts?: number;
         }[];
+        pointsHistory?: {
+            action: string;
+            points: number;
+            date: Date;
+            description: string;
+        }[];
     };
 
     lastUpdated: Date;
@@ -60,6 +67,7 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
         username: { type: String, default: null },
         address: { type: String, required: true }, // Verified address from context
         points: { type: Number, default: 0 },
+        onchainScore: { type: Number, default: 0 },
         castCount: { type: Number, default: 0 }, // Synced from Neynar
         // Track points earned strictly from actions for referral calc
         pointsGrinded: { type: Number, default: 0 },
@@ -104,6 +112,12 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
                 points: Number,
                 likes: { type: Number, default: 0 },
                 recasts: { type: Number, default: 0 }
+            }],
+            pointsHistory: [{
+                action: String,
+                points: Number,
+                date: { type: Date, default: Date.now },
+                description: String
             }]
         },
 

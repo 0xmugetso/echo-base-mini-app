@@ -11,7 +11,7 @@
         "homeUrl": "https://echo-base-mini-app.vercel.app",
         "imageUrl": "https://echo-base-mini-app.vercel.app/assets/banner_skull.jpg",
         "buttonTitle": "Launch Echo",
-        "splashImageUrl": "https://echo-base-mini-app.vercel.app/echo-logo.png",
+        "splashImageUrl": "https://echo-base-mini-app.vercel.app/splash.png",
         "splashBackgroundColor": "#000000",
         "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook"
     }
