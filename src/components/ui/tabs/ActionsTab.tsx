@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { RetroWindow } from '../RetroWindow';
 import { RetroBanner } from '../RetroBanner';
-import { useFarcasterSigner } from '~/hooks/useFarcasterSigner';
 import Image from 'next/image';
 import { useToast } from '../ToastProvider';
 
@@ -13,13 +12,11 @@ type ActionTabProps = {
 
 export function ActionsTab({ context }: ActionTabProps) {
   const [castText, setCastText] = useState('');
-  const [status, setStatus] = useState<'IDLE' | 'VALIDATING' | 'PUBLISHING' | 'CLAIMING' | 'SUCCESS'>('IDLE');
+  const [status, setStatus] = useState<'IDLE' | 'VALIDATING' | 'PUBLISHING' | 'AWAITING_VERIFICATION' | 'CLAIMING' | 'SUCCESS'>('IDLE');
   const [lastCast, setLastCast] = useState<any>(null);
   const [viewHistory, setViewHistory] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const { signer, signerStatus, createSigner } = useFarcasterSigner(); // Changed hook
   const { toast } = useToast();
 
   // Limits
@@ -57,10 +54,7 @@ export function ActionsTab({ context }: ActionTabProps) {
     } catch (e) { console.error("Failed to load history", e); }
   };
 
-  const handlePublish = async () => {
-    // DEBUG: Confirm click
-    console.log("Publish clicked. Valid:", isValid, "Signer:", signerStatus);
-
+  const handleCompose = () => {
     if (!isValid) {
       if (!isLengthValid) toast(`Length invalid: ${length} chars (Need ${MIN_CHARS}-${MAX_CHARS})`, "ERROR");
       else if (!hasTag) toast("Missing @base tag!", "ERROR");
@@ -68,88 +62,60 @@ export function ActionsTab({ context }: ActionTabProps) {
       return;
     }
 
-    // 1. Check Signer
-    if (signerStatus.status !== 'approved' || !signer) {
-      toast("Signer required. Please connect above.", "INFO");
-      if (signerStatus.status !== 'pending_approval') {
-        await createSigner();
-      }
-      return;
+    const encodedText = encodeURIComponent(castText);
+    const url = `https://warpcast.com/~/compose?text=${encodedText}&channelKey=base`; // Pre-fill channel if possible, or just text
+
+    // Open Deep Link
+    if ((window as any).farcaster?.actions?.openUrl) {
+      (window as any).farcaster.actions.openUrl(url);
+    } else {
+      window.open(url, '_blank');
     }
 
-    setStatus('PUBLISHING');
-    toast("INITIATING BROADCAST...", "PROCESS");
+    setStatus('AWAITING_VERIFICATION');
+  };
+
+  const handleVerify = async () => {
+    setStatus('VALIDATING');
+    toast("SCANNING ETHER FOR SIGNAL...", "PROCESS");
 
     try {
-      // 2. Sign and Publish to Farcaster via Backend
-      // We need to construct the cast add message locally
-      const { makeCastAdd, CastType } = await import('@farcaster/core');
+      if (!context?.user?.fid) throw new Error("User FID missing");
 
-      // Need user FID from status
-      if (!signerStatus.fid) throw new Error("Signer FID missing");
+      // Fetch recent casts
+      const res = await fetch(`/api/warpcast/casts/${context.user.fid}`);
+      const data = await res.json();
 
-      // Construct Cast
-      const castAdd = await makeCastAdd({
-        text: castText,
-        embeds: [],
-        embedsDeprecated: [],
-        mentions: [],
-        mentionsPositions: [],
-        parentUrl: 'https://warpcast.com/~/channel/base',
-        type: CastType.CAST,
-      }, {
-        fid: signerStatus.fid,
-        network: 1, // Mainnet
-      }, signer);
-
-      if (castAdd.isErr()) {
-        throw new Error("Failed to sign cast: " + castAdd.error.message);
+      if (!data.casts || data.casts.length === 0) {
+        throw new Error("No recent casts found on Warpcast.");
       }
 
-      const message = castAdd.value;
-      // Convert message to hex or JSON to send to API
-      // Our API at /api/warpcast/cast needs to support receiving a signed message OR we can just use the generic one if we trust the server.
-      // BUT WAIT: The server 'publishWarpcastCast' uses the App Secret directly if no signature provided?
-      // No, the previous implementation of publishWarpcastCast tried to just POST body. 
-      // To strictly follow "Native Signer", we should POST the SIGNED MESSAGE to the Hub.
-      // But we don't have a Hub proxy set up. Warpcast API v2 accepts signed messages?
-      // Actually, standard practice is: Miniapp -> Sign -> Backend -> Submit to Hub.
-      // Or: Miniapp -> Sign -> Submit to Hub (if public/CORS allowed).
+      // Find match
+      // Logic: Look for a cast by this user created in the last 5 minutes that contains our required tags
+      // We can also try to match the exact text, but user might have edited it slightly. 
+      // Sticking to required tags + length check + recent time is safer/friendlier.
+      const fiveColorsAgo = Date.now() - 5 * 60 * 1000;
 
-      // Let's modify the backend to accept the signed message and post it relative to the user?
-      // OR simpler: Since we have the App Secret, maybe we CAN just post simple text? 
-      // The user specifically said "go through the entire suggested flow... not neynar". Suggested flow uses local key.
+      const match = data.casts.find((c: any) => {
+        const cTime = new Date(c.timestamp).getTime(); // Warpcast timestamp might be seconds or ms? Usually ms in these SDKs but API might be different. 
+        // API v2 casts timestamp is usually epoch milliseconds. 
+        // Wait, API v2 timestamp is usually NOT unix ms? Check definition. 
+        // Usually it is. Let's assume ms.
 
-      // So we must submit the signed message.
-      // I will send the `Message` object to a new API endpoint handling signed messages, or update the existing one.
-
-      // For now, let's assume we update `/api/warpcast/cast` to accept `signedMessage`.
-
-      // Convert BigInts to string for JSON serialization
-      const serializedMessage = JSON.parse(JSON.stringify(message, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-      ));
-
-      const castRes = await fetch('/api/warpcast/cast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signedMessage: serializedMessage
-        })
+        const isRecent = c.timestamp > fiveColorsAgo;
+        const text = c.text || '';
+        const hasTags = text.toLowerCase().includes('@base') && text.toLowerCase().includes('#echocast');
+        return isRecent && hasTags;
       });
 
-      const castData = await castRes.json();
-
-      if (!castData.success || !castData.hash) {
-        throw new Error(castData.error || "Unknown Cast Error");
+      if (!match) {
+        throw new Error("Cast verify failed. Did you post it? Wait 10s & try again.");
       }
 
-      const txHash = castData.hash;
       setStatus('CLAIMING');
-      toast("CAST SENT! VERIFYING REWARD...", "PROCESS");
+      const txHash = match.hash;
 
-      // 3. Claim Points
-      // Calculate score based on user effort
+      // Claim Points
       const lengthScore = castText.length > 200 ? 5 : 3;
       const tagScore = (castText.includes('@base') ? 2 : 0) + (castText.includes('#echocast') ? 3 : 0);
       const score = Math.min(10, lengthScore + tagScore);
@@ -161,42 +127,30 @@ export function ActionsTab({ context }: ActionTabProps) {
           fid: context?.user?.fid,
           actionType: 'daily_cast',
           castHash: txHash,
-          castText: castText,
+          castText: match.text, // Use actual text posted
           castScore: score
         })
       });
 
-      const data = await claimRes.json();
-      if (data.success) {
+      const claimData = await claimRes.json();
+      if (claimData.success) {
         setStatus('SUCCESS');
-        setLastCast({ points: score, hash: txHash, text: castText });
+        setLastCast({ points: score, hash: txHash, text: match.text });
         fetchHistory();
         toast(`MISSION COMPLETE! +${score} PTS`, "SUCCESS");
       } else {
-        console.error(data.error);
-        setStatus('IDLE');
-        toast("Verification Failed: " + data.error, "ERROR");
+        throw new Error(claimData.error);
       }
 
     } catch (e: any) {
       console.error(e);
-      setStatus('IDLE');
-      toast("TRANSMISSION FAILED: " + (e.message || "Unknown error"), "ERROR");
+      setStatus('AWAITING_VERIFICATION'); // Go back to verify state
+      toast(e.message || "Verification Failed", "ERROR");
     }
   };
 
-  const calculateScore = () => {
-    // Simple logic: 10 pts + bonus for perfect length
-    /* 
-    User Req: "score (1-10)"
-    Let's make it 8 base + 2 for using keywords. 
-    */
-    return 10;
-  }
-
   const handleShare = () => {
     const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-base-mini-app.vercel.app`;
-    // Use intent
     window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
@@ -244,76 +198,18 @@ export function ActionsTab({ context }: ActionTabProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                {signerStatus.status !== 'approved' && (
-                  <div className={`p-3 border-2 ${signerStatus.status === 'pending_approval' ? 'border-yellow-500 bg-yellow-900/20' : 'border-red-900 bg-red-900/10'} mb-4`}>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-pixel text-xs text-gray-400">SIGNER_STATUS</span>
-                      <span className={`font-mono text-xs ${signerStatus.status === 'pending_approval' ? 'text-yellow-500 animate-pulse' : 'text-red-500'}`}>
-                        {signerStatus.status === 'pending_approval' ? 'PENDING APPROVAL' : 'DISCONNECTED'}
-                      </span>
-                    </div>
 
-                    {signerStatus.status === 'pending_approval' && signerStatus.approval_url ? (
-                      <button
-                        onClick={async () => {
-                          // Reference Implementation Logic
-                          // Use sdk.actions.openUrl for better mini-app support
-                          // And replace the deeplink scheme if needed
-                          const url = signerStatus.approval_url;
-                          if (!url) {
-                            console.error("No approval URL found");
-                            return;
-                          }
-                          console.log("Opening approval URL:", url);
-
-                          try {
-                            // Try SDK Action first (if in mini-app)
-                            // Replace strictly as per reference if it matches the pattern
-                            const targetUrl = url.includes('client.farcaster.xyz')
-                              ? url.replace('https://client.farcaster.xyz/deeplinks/signed-key-request', 'https://farcaster.xyz/~/connect')
-                              : url;
-
-                            if ((window as any).farcaster?.actions?.openUrl) {
-                              await (window as any).farcaster.actions.openUrl(targetUrl);
-                            } else {
-                              window.open(targetUrl, '_blank');
-                            }
-                          } catch (e) {
-                            console.error("Open URL failed", e);
-                            window.open(url, '_blank'); // Fallback
-                            toast("Redirect failed: " + (e as any).message, "ERROR");
-                          }
-                        }}
-                        className="w-full py-3 bg-yellow-500 text-black font-pixel text-sm hover:bg-yellow-400 animate-pulse"
-                      >
-                        TAP TO APPROVE ACCESS
-                      </button>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          setIsLoading(true);
-                          toast("Requesting Access...", "PROCESS");
-                          await createSigner();
-                          setIsLoading(false);
-                        }}
-                        className="w-full py-2 border border-dashed border-gray-600 text-gray-400 font-pixel text-xs hover:border-white hover:text-white"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'GENERATING...' : 'REQUEST PERMISSION'}
-                      </button>
-                    )}
-                  </div>
-                )}
+                {/* REMOVED SIGNER STATUS BLOCK */}
 
                 {/* INPUT */}
                 <div className="relative group">
                   <textarea
                     value={castText}
                     onChange={(e) => setCastText(e.target.value)}
-                    disabled={status !== 'IDLE'}
+                    disabled={status === 'SUCCESS'}
                     placeholder="TYPE YOUR ECHO..."
                     className="w-full h-32 bg-black border-2 border-gray-800 p-4 font-mono text-white focus:border-primary focus:outline-none resize-none"
-                    maxLength={MAX_CHARS} // Changed to MAX_CHARS for consistency
+                    maxLength={MAX_CHARS}
                   />
                   {/* Char Count */}
                   <div className={`absolute bottom-2 right-2 text-[10px] font-bold ${isLengthValid ? 'text-primary' : 'text-red-500'}`}>
@@ -334,17 +230,41 @@ export function ActionsTab({ context }: ActionTabProps) {
                   </div>
                 </div>
 
-                {/* SUBMIT BUTTON */}
-                <button
-                  onClick={handlePublish}
-                  disabled={!isValid || status !== 'IDLE'}
-                  className={`relative w-full py-4 font-pixel text-sm uppercase transition-all ${isValid && status === 'IDLE'
-                    ? 'bg-primary text-white hover:brightness-110 shadow-[0_0_10px_theme(\'colors.primary\')]'
-                    : 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800'
-                    }`}
-                >
-                  {status === 'IDLE' ? (isValid ? 'TRANSMIT_CAST' : 'AWAITING_INPUT') : status === 'PUBLISHING' ? 'BROADCASTING...' : 'VERIFYING...'}
-                </button>
+                {/* BUTTONS */}
+                {status === 'IDLE' ? (
+                  <button
+                    onClick={handleCompose}
+                    disabled={!isValid}
+                    className={`relative w-full py-4 font-pixel text-sm uppercase transition-all ${isValid
+                      ? 'bg-primary text-white hover:brightness-110 shadow-[0_0_10px_theme(\'colors.primary\')]'
+                      : 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800'
+                      }`}
+                  >
+                    COMPOSE ON WARPCAST ↗
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-center text-[10px] text-gray-400 font-mono mb-2">
+                      Step 1: Post on Warpcast <br /> Step 2: Click Verify
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCompose}
+                        className="flex-1 py-3 bg-gray-800 text-gray-300 font-pixel text-xs hover:bg-gray-700"
+                      >
+                        Re-Open Warpcast
+                      </button>
+                      <button
+                        onClick={handleVerify}
+                        disabled={status === 'VALIDATING'}
+                        className="flex-[2] py-3 bg-green-600 text-white font-pixel text-xs hover:bg-green-500 animate-pulse"
+                      >
+                        {status === 'VALIDATING' ? 'SCANNING...' : 'VERIFY CAST'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
 
