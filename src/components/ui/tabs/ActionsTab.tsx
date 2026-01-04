@@ -208,7 +208,7 @@ export function ActionsTab({ context }: ActionTabProps) {
                   <textarea
                     value={castText}
                     onChange={(e) => setCastText(e.target.value)}
-                    disabled={status === 'SUCCESS'}
+                    disabled={status !== 'IDLE' && status !== 'AWAITING_VERIFICATION'}
                     placeholder="TYPE YOUR ECHO..."
                     className="w-full h-32 bg-black border-2 border-gray-800 p-4 font-mono text-white focus:border-primary focus:outline-none resize-none"
                     maxLength={MAX_CHARS}
