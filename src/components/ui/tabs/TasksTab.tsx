@@ -389,230 +389,103 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
         </div>
       </div>
 
-      {/* POINTS HISTORY TABLE - RIGHT AFTER SCORE */}
-      <RetroWindow title="POINTS_LOG.HIST" icon={<span className="text-primary text-xs mr-2">Σ</span>}>
-        <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b-2 border-white/20 text-[10px] font-mono text-gray-500 uppercase">
-                <th className="py-2 pl-2">DATE</th>
-                <th className="py-2">ACTIVITY</th>
-                <th className="py-2 text-right pr-2">PTS</th>
-              </tr>
-            </thead>
-            <tbody className="text-[11px] font-mono">
-              {profile?.dailyActions?.pointsHistory && profile.dailyActions.pointsHistory.length > 0 ? (
-                profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-2 pl-2 text-gray-400">
-                      {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
-                    </td>
-                    <td className="py-2">
-                      <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
-                      <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
-                    </td>
-                    <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
-                      +{item.points}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
-                    NO_HISTORY_FOUND
-                  </td>
-                </tr>
-              )}
-              {/* Onchain Row if present */}
-              {profile?.onchainScore && profile.onchainScore > 0 && (
-                <tr className="bg-yellow-500/10 border-t-2 border-yellow-500/20">
-                  <td className="py-2 pl-2 text-yellow-500 font-bold">LEGACY</td>
-                  <td className="py-2">
-                    <div className="uppercase font-pixel text-yellow-500">ONCHAIN_REPUTATION</div>
-                    <div className="text-[8px] text-yellow-500/70 italic">Verified wallet activity score</div>
-                  </td>
-                  <td className="py-2 text-right pr-2 font-pixel text-yellow-500">
-                    +{profile.onchainScore}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+    </div>
+        </div >
+
+    {/* SOCIAL TASKS */ }
+    < RetroWindow title = "ONE_TIME_QUESTS" icon = "star" >
+      <div className="space-y-4">
+        {/* Follow Echo */}
+        <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+          <div>
+            <p className="font-bold text-xs">FOLLOW @ECHO</p>
+            <p className="text-[9px] text-primary font-mono tracking-widest uppercase">+50 PTS</p>
+          </div>
+          <button
+            onClick={() => handleSocialTask('follow_echo')}
+            disabled={actionLoading === 'follow_echo'}
+            className="px-3 py-1.5 bg-white text-black font-pixel text-[10px] hover:bg-gray-200 transition-colors shadow-[2px_2px_0_0_#ccc]"
+          >
+            {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
+          </button>
         </div>
-      </RetroWindow>
-
-      {/* 2. CALENDAR / REWARD PATH */}
-      <RetroWindow title="MONTHLY_GRID">
-        <div className="p-1">
-          <div className="grid grid-cols-7 gap-1 mb-4">
-            {Array.from({ length: 30 }).map((_, i) => {
-              const dayNum = i + 1;
-              const isActive = dayNum <= (profile?.streak.current || 0);
-
-              return (
-                <div key={i} className={`h-2 w-full ${isActive ? "bg-primary shadow-[0_0_5px_theme('colors.primary')]" : "bg-gray-900"}`} />
-              )
-            })}
+        {/* Follow Dev */}
+        <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+          <div>
+            <p className="font-bold text-xs">FOLLOW @KHASH</p>
+            <p className="text-[9px] text-primary font-mono tracking-widest uppercase">+50 PTS</p>
           </div>
-
-          <p className="font-mono text-[10px] text-center text-gray-400 mb-2">- REWARD MILESTONES -</p>
-          <div className="grid grid-cols-4 gap-2">
-            <BoxButton day={3} label="COMMON" />
-            <BoxButton day={7} label="RARE" />
-            <BoxButton day={14} label="EPIC" />
-            <BoxButton day={30} label="LEGEND" />
-          </div>
-        </div>
-      </RetroWindow>
-
-      {/* 3. DAILY ACTIONS */}
-      <div className="space-y-3">
-        <div className="space-y-3">
-          {/* Daily Tasks Row */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Check In */}
-            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-              <div className="mb-2">
-                <h3 className="font-pixel text-sm text-white">CHECK_IN</h3>
-                <p className="font-mono text-[8px] text-gray-400 uppercase">+10 PTS • TX REQUIRED</p>
-              </div>
-
-              <div className="w-full">
-                {isCheckedInToday() ? (
-                  <div className="space-y-2">
-                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                    <RetroTimer />
-                  </div>
-                ) : (
-                  <button
-                    disabled={actionLoading === 'checkin'}
-                    onClick={handleCheckIn}
-                    className={`w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {actionLoading === 'checkin' ? 'SIGNING' : 'SIGN TX'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Daily Echo Cast */}
-            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-              <div className="mb-2">
-                <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
-                <p className="font-mono text-[8px] text-gray-400 uppercase">+5-10 PTS • CAST</p>
-              </div>
-              <div className="w-full">
-                {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
-                  <div className="space-y-2">
-                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                    <RetroTimer />
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setActiveTab?.('actions')}
-                    className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
-                  >
-                    GO TO CAST
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* LIMITED MISSION - YELLOW STYLE */}
-          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
-            <div className="flex justify-between items-center relative z-10">
-              <div>
-                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
-                <p className="font-mono text-[10px] text-gray-400 uppercase tracking-tighter">FOLLOW @MUGETSO • +30 PTS</p>
-              </div>
-              <button
-                onClick={() => handleSocialTask('follow_mugetso')}
-                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
-                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500 transition-all shadow-[2px_2px_0_0_#000]"
-              >
-                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? '...' : 'CLAIM')}
-              </button>
-            </div>
-          </div>
-
-          {/* [REDESIGNED] EARNED BADGES SECTION */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <h3 className="font-pixel text-[10px] text-primary uppercase tracking-[0.3em] text-shadow-glow">EARNED_REPUTATION</h3>
-              <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
-            </div>
-
-            {/* Badges Grid - Consolidated with more tokens */}
-            <div className="grid grid-cols-4 gap-4 px-2">
-              {[
-                { id: 'clanker', label: 'CLANKER', color: 'from-blue-600 to-blue-900', icon: '⚡' },
-                { id: 'toshi', label: 'TOSHI', color: 'from-cyan-500 to-cyan-800', icon: '🐱' },
-                { id: 'degen', label: 'DEGEN', color: 'from-purple-600 to-purple-900', icon: '🎩' },
-                { id: 'bankr_club', label: 'BANKR', color: 'from-orange-500 to-orange-800', icon: '🌀' },
-                { id: 'jesse', label: 'JESSE', color: 'from-green-500 to-green-800', icon: '✨' },
-                { id: 'brett', label: 'BRETT', color: 'from-blue-400 to-blue-700', icon: '🎸' },
-                { id: 'pro_og', label: 'PRO_OG', color: 'from-yellow-500 to-yellow-800', icon: '👑' },
-                { id: 'warplets', label: 'WARPLETS', color: 'from-orange-600 to-orange-900', icon: '🌀' },
-              ].map((badge) => {
-                // In TasksTab we don't have baseStats directly, we have a profile which doesn't store ALL holdings.
-                // We should probably rely on a baseStats hook here too if we want it live, 
-                // but since it's "Profile", showing what's detected is fine.
-                // For now, I'll add a helper or just check if it's "known" to the app.
-                // Actually, TasksTab should also use useBaseStats for this.
-                return (
-                  <BadgeItem key={badge.id} badge={badge} holdings={baseStats?.farcaster?.holdings || {}} />
-                );
-              })}
-            </div>
-          </div>
-
-          <style>{`
-            @keyframes shimmer {
-              0% { transform: translateX(-150%) skewX(-45deg); }
-              100% { transform: translateX(150%) skewX(-45deg); }
-            }
-          `}</style>
-
-
-          {/* SOCIAL TASKS */}
-          <RetroWindow title="ONE_TIME_QUESTS" icon="star">
-            <div className="space-y-2">
-              {/* Follow Echo */}
-              <div className="flex justify-between items-center border-b border-white/10 pb-2 last:border-0 last:pb-0">
-                <div>
-                  <p className="font-bold text-xs">FOLLOW @ECHO</p>
-                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-                </div>
-                <button
-                  onClick={() => handleSocialTask('follow_echo')}
-                  disabled={actionLoading === 'follow_echo'}
-                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-                >
-                  {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
-                </button>
-              </div>
-              {/* Follow Dev */}
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-xs">FOLLOW @KHASH</p>
-                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-                </div>
-                <button
-                  onClick={() => handleSocialTask('follow_khash')}
-                  disabled={actionLoading === 'follow_khash'}
-                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-                >
-                  {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
-                </button>
-              </div>
-            </div>
-          </RetroWindow>
-
+          <button
+            onClick={() => handleSocialTask('follow_khash')}
+            disabled={actionLoading === 'follow_khash'}
+            className="px-3 py-1.5 bg-white text-black font-pixel text-[10px] hover:bg-gray-200 transition-colors shadow-[2px_2px_0_0_#ccc]"
+          >
+            {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
+          </button>
         </div>
       </div>
-    </div>
+        </RetroWindow >
+
+    {/* POINTS HISTORY TABLE - NOW AT THE BOTTOM */ }
+    < RetroWindow title = "POINTS_LOG.HIST" icon = {< span className = "text-primary text-xs mr-2" > Σ</span >}>
+      <div className="overflow-x-auto max-h-[250px] overflow-y-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b-2 border-white/20 text-[10px] font-mono text-gray-500 uppercase">
+              <th className="py-3 pl-2">DATE</th>
+              <th className="py-3">ACTIVITY</th>
+              <th className="py-3 text-right pr-2">PTS</th>
+            </tr>
+          </thead>
+          <tbody className="text-[11px] font-mono">
+            {profile?.dailyActions?.pointsHistory && profile.dailyActions.pointsHistory.length > 0 ? (
+              profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
+                <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                  <td className="py-3 pl-2 text-gray-400 group-hover:text-white transition-colors">
+                    {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
+                  </td>
+                  <td className="py-3">
+                    <div className="uppercase font-bold text-white leading-tight mb-0.5">{item.action.replace(/_/g, ' ')}</div>
+                    <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[140px] group-hover:text-gray-300">{item.description}</div>
+                  </td>
+                  <td className={`py-3 text-right pr-2 font-pixel text-[#00ff00] text-shadow-glow`}>
+                    +{item.points}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="py-12 text-center text-gray-600 uppercase italic tracking-widest text-[10px]">
+                  NO_HISTORY_LOG_FOUND
+                </td>
+              </tr>
+            )}
+            {/* Onchain Row if present */}
+            {profile?.onchainScore && profile.onchainScore > 0 && (
+              <tr className="bg-yellow-500/5 border-t-2 border-yellow-500/20">
+                <td className="py-3 pl-2 text-yellow-500 font-bold">LEGACY</td>
+                <td className="py-3">
+                  <div className="uppercase font-pixel text-yellow-500">ONCHAIN_REPUTATION</div>
+                  <div className="text-[8px] text-yellow-500/70 italic">Verified wallet activity score</div>
+                </td>
+                <td className="py-3 text-right pr-2 font-pixel text-yellow-500">
+                  +{profile.onchainScore}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+        </RetroWindow >
+
+      </div >
+    </div >
+  );
+}
+
+
+        </div >
+      </div >
+    </div >
   );
 }
