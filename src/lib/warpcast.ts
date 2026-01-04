@@ -236,3 +236,34 @@ export async function getSignedKeyRequestStatus(token: string): Promise<SignedKe
         return null;
     }
 }
+
+/**
+ * Fetches a user's casts from Warpcast API.
+ * @param fid The FID of the user.
+ * @param limit Number of casts to fetch (default 10).
+ */
+export async function getUserCasts(fid: number, limit: number = 10): Promise<PublishCastResponse['result']['cast'][] | null> {
+    try {
+        const url = `${WARPCAST_API_BASE}/casts?fid=${fid}&limit=${limit}`;
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+
+        if (process.env.WARPCAST_DC_SECRET) {
+            headers['Authorization'] = `Bearer ${process.env.WARPCAST_DC_SECRET}`;
+        }
+
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            console.error(`[Warpcast] Failed to fetch user ${fid} casts: ${response.status}`);
+            return null;
+        }
+
+        const data = await response.json();
+        return data.result.casts;
+    } catch (error) {
+        console.error('[Warpcast] Error fetching user casts:', error);
+        return null;
+    }
+}
