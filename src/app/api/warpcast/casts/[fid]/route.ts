@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserCasts } from '~/lib/warpcast';
 
-export async function GET(req: NextRequest, { params }: { params: { fid: string } }) {
-    const fid = parseInt(params.fid, 10);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ fid: string }> }) {
+    const { fid: fidStr } = await params;
+    const fid = parseInt(fidStr, 10);
     if (isNaN(fid)) {
         return NextResponse.json({ error: "Invalid FID" }, { status: 400 });
     }
