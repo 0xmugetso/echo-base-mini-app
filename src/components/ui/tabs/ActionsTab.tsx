@@ -56,7 +56,7 @@ export function ActionsTab({ context }: ActionTabProps) {
     } catch (e) { console.error("Failed to load history", e); }
   };
 
-  const handleCompose = () => {
+  const handleCompose = async () => {
     if (!isValid) {
       if (!isLengthValid) toast(`Length invalid: ${length} chars (Need ${MIN_CHARS}-${MAX_CHARS})`, "ERROR");
       else if (!hasTag) toast("Missing @base tag!", "ERROR");
@@ -64,17 +64,21 @@ export function ActionsTab({ context }: ActionTabProps) {
       return;
     }
 
-    const encodedText = encodeURIComponent(castText);
-    const url = `https://warpcast.com/~/compose?text=${encodedText}&channelKey=base`; // Pre-fill channel if possible, or just text
-
-    // Open Deep Link
-    if ((window as any).farcaster?.actions?.openUrl) {
-      (window as any).farcaster.actions.openUrl(url);
-    } else {
+    try {
+      // Use Frame SDK compose action
+      const sdk = (await import("@farcaster/frame-sdk")).default;
+      await sdk.actions.composeCast({
+        text: castText
+      });
+      setStatus('AWAITING_VERIFICATION');
+    } catch (e) {
+      console.error("SDK Compose failed", e);
+      // Fallback to manual if needed (though user said it redirects to download)
+      const encodedText = encodeURIComponent(castText);
+      const url = `farcaster://compose?text=${encodedText}`;
       window.open(url, '_blank');
+      setStatus('AWAITING_VERIFICATION');
     }
-
-    setStatus('AWAITING_VERIFICATION');
   };
 
   const handleVerify = async () => {

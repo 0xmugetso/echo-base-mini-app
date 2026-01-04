@@ -82,7 +82,7 @@ export default function App(
             <HomeTab neynarUser={neynarUser} context={context} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Actions}>
-            <ActionsTab />
+            <ActionsTab context={context} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Context}>
             <TasksTab context={context} neynarUser={neynarUser} />
