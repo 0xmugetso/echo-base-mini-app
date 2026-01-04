@@ -155,9 +155,18 @@ export function ActionsTab({ context }: ActionTabProps) {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-base-mini-app.vercel.app`;
-    window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}`, '_blank');
+
+    try {
+      const sdk = (await import("@farcaster/frame-sdk")).default;
+      await sdk.actions.composeCast({
+        text: shareText
+      });
+    } catch (e) {
+      console.error("SDK Share failed", e);
+      window.open(`farcaster://compose?text=${encodeURIComponent(shareText)}`, '_blank');
+    }
   };
 
   return (
