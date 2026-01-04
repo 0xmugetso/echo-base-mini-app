@@ -6,7 +6,7 @@ import { Header } from "~/components/ui/Header";
 import { Footer } from "~/components/ui/Footer";
 import { HomeTab, ActionsTab, TasksTab, WalletTab } from "~/components/ui/tabs";
 import { USE_WALLET } from "~/lib/constants";
-import { useNeynarUser } from "../hooks/useNeynarUser";
+import { useBaseStats } from "~/hooks/useCoinBaseData";
 
 export enum Tab {
   Home = "home",
@@ -39,6 +39,14 @@ export default function App(
   } = useMiniApp();
 
   const { user: neynarUser } = useNeynarUser(context || undefined);
+
+  // Address logic
+  const address =
+    (context?.user as any)?.custodyAddress ||
+    (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0] ||
+    "0x6bD8965a5e66EC06c29800Fb3a79B43f56D758cd";
+
+  const { data: baseStats } = useBaseStats(address, context?.user?.fid);
 
   // Scroll to top on tab change
   useEffect(() => {
@@ -74,7 +82,7 @@ export default function App(
         <Header
           neynarUser={neynarUser}
           tab={currentTab as Tab}
-          address={(context?.user as any)?.custodyAddress || (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0]}
+          address={address}
         />
 
         <main className="flex-1 p-4">
