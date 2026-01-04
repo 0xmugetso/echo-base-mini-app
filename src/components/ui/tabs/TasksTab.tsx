@@ -11,10 +11,20 @@ import { useToast } from "../ToastProvider";
 type Profile = {
   fid: number;
   points: number;
+  onchainScore?: number;
   castCount?: number;
   streak: { current: number; highest: number; lastCheckIn: string };
   rewards: { claimedBoxes: { day3: boolean; day7: boolean; day14: boolean; day30: boolean } };
-  dailyActions: { lastCastDate: string; completedTasks: string[] };
+  dailyActions: {
+    lastCastDate: string;
+    completedTasks: string[];
+    pointsHistory?: {
+      action: string;
+      points: number;
+      date: string;
+      description: string;
+    }[];
+  };
 };
 
 export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void }) {
@@ -331,9 +341,11 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
             </h2>
           </div>
           <div className="text-right">
-            <p className="font-mono text-[10px] text-gray-500">TOTAL PTS</p>
+            <p className="font-mono text-[10px] text-gray-500 uppercase">Total Echo Power</p>
             <div className="flex items-center gap-2 justify-end">
-              <p className="font-pixel text-2xl text-white">{profile?.points || 0}</p>
+              <p className="font-pixel text-2xl text-white">
+                {(profile?.points || 0) + (profile?.onchainScore || 0)}
+              </p>
               <button
                 onClick={async () => {
                   toast("SYNCING DATA...", "PROCESS");
@@ -354,10 +366,62 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
                 ↻
               </button>
             </div>
+            <p className="text-[8px] text-gray-500 uppercase mt-1 leading-tight">Points + Reputation</p>
           </div>
         </div>
-
       </div>
+
+      {/* POINTS HISTORY TABLE - RIGHT AFTER SCORE */}
+      <RetroWindow title="POINTS_LOG.HIST" icon={<span className="text-primary text-xs mr-2">Σ</span>}>
+        <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b-2 border-white/20 text-[10px] font-mono text-gray-500 uppercase">
+                <th className="py-2 pl-2">DATE</th>
+                <th className="py-2">ACTIVITY</th>
+                <th className="py-2 text-right pr-2">PTS</th>
+              </tr>
+            </thead>
+            <tbody className="text-[11px] font-mono">
+              {profile?.dailyActions?.pointsHistory && profile.dailyActions.pointsHistory.length > 0 ? (
+                profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-2 pl-2 text-gray-400">
+                      {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
+                    </td>
+                    <td className="py-2">
+                      <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
+                      <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
+                    </td>
+                    <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
+                      +{item.points}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
+                    NO_HISTORY_FOUND
+                  </td>
+                </tr>
+              )}
+              {/* Onchain Row if present */}
+              {profile?.onchainScore && profile.onchainScore > 0 && (
+                <tr className="bg-primary/10 border-t-2 border-primary/20">
+                  <td className="py-2 pl-2 text-primary font-bold">LEGACY</td>
+                  <td className="py-2">
+                    <div className="uppercase font-pixel text-primary">ONCHAIN_REPUTATION</div>
+                    <div className="text-[8px] text-primary/70 italic">Verified wallet activity score</div>
+                  </td>
+                  <td className="py-2 text-right pr-2 font-pixel text-primary">
+                    +{profile.onchainScore}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </RetroWindow>
 
       {/* 2. CALENDAR / REWARD PATH */}
       <RetroWindow title="MONTHLY_GRID">
@@ -386,74 +450,54 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
       {/* 3. DAILY ACTIONS */}
       <div className="space-y-3">
         <div className="space-y-3">
-          {/* Check In */}
-          <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-            <div>
-              <h3 className="font-pixel text-lg text-white">DAILY_CHECK_IN</h3>
-              <p className="font-mono text-[10px] text-gray-400">+10 PTS • REQUIRES TX</p>
-            </div>
-
-            <div className="flex flex-col items-end gap-2 min-w-[120px]">
-              {isCheckedInToday() && (
-                <button disabled className="w-full px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
-                  COMPLETED
-                </button>
-              )}
-
-              {isCheckedInToday() ? (
-                <RetroTimer />
-              ) : (
-                <button
-                  disabled={actionLoading === 'checkin'}
-                  onClick={handleCheckIn}
-                  className={`w-full px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {actionLoading === 'checkin' ? 'SIGNING...' : 'SIGN TX'}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* LIMITED MISSION */}
-          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
-            <div className="flex justify-between items-center relative z-10">
-              <div>
-                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
-                <p className="font-mono text-[10px] text-gray-400">FOLLOW @MUGETSO • +30 PTS</p>
+          {/* Daily Tasks Row */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Check In */}
+            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+              <div className="mb-2">
+                <h3 className="font-pixel text-sm text-white">CHECK_IN</h3>
+                <p className="font-mono text-[8px] text-gray-400 uppercase">+10 PTS • TX REQUIRED</p>
               </div>
-              <button
-                onClick={() => handleSocialTask('follow_mugetso')}
-                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
-                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500"
-              >
-                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? 'VERIFYING...' : 'FOLLOW & CLAIM')}
-              </button>
-            </div>
-          </div>
 
-          {/* Daily Echo Cast */}
-          <div className={`border-2 p-4 flex justify-between items-center transition-all min-h-[80px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-            <div>
-              <h3 className="font-pixel text-lg text-white">DAILY_ECHO</h3>
-              <p className="font-mono text-[10px] text-gray-400">+5-10 PTS • CAST ON FARCASTER</p>
-            </div>
-            <div className="flex flex-col items-end gap-2 min-w-[120px]">
-              {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
-                <>
-                  <button disabled className="w-full px-3 py-2 font-pixel text-xs border border-gray-700 text-gray-600 bg-black opacity-50 cursor-not-allowed">
-                    COMPLETED
+              <div className="w-full">
+                {isCheckedInToday() ? (
+                  <div className="space-y-2">
+                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                    <RetroTimer />
+                  </div>
+                ) : (
+                  <button
+                    disabled={actionLoading === 'checkin'}
+                    onClick={handleCheckIn}
+                    className={`w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {actionLoading === 'checkin' ? 'SIGNING' : 'SIGN TX'}
                   </button>
-                  <RetroTimer />
-                </>
-              ) : (
-                <button
-                  onClick={() => setActiveTab?.('actions')}
-                  className="w-full px-4 py-2 font-pixel text-xs border uppercase border-primary text-primary hover:bg-primary hover:text-black"
-                >
-                  GO TO CAST
-                </button>
-              )}
+                )}
+              </div>
+            </div>
+
+            {/* Daily Echo Cast */}
+            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+              <div className="mb-2">
+                <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
+                <p className="font-mono text-[8px] text-gray-400 uppercase">+5-10 PTS • CAST</p>
+              </div>
+              <div className="w-full">
+                {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
+                  <div className="space-y-2">
+                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                    <RetroTimer />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab?.('actions')}
+                    className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
+                  >
+                    GO TO CAST
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

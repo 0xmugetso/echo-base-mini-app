@@ -104,23 +104,6 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-
-  const fetchProfile = async () => {
-    const targetFid = neynarUser?.fid || context?.user?.fid;
-    if (!targetFid) return;
-    try {
-      const res = await fetch(`/api/echo/profile?fid=${targetFid}`);
-      const data = await res.json();
-      if (data && !data.error) setProfile(data);
-    } catch (e) { console.error(e); }
-  };
-
-  useEffect(() => {
-    fetchProfile();
-    const interval = setInterval(fetchProfile, 30000); // Sync every 30s
-    return () => clearInterval(interval);
-  }, [neynarUser?.fid, context?.user?.fid]);
 
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0];
   const address =
