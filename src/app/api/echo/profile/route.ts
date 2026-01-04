@@ -149,57 +149,31 @@ export async function POST(request: Request) {
 
             if (statsToUse) {
                 // A. Wallet Age (Max 300)
-                // 1 year = 100 pts, 3 years = 300 pts
                 const age = statsToUse.wallet_age_days || 0;
-                onchainScore += Math.min(Math.floor(age / 3.65), 300);
+                onchainScore += Math.min(Math.floor(age / 2), 300); // More aggressive age scaling
 
                 // B. Transaction Count (Max 300)
-                // 100 tx = 50 pts, 1000 tx = 300 pts
                 const tx = statsToUse.total_tx || 0;
-                onchainScore += Math.min(Math.floor(tx * 0.3), 300);
+                onchainScore += Math.min(Math.floor(tx * 1.5), 300); // Faster tx scaling
 
-                // C. Farcaster Value / Volume (Max 300)
-                // $1000 = 100 pts, $5000 = 300 pts
+                // C. Value Metric (Max 300)
                 const fcVal = statsToUse.farcaster?.wallet_value_usd || 0;
                 const volume = statsToUse.total_volume_usd || 0;
                 const valueMetric = Math.max(fcVal, volume);
-                onchainScore += Math.min(Math.floor(valueMetric / 10), 300);
+                onchainScore += Math.min(Math.floor(valueMetric / 5), 300);
 
                 // D. Badges / Holdings (Max 100)
                 const holdings = statsToUse.farcaster?.holdings || {};
                 const badgeCount = Object.values(holdings).filter(Boolean).length;
                 onchainScore += Math.min(badgeCount * 25, 100);
+            } else if (profile.onchainScore > 0) {
+                // Keep existing score if we can't find stats this time
+                onchainScore = profile.onchainScore;
             } else {
-                // Minimal fallback for fresh wallets connected manually
                 onchainScore = 10;
             }
 
-            console.log(`[PROFILE_CALC] Onchain Score: ${onchainScore}/1000`);
-
-            // Save Onchain Score to Profile for persistence (if we add a field)
-            // For now, we return it to be displayed. 
-            // Ideally we should save it. Let's add 'baseScore' to profile schema later if needed.
-            // For this session, we'll return it and let the Frontend sum it up.
-            // BUT: If the user refreshes, we need this stored.
-            // Hack: Store it in a new field if possible, or assume frontend calls 'calculate' on load.
-            // User 'profile.points' should be ONLY grind points.
-            // The previous logic was `profile.points = newScore` which merged them.
-            // We need to STOP merging. `profile.points` is strictly actions (like intro, daily cast).
-
-            // If this is the FIRST calculation (Intro), we might want to give them some starting 'Grind Points' too?
-            // User said: "110 got calculated... and 10 added for check in". 
-            // So Intro gave 110 (Grind) + 30 (Onchain) ? No, currently it was mixed.
-
-            // Proposal:
-            // profile.points = Earned Points (Referrals, Daily, Intro Task)
-            // profile.onchainScore = persistent score based on stats (New Field? or just returned?)
-
-            // We will save it to `profile.onchainScore` if schema allows, otherwise just return it.
-            // Looking at `EchoProfile`, I don't see `onchainScore`.
-            // I'll assume we return it and the frontend manages the display sum.
-
-            // SAVE STATS
-            // NEW: Persist Onchain Score
+            console.log(`[PROFILE_CALC] Resulting Onchain Score: ${onchainScore}`);
             profile.onchainScore = Math.floor(onchainScore);
 
             // Logic to award Welcome Points if this is the first calculation

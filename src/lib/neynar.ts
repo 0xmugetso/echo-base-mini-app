@@ -3,48 +3,43 @@ import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function fetchUserCastCount(fid: number): Promise<number> {
-  const client = getNeynarClient();
-  let cursor: string | undefined;
-  let totalCasts = 0;
-  let hasMore = true;
-  const MAX_PAGES = 1000; // High limit to ensure we get everything
-  let page = 0;
-
-  console.log(`[NEYNAR] SDK: Counting casts for FID: ${fid}...`);
+  console.log(`[NEYNAR] Fetching total cast count for FID: ${fid}...`);
 
   try {
-    while (hasMore && page < MAX_PAGES) {
-      // Try SDK with force-included params (ignoring strict types for reliability)
+    // 1. Try getting from Neynar User Stats (Most reliable total)
+    const user = await getNeynarUser(fid);
+    if (user && user.stats && typeof user.stats.cast_count === 'number') {
+      console.log(`[NEYNAR] Success via Stats: ${user.stats.cast_count}`);
+      return user.stats.cast_count;
+    }
+
+    // 2. Fallback to manual counting if stats missing
+    console.log("[NEYNAR] Stats missing, falling back to manual pagination...");
+    const client = getNeynarClient();
+    let cursor: string | undefined;
+    let totalCasts = 0;
+    let hasMore = true;
+    let page = 0;
+
+    while (hasMore && page < 20) { // Limit pages for fallback
       const data = await client.fetchCastsForUser({
         fid,
         limit: 150,
         cursor,
-        includeReplies: true, // Force include
+        includeReplies: true,
         includeRecasts: true
       } as any);
 
-      const casts = data.casts || [];
-      totalCasts += casts.length;
-      console.log(`[NEYNAR] SDK Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
-
+      totalCasts += (data.casts || []).length;
       cursor = data.next?.cursor || undefined;
       if (!cursor) hasMore = false;
       page++;
     }
 
-    // Fallback: If SDK returned 0, try Raw Fetch (in case of SDK version mismatch)
-    if (totalCasts === 0) {
-      console.log("[NEYNAR] SDK returned 0. Attempting Raw Fetch Fallback...");
-      const rawCount = await fetchUserCastCountRaw(fid);
-      console.log(`[NEYNAR] Raw Fetch Result: ${rawCount}`);
-      return rawCount;
-    }
-
     return totalCasts;
-
   } catch (e) {
-    console.error("[NEYNAR] SDK Cast count failed, trying raw...", e);
-    return await fetchUserCastCountRaw(fid);
+    console.error("[NEYNAR] Cast count failed", e);
+    return 0;
   }
 }
 

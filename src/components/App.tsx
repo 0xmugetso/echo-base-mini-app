@@ -85,7 +85,7 @@ export default function App(
             <ActionsTab context={context} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Context}>
-            <TasksTab context={context} neynarUser={neynarUser} setActiveTab={setActiveTab} />
+            <TasksTab context={context} neynarUser={neynarUser} setActiveTab={setActiveTab} baseStats={baseStats} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Wallet}>
             <WalletTab />

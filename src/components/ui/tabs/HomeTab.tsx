@@ -311,34 +311,45 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-primary/30" />
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-4 px-2">
               {[
                 { id: 'clanker', label: 'CLANKER', color: 'from-blue-600 to-blue-900', icon: '⚡' },
                 { id: 'toshi', label: 'TOSHI', color: 'from-cyan-500 to-cyan-800', icon: '🐱' },
                 { id: 'degen', label: 'DEGEN', color: 'from-purple-600 to-purple-900', icon: '🎩' },
-                { id: 'pro_og', label: 'PRO_OG', color: 'from-yellow-500 to-yellow-800', icon: '👑' },
-                { id: 'warplets', label: 'WARP', color: 'from-orange-500 to-orange-800', icon: '🌀' },
-                { id: 'based_punk', label: 'PUNK', color: 'from-blue-400 to-blue-700', icon: '🎸' },
                 { id: 'bankr_club', label: 'BANKR', color: 'from-red-500 to-red-800', icon: '🏦' },
                 { id: 'jesse', label: 'JESSE', color: 'from-green-500 to-green-800', icon: '✨' },
+                { id: 'brett', label: 'BRETT', color: 'from-blue-400 to-blue-700', icon: '🎸' },
+                { id: 'pro_og', label: 'PRO_OG', color: 'from-yellow-500 to-yellow-800', icon: '👑' },
+                { id: 'warplets', label: 'WARP', color: 'from-orange-600 to-orange-900', icon: '🌀' },
               ].map((badge) => {
                 const isOwned = baseStats?.farcaster?.holdings?.[badge.id as keyof typeof baseStats.farcaster.holdings];
                 return (
                   <div
                     key={badge.id}
-                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-500 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_10px_rgba(255,255,255,0.2)]` : 'border-white/10 bg-black grayscale opacity-40'}`}
+                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-700 transform hover:scale-105 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-1 ring-white/50` : 'border-white/5 bg-[#0a0a0a] grayscale opacity-20'}`}
                   >
-                    {/* Badge Shine */}
-                    {isOwned && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+                    {/* Premium Shine Animation */}
+                    {isOwned && (
+                      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-[-45deg]" />
+                      </div>
+                    )}
 
-                    <span className="text-lg">{badge.icon}</span>
-                    <span className="text-[7px] font-pixel text-center px-1 leading-tight">{badge.label}</span>
+                    <span className="text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{badge.icon}</span>
+                    <span className="text-[7px] font-pixel text-center px-1 leading-tight text-white/90">{badge.label}</span>
 
-                    {!isOwned && <div className="absolute inset-0 flex items-center justify-center"><span className="text-[10px] opacity-20">?</span></div>}
+                    {!isOwned && <div className="absolute inset-0 flex items-center justify-center font-pixel text-[8px] opacity-10 uppercase tracking-tighter">Locked</div>}
                   </div>
                 );
               })}
             </div>
+
+            <style>{`
+              @keyframes shimmer {
+                0% { transform: translateX(-150%) skewX(-45deg); }
+                100% { transform: translateX(150%) skewX(-45deg); }
+              }
+            `}</style>
 
             <p className="text-[8px] text-center text-gray-600 font-mono uppercase tracking-widest leading-relaxed">
               Tokens & Collections detected via Base Network indexing.<br />
