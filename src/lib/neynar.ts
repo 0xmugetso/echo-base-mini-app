@@ -6,37 +6,61 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
   console.log(`[NEYNAR] Fetching total cast count for FID: ${fid}...`);
 
   try {
-    // 1. Try getting from Neynar User Stats (Most reliable total)
-    const user = await getNeynarUser(fid);
-    if (user && user.stats && typeof user.stats.cast_count === 'number') {
-      console.log(`[NEYNAR] Success via Stats: ${user.stats.cast_count}`);
-      return user.stats.cast_count;
+    // 1. Try Storage API (Canonical Hubble count)
+    // This is the most accurate way to get the total number of casts according to Farcaster docs.
+    if (NEYNAR_API_KEY) {
+      try {
+        const storageUrl = `https://api.neynar.com/v2/farcaster/hub/storageLimitsByFid?fid=${fid}`;
+        const res = await fetch(storageUrl, {
+          headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const castLimit = data.limits?.find((l: any) => l.storeType === 'Casts');
+          if (castLimit && typeof castLimit.used === 'number') {
+            console.log(`[NEYNAR] Success via Storage API: ${castLimit.used}`);
+            return castLimit.used;
+          }
+        }
+      } catch (err) {
+        console.warn("[NEYNAR] Storage API failed, falling back to manual count...", err);
+      }
     }
 
-    // 2. Fallback to manual counting if stats missing
-    console.log("[NEYNAR] Stats missing, falling back to manual pagination...");
+    // 2. Fallback: Manual Paging (User Suggested Method)
+    // Paginates through all casts to count them.
+    console.log("[NEYNAR] Starting manual cast pagination count...");
     const client = getNeynarClient();
+    let totalCount = 0;
     let cursor: string | undefined;
-    let totalCasts = 0;
     let hasMore = true;
-    let page = 0;
+    let pages = 0;
+    const MAX_PAGES = 100; // Safety limit: 100 * 150 = 15,000 casts
 
-    while (hasMore && page < 20) { // Limit pages for fallback
-      const data = await client.fetchCastsForUser({
+    while (hasMore && pages < MAX_PAGES) {
+      const data: any = await client.fetchCastsForUser({
         fid,
         limit: 150,
-        cursor,
-        includeReplies: true,
-        includeRecasts: true
-      } as any);
+        ...(cursor && cursor.trim() !== "" ? { cursor } : {}),
+      });
 
-      totalCasts += (data.casts || []).length;
-      cursor = data.next?.cursor || undefined;
-      if (!cursor) hasMore = false;
-      page++;
+      totalCount += (data.casts || []).length;
+      cursor = data.next?.cursor;
+      hasMore = !!cursor;
+      pages++;
+
+      if (pages % 5 === 0) console.log(`[NEYNAR] Counted ${totalCount} casts so far... (${pages} pages)`);
     }
 
-    return totalCasts;
+    console.log(`[NEYNAR] Final manual count: ${totalCount} (${pages} pages)`);
+
+    // 3. Last Fallback: User Stats
+    if (totalCount === 0) {
+      const user = await getNeynarUser(fid);
+      if (user?.stats?.cast_count) return user.stats.cast_count;
+    }
+
+    return totalCount;
   } catch (e) {
     console.error("[NEYNAR] Cast count failed", e);
     return 0;

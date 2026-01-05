@@ -177,7 +177,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.2em] mb-2">TOTAL_ECHO_POWER</p>
               <div className="flex items-baseline gap-3">
                 <h2 className="text-6xl font-pixel text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                  {(neynarUser?.score ? Math.floor(neynarUser.score) : 0) + (baseStats?.baseScore || 0)}
+                  {formatNumber((neynarUser?.score ? Math.floor(neynarUser.score) : 0) + (baseStats?.baseScore || 0))}
                 </h2>
                 <span className="text-xl font-pixel text-primary">PT</span>
               </div>
