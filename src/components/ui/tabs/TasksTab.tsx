@@ -326,6 +326,24 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
     )
   };
 
+  const BadgeItem = ({ badge, holdings }: { badge: any, holdings: any }) => {
+    const isOwned = holdings?.[badge.id];
+    return (
+      <div
+        className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-700 transform hover:scale-105 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-1 ring-white/50` : 'border-white/5 bg-[#0a0a0a] grayscale opacity-20'}`}
+      >
+        {isOwned && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-[-45deg]" />
+          </div>
+        )}
+        <span className="text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{badge.icon}</span>
+        <span className="text-[7px] font-pixel text-center px-1 leading-tight text-white/90">{badge.label}</span>
+        {!isOwned && <div className="absolute inset-0 flex items-center justify-center font-pixel text-[8px] opacity-10 uppercase tracking-tighter">Locked</div>}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 pb-20 min-h-[500px]">
       {/* 0. BANNER */}
@@ -371,7 +389,25 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
         </div>
       </div>
 
-      {/* 2. DAILY GRID */}
+      {/* 2. EARNED BADGES (Grid) */}
+      <RetroWindow title="EARNED_BADGES" icon="star">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { id: 'clanker', label: 'CLANKER', icon: '🤖', color: 'from-blue-600 to-blue-800' },
+            { id: 'toshi', label: 'TOSHI', icon: '🐱', color: 'from-purple-600 to-purple-800' },
+            { id: 'degen', label: 'DEGEN', icon: '🎩', color: 'from-pink-600 to-pink-800' },
+            { id: 'bankr_club', label: 'BANKR', icon: '🏦', color: 'from-orange-600 to-orange-800' },
+            { id: 'jesse', label: 'JESSE', icon: '🔵', color: 'from-sky-600 to-sky-800' },
+            { id: 'brett', label: 'BRETT', icon: '🐸', color: 'from-green-600 to-green-800' },
+            { id: 'pro_og', label: 'OG_TESTER', icon: '👑', color: 'from-yellow-600 to-yellow-800' },
+            { id: 'warplets', label: 'WARPLETS', icon: '🚀', color: 'from-red-600 to-red-800' },
+          ].map((badge) => (
+            <BadgeItem key={badge.id} badge={badge} holdings={baseStats?.farcaster?.holdings} />
+          ))}
+        </div>
+      </RetroWindow>
+
+      {/* 3. DAILY GRID */}
       <div className="grid grid-cols-2 gap-4">
         {/* Daily Check-in */}
         <RetroWindow title="DAILY_CHECKIN" icon="check">
@@ -409,10 +445,9 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
         </RetroWindow>
       </div>
 
-      {/* 3. ONE TIME QUESTS */}
+      {/* 4. ONE TIME QUESTS */}
       <RetroWindow title="ONE_TIME_QUESTS" icon="star">
         <div className="space-y-4">
-          {/* Follow Echo */}
           <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
             <div>
               <p className="font-bold text-xs">FOLLOW @ECHO</p>
@@ -426,7 +461,6 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
               {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
             </button>
           </div>
-          {/* Follow Dev */}
           <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
             <div>
               <p className="font-bold text-xs">FOLLOW @KHASH</p>
@@ -443,7 +477,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
         </div>
       </RetroWindow>
 
-      {/* 4. POINTS HISTORY LOG */}
+      {/* 5. POINTS HISTORY LOG */}
       <RetroWindow title="POINTS_LOG.HIST" icon={<span className="text-primary text-xs mr-2">Σ</span>}>
         <div className="overflow-x-auto max-h-[300px] overflow-y-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
