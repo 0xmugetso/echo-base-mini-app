@@ -5,9 +5,40 @@ import { useAccount, useDisconnect, useConnect } from "wagmi";
 import { useMiniApp } from "@neynar/react";
 import { RetroWindow } from "../RetroWindow";
 import { RetroBanner } from "../RetroBanner";
+import { Skull } from "../Skull";
+import { base64Grid } from "../gridPattern";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { truncateAddress } from "../../../lib/truncateAddress";
 import { useToast } from "../ToastProvider";
+
+const formatNumber = (value?: number | null, digits = 0) => {
+  if (value === null || value === undefined) return "—";
+  return Number(value).toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  });
+};
+
+const formatEth = (wei: bigint) => Number(wei) / 1e18;
+
+const RetroStatBox = ({ label, value, subValue }: { label: string; value: string; subValue?: string }) => (
+  <div className="group relative border-2 border-white bg-black p-3 hover:border-primary transition-colors cursor-default">
+    {/* Corner Decorations */}
+    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white group-hover:border-primary" />
+    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white group-hover:border-primary" />
+    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white group-hover:border-primary" />
+    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white group-hover:border-primary" />
+
+    <span className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-primary font-bold mb-1 block">{label}</span>
+    <div className="flex items-baseline gap-1">
+      <span className="text-lg font-pixel text-white tracking-wider group-hover:text-shadow-glow">{value}</span>
+      {subValue && <span className="text-[10px] text-gray-500">{subValue}</span>}
+    </div>
+
+    {/* Scanline effect on hover */}
+    <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 pointer-events-none" />
+  </div>
+);
 
 export function WalletTab() {
   const { context } = useMiniApp();
@@ -211,79 +242,125 @@ export function WalletTab() {
         </div>
       </RetroWindow>
 
-      {/* UNIFIED POWER SCORE */}
-      <div className="border-4 border-primary bg-black/80 p-4 relative overflow-hidden shadow-[8px_8px_0_0_rgba(0,82,255,0.2)]">
-        <div className="absolute top-0 right-0 p-2 opacity-10 text-primary scale-150">
-          <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
-        </div>
+      {/* 1. TECHY POWER SCORE DASHBOARD */}
+      <div className="relative border-4 border-white bg-black p-6 shadow-[8px_8px_0_0_rgba(255,255,255,0.1)] overflow-hidden group">
+        {/* Animated Scanline Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(0,180,255,0.05)_50%,transparent_100%)] bg-[length:100%_4px] animate-[scanline_10s_linear_infinite] pointer-events-none z-10" />
 
-        <div className="relative z-10">
-          <p className="text-[10px] text-primary uppercase font-bold tracking-[0.2em] mb-1">TOTAL_ECHO_POWER</p>
-          <div className="flex items-baseline gap-2">
-            <p className="text-4xl font-pixel text-white tracking-widest leading-none">
-              {(activityPoints + baseScore).toLocaleString()}
-            </p>
-            <span className="text-xs text-primary font-bold">PT</span>
+        {/* Background Grid Accent */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: base64Grid, backgroundSize: '10px 10px' }} />
+
+        <div className="relative z-20">
+          <div className="flex justify-between items-start mb-8">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-primary animate-pulse" />
+                <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.3em]">PROFILE_IDENTITY.LOG</p>
+              </div>
+              <div className="flex items-baseline gap-4">
+                <h2 className="text-7xl font-pixel text-white tracking-tighter text-shadow-glow">
+                  {formatNumber(totalScore)}
+                </h2>
+                <span className="text-2xl font-pixel text-primary animate-pulse">EP</span>
+              </div>
+              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest pl-1">Consolidated Echo Power Output</p>
+            </div>
+            <div className="text-right flex flex-col items-end gap-2">
+              <div className="border border-white/20 p-2 bg-black/50 backdrop-blur-sm">
+                <Skull className="w-12 h-12 text-primary opacity-80" />
+              </div>
+              <span className="text-[8px] font-mono text-primary/50 uppercase tracking-[0.2em] leading-none">CORE_OS_V.4.2</span>
+            </div>
           </div>
 
-          {/* Breakdown */}
-          <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase">GRIND_PTS (EARNED)</p>
-              <p className="font-pixel text-sm text-gray-300">+{activityPoints.toLocaleString()}</p>
+          <div className="grid grid-cols-2 gap-6 border-t border-b border-white/10 py-6">
+            <div className="space-y-1 group/stat">
+              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
+                GRIND_PTS (SESSION)
+              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-pixel text-white">+{formatNumber(activityPoints)}</p>
+                <div className="text-[8px] font-mono text-[#00ff00] animate-pulse">● FEED</div>
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase">ONCHAIN_POWER (HISTORY)</p>
-              <p className="font-pixel text-sm text-gray-300">+{baseLoading ? "..." : baseScore.toLocaleString()}</p>
+            <div className="space-y-1 group/stat border-l border-white/10 pl-6">
+              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
+                ONCHAIN_PWR (NODE)
+              </p>
+              <p className="text-3xl font-pixel text-white">+{baseLoading ? "..." : formatNumber(baseScore)}</p>
             </div>
           </div>
-        </div>
 
-        {/* Scanline Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-[200%] animate-scan pointer-events-none" />
+          <div className="mt-4 flex justify-between items-center text-[8px] font-mono text-gray-600 uppercase tracking-[0.25em]">
+            <span>NODE_ADDR: {userAddress?.slice(0, 10)}...</span>
+            <span className="text-gray-400">ENCRYPTION: SHARDED_RSA</span>
+          </div>
+        </div>
       </div>
 
-      {/* BADGES (PROMINENT) */}
-      <RetroWindow title="EARNED_BADGES" icon="star">
-        <div className="grid grid-cols-4 gap-3 p-2">
+      {/* 2. PIXELATED BADGES GRID */}
+      <RetroWindow title="EARNED_BADGES.SYS" icon={<span className="text-primary text-xs mr-2">◈</span>}>
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { id: 'clanker', label: 'CLKR', icon: '⚡', color: 'from-yellow-500 to-orange-600' },
+            { id: 'toshi', label: 'TSHI', icon: '🐱', color: 'from-blue-400 to-blue-600' },
+            { id: 'degen', label: 'DGN', icon: '🎩', color: 'from-purple-500 to-indigo-600' },
+            { id: 'bankr_club', label: 'BNKR', icon: '🏛️', color: 'from-emerald-500 to-green-700' },
+            { id: 'jesse', label: 'JSSE', icon: '🌟', color: 'from-pink-500 to-red-600' },
+            { id: 'brett', label: 'BRTT', icon: '🐸', color: 'from-green-400 to-teal-600' },
+            { id: 'pro_og', label: 'OG_V', icon: '👑', color: 'from-amber-400 to-yellow-600' },
+            { id: 'warplets', icon: '💎', label: 'WRPT', color: 'from-cyan-400 to-blue-500' },
+          ].map((badge) => {
+            const isOwned = (baseStats?.farcaster?.holdings as any)?.[badge.id];
+            return (
+              <div
+                key={badge.id}
+                className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-700 transform hover:scale-105 active:scale-95 group/badge ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-1 ring-white/50` : 'border-white/5 bg-[#0a0a0a] grayscale opacity-20'}`}
+              >
+                {isOwned && (
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-[-45deg]" />
+                  </div>
+                )}
+                <span className={`text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] ${isOwned ? 'animate-bounce' : ''}`}>{badge.icon}</span>
+                <span className="text-[7px] font-pixel text-center px-1 leading-tight text-white/90 uppercase">{badge.label}</span>
+                {!isOwned && <div className="absolute inset-0 flex items-center justify-center font-pixel text-[8px] opacity-10 uppercase tracking-tighter">Locked</div>}
 
-          {/* OG Badge */}
-          <div className="aspect-square bg-[#0052FF] border-2 border-white shadow-[4px_4px_0_0_rgba(255,255,255,0.2)] flex flex-col items-center justify-center p-1 group relative cursor-help">
-            <span className="font-pixel text-lg text-white">OG</span>
-            <span className="text-[8px] text-white/80 mt-1">EARLY</span>
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black border border-white px-2 py-1 text-[8px] whitespace-nowrap hidden group-hover:block z-20">
-              FOUNDING MEMBER
-            </div>
-          </div>
-
-          {/* V1 Badge (Placeholder) */}
-          <div className="aspect-square bg-purple-900 border border-white/50 flex flex-col items-center justify-center p-1 opacity-80">
-            <span className="font-pixel text-lg text-white">V1</span>
-            <span className="text-[8px] text-white/60 mt-1">TESTER</span>
-          </div>
-
-          {/* Locked Slots */}
-          <div className="aspect-square border border-dashed border-gray-700 bg-black/50 flex items-center justify-center">
-            <span className="text-gray-700 text-xs">?</span>
-          </div>
-          <div className="aspect-square border border-dashed border-gray-700 bg-black/50 flex items-center justify-center">
-            <span className="text-gray-700 text-xs">?</span>
-          </div>
-
+                {/* Micro-tooltip on hover */}
+                {isOwned && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover/badge:opacity-100 bg-white text-black text-[6px] font-pixel px-1 py-0.5 z-50 pointer-events-none whitespace-nowrap">
+                    UNLOCK_VERIFIED
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </RetroWindow>
 
-      {/* LEADERBOARD (COMING SOON) */}
-      <div className="relative opacity-60">
-        <RetroWindow title="GLOBAL_RANKING" icon="list">
-          <div className="h-32 flex items-center justify-center bg-stripes-gray">
-            <div className="bg-black border border-white px-4 py-2 text-center transform rotate-[-2deg]">
-              <p className="font-pixel text-lg text-white">COMING SOON</p>
-              <p className="text-[8px] text-gray-400 uppercase tracking-widest">SEASON 1</p>
-            </div>
+      {/* 3. GLOBAL RANKING SECTION */}
+      <RetroWindow title="GLOBAL_RANKING.DAT" icon={<span className="text-primary text-xs mr-2">⌁</span>}>
+        <div className="relative aspect-[21/9] bg-[#050505] border-2 border-white/10 flex items-center justify-center overflow-hidden">
+          {/* Animated Matrix-like Background */}
+          <div className="absolute inset-0 opacity-10 font-mono text-[10px] text-primary whitespace-pre overflow-hidden leading-none pointer-events-none">
+            {Array(10).fill("ECHO_RANK_SYSTEM_V.1.0_INITIALIZING_DATA_STREAM_01010101\n").join("")}
           </div>
-        </RetroWindow>
-      </div>
+
+          <div className="relative z-10 border-4 border-white/20 p-6 backdrop-blur-sm group hover:border-white transition-colors duration-500">
+            <h3 className="text-3xl font-pixel text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors">COMING_SOON</h3>
+            <div className="h-1 w-full bg-white/10 mt-2 overflow-hidden">
+              <div className="h-full bg-primary w-1/3 animate-[loading_2s_infinite]" />
+            </div>
+            <p className="text-center font-mono text-[9px] text-gray-600 mt-3 uppercase tracking-widest group-hover:text-primary/70 transition-colors">SEASON_01_CALIBRATION_IN_PROGRESS</p>
+          </div>
+
+          {/* Corner Elements */}
+          <div className="absolute top-2 left-2 text-[6px] font-mono text-gray-500 uppercase">LATENCY: 42MS</div>
+          <div className="absolute bottom-2 right-2 text-[6px] font-mono text-gray-500 uppercase">SERVER: BASE_MAINNET</div>
+        </div>
+      </RetroWindow>
 
     </div>
   );
