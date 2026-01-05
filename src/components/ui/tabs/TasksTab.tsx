@@ -27,25 +27,7 @@ type Profile = {
   };
 };
 
-const BadgeItem = ({ badge, holdings }: { badge: any, holdings: any }) => {
-  const isOwned = holdings?.[badge.id];
-  return (
-    <div
-      className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-700 transform hover:scale-105 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-1 ring-white/50` : 'border-white/5 bg-[#0a0a0a] grayscale opacity-20'}`}
-    >
-      {isOwned && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-[-45deg]" />
-        </div>
-      )}
-      <span className="text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{badge.icon}</span>
-      <span className="text-[7px] font-pixel text-center px-1 leading-tight text-white/90">{badge.label}</span>
-      {!isOwned && <div className="absolute inset-0 flex items-center justify-center font-pixel text-[8px] opacity-10 uppercase tracking-tighter">Locked</div>}
-    </div>
-  );
-};
-
-export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void, baseStats?: any }) {
+export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -388,104 +370,50 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
           </div>
         </div>
       </div>
-      {/* 2. DAILY MISSIONS GRID */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Daily Check-in */}
-        <RetroWindow title="STREAK_SYNC" icon="zap">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center bg-white/5 p-2 border border-white/10">
-              <span className="text-[10px] font-pixel text-gray-400 uppercase">Status</span>
-              <span className={`text-[10px] font-pixel ${isCheckedInToday() ? 'text-[#00ff00]' : 'text-primary'}`}>
-                {isCheckedInToday() ? 'VERIFIED' : 'PENDING'}
-              </span>
-            </div>
-            <button
-              onClick={handleCheckIn}
-              disabled={actionLoading === 'checkin' || isCheckedInToday()}
-              className={`w-full py-2 font-pixel text-xs transition-colors shadow-[3px_3px_0_0_#000] active:translate-x-1 active:translate-y-1 active:shadow-none ${isCheckedInToday() ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-primary text-black hover:bg-white'}`}
-            >
-              {actionLoading === 'checkin' ? 'PROCESSING...' : (isCheckedInToday() ? 'SYNCED_TODAY' : 'CHECK_IN_NOW')}
-            </button>
-            <p className="text-[8px] text-center text-gray-500 uppercase">+10 PTS + STREAK++</p>
-          </div>
-        </RetroWindow>
 
-        {/* Daily Echo */}
-        <RetroWindow title="DAILY_ECHO" icon="megaphone">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center bg-white/5 p-2 border border-white/10">
-              <span className="text-[10px] font-pixel text-gray-400 uppercase">Mission</span>
-              <span className="text-[10px] font-pixel text-primary uppercase">DAILY_CAST</span>
-            </div>
-            <button
-              onClick={() => setActiveTab?.('actions')}
-              className="w-full py-2 bg-white text-black font-pixel text-xs hover:bg-primary transition-colors shadow-[3px_3px_0_0_#000] active:translate-x-1 active:translate-y-1 active:shadow-none"
-            >
-              GOTO_MISSIONS
-            </button>
-            <p className="text-[8px] text-center text-gray-500 uppercase">+10 PTS PER CAST</p>
-          </div>
-        </RetroWindow>
-      </div>
-
-      {/* 3. MYSTERY BOXES */}
-      <RetroWindow title="STREAK_REWARDS" icon="box">
-        <div className="grid grid-cols-4 gap-2">
-          <BoxButton day={3} label="Common" />
-          <BoxButton day={7} label="Uncommon" />
-          <BoxButton day={14} label="Rare" />
-          <BoxButton day={30} label="Legendary" />
-        </div>
-        <div className="mt-3 p-2 bg-white/5 border border-white/10 rounded">
-          <p className="text-[10px] leading-relaxed text-gray-400">
-            Maintain your streak to unlock mystery loot boxes. Higher streaks grant significantly more points and exclusive bonuses.
-          </p>
-        </div>
-      </RetroWindow>
-
-      {/* POINTS HISTORY TABLE - NOW AT THE BOTTOM */}
+      {/* POINTS HISTORY TABLE - RIGHT AFTER SCORE */}
       <RetroWindow title="POINTS_LOG.HIST" icon={<span className="text-primary text-xs mr-2">Σ</span>}>
-        <div className="overflow-x-auto max-h-[250px] overflow-y-auto custom-scrollbar">
+        <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b-2 border-white/20 text-[10px] font-mono text-gray-500 uppercase">
-                <th className="py-3 pl-2">DATE</th>
-                <th className="py-3">ACTIVITY</th>
-                <th className="py-3 text-right pr-2">PTS</th>
+                <th className="py-2 pl-2">DATE</th>
+                <th className="py-2">ACTIVITY</th>
+                <th className="py-2 text-right pr-2">PTS</th>
               </tr>
             </thead>
             <tbody className="text-[11px] font-mono">
               {profile?.dailyActions?.pointsHistory && profile.dailyActions.pointsHistory.length > 0 ? (
                 profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                    <td className="py-3 pl-2 text-gray-400 group-hover:text-white transition-colors">
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-2 pl-2 text-gray-400">
                       {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
                     </td>
-                    <td className="py-3">
-                      <div className="uppercase font-bold text-white leading-tight mb-0.5">{item.action.replace(/_/g, ' ')}</div>
-                      <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[140px] group-hover:text-gray-300">{item.description}</div>
+                    <td className="py-2">
+                      <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
+                      <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
                     </td>
-                    <td className={`py-3 text-right pr-2 font-pixel text-[#00ff00] text-shadow-glow`}>
+                    <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
                       +{item.points}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="py-12 text-center text-gray-600 uppercase italic tracking-widest text-[10px]">
-                    NO_HISTORY_LOG_FOUND
+                  <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
+                    NO_HISTORY_FOUND
                   </td>
                 </tr>
               )}
               {/* Onchain Row if present */}
               {profile?.onchainScore && profile.onchainScore > 0 && (
-                <tr className="bg-yellow-500/5 border-t-2 border-yellow-500/20">
-                  <td className="py-3 pl-2 text-yellow-500 font-bold">LEGACY</td>
-                  <td className="py-3">
+                <tr className="bg-yellow-500/10 border-t-2 border-yellow-500/20">
+                  <td className="py-2 pl-2 text-yellow-500 font-bold">LEGACY</td>
+                  <td className="py-2">
                     <div className="uppercase font-pixel text-yellow-500">ONCHAIN_REPUTATION</div>
                     <div className="text-[8px] text-yellow-500/70 italic">Verified wallet activity score</div>
                   </td>
-                  <td className="py-3 text-right pr-2 font-pixel text-yellow-500">
+                  <td className="py-2 text-right pr-2 font-pixel text-yellow-500">
                     +{profile.onchainScore}
                   </td>
                 </tr>
@@ -495,40 +423,138 @@ export function TasksTab({ context, neynarUser, setActiveTab, baseStats }: { con
         </div>
       </RetroWindow>
 
-      {/* SOCIAL TASKS */}
-      <RetroWindow title="ONE_TIME_QUESTS" icon="star">
-        <div className="space-y-4">
-          {/* Follow Echo */}
-          <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
-            <div>
-              <p className="font-bold text-xs">FOLLOW @ECHO</p>
-              <p className="text-[9px] text-primary font-mono tracking-widest uppercase">+50 PTS</p>
-            </div>
-            <button
-              onClick={() => handleSocialTask('follow_echo')}
-              disabled={actionLoading === 'follow_echo'}
-              className="px-3 py-1.5 bg-white text-black font-pixel text-[10px] hover:bg-gray-200 transition-colors shadow-[2px_2px_0_0_#ccc]"
-            >
-              {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
-            </button>
+      {/* 2. CALENDAR / REWARD PATH */}
+      <RetroWindow title="MONTHLY_GRID">
+        <div className="p-1">
+          <div className="grid grid-cols-7 gap-1 mb-4">
+            {Array.from({ length: 30 }).map((_, i) => {
+              const dayNum = i + 1;
+              const isActive = dayNum <= (profile?.streak.current || 0);
+
+              return (
+                <div key={i} className={`h-2 w-full ${isActive ? "bg-primary shadow-[0_0_5px_theme('colors.primary')]" : "bg-gray-900"}`} />
+              )
+            })}
           </div>
-          {/* Follow Dev */}
-          <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
-            <div>
-              <p className="font-bold text-xs">FOLLOW @KHASH</p>
-              <p className="text-[9px] text-primary font-mono tracking-widest uppercase">+50 PTS</p>
-            </div>
-            <button
-              onClick={() => handleSocialTask('follow_khash')}
-              disabled={actionLoading === 'follow_khash'}
-              className="px-3 py-1.5 bg-white text-black font-pixel text-[10px] hover:bg-gray-200 transition-colors shadow-[2px_2px_0_0_#ccc]"
-            >
-              {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
-            </button>
+
+          <p className="font-mono text-[10px] text-center text-gray-400 mb-2">- REWARD MILESTONES -</p>
+          <div className="grid grid-cols-4 gap-2">
+            <BoxButton day={3} label="COMMON" />
+            <BoxButton day={7} label="RARE" />
+            <BoxButton day={14} label="EPIC" />
+            <BoxButton day={30} label="LEGEND" />
           </div>
         </div>
       </RetroWindow>
 
+      {/* 3. DAILY ACTIONS */}
+      <div className="space-y-3">
+        <div className="space-y-3">
+          {/* Daily Tasks Row */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Check In */}
+            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+              <div className="mb-2">
+                <h3 className="font-pixel text-sm text-white">CHECK_IN</h3>
+                <p className="font-mono text-[8px] text-gray-400 uppercase">+10 PTS • TX REQUIRED</p>
+              </div>
+
+              <div className="w-full">
+                {isCheckedInToday() ? (
+                  <div className="space-y-2">
+                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                    <RetroTimer />
+                  </div>
+                ) : (
+                  <button
+                    disabled={actionLoading === 'checkin'}
+                    onClick={handleCheckIn}
+                    className={`w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {actionLoading === 'checkin' ? 'SIGNING' : 'SIGN TX'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Daily Echo Cast */}
+            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+              <div className="mb-2">
+                <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
+                <p className="font-mono text-[8px] text-gray-400 uppercase">+5-10 PTS • CAST</p>
+              </div>
+              <div className="w-full">
+                {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
+                  <div className="space-y-2">
+                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                    <RetroTimer />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab?.('actions')}
+                    className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
+                  >
+                    GO TO CAST
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* LIMITED MISSION - YELLOW STYLE */}
+          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
+            <div className="flex justify-between items-center relative z-10">
+              <div>
+                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
+                <p className="font-mono text-[10px] text-gray-400 uppercase tracking-tighter">FOLLOW @MUGETSO • +30 PTS</p>
+              </div>
+              <button
+                onClick={() => handleSocialTask('follow_mugetso')}
+                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
+                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500 transition-all shadow-[2px_2px_0_0_#000]"
+              >
+                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? '...' : 'CLAIM')}
+              </button>
+            </div>
+          </div>
+
+          {/* SOCIAL TASKS */}
+          <RetroWindow title="ONE_TIME_QUESTS" icon="star">
+            <div className="space-y-2">
+              {/* Follow Echo */}
+              <div className="flex justify-between items-center border-b border-white/10 pb-2 last:border-0 last:pb-0">
+                <div>
+                  <p className="font-bold text-xs">FOLLOW @ECHO</p>
+                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
+                </div>
+                <button
+                  onClick={() => handleSocialTask('follow_echo')}
+                  disabled={actionLoading === 'follow_echo'} // Needs 'claimed' check from profile in future
+                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
+                >
+                  {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
+                </button>
+              </div>
+              {/* Follow Dev */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-xs">FOLLOW @KHASH</p>
+                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
+                </div>
+                <button
+                  onClick={() => handleSocialTask('follow_khash')}
+                  disabled={actionLoading === 'follow_khash'}
+                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
+                >
+                  {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
+                </button>
+              </div>
+            </div>
+          </RetroWindow>
+
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,67 +3,48 @@ import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function fetchUserCastCount(fid: number): Promise<number> {
-  console.log(`[NEYNAR] Fetching total cast count for FID: ${fid}...`);
+  const client = getNeynarClient();
+  let cursor: string | undefined;
+  let totalCasts = 0;
+  let hasMore = true;
+  const MAX_PAGES = 1000; // High limit to ensure we get everything
+  let page = 0;
+
+  console.log(`[NEYNAR] SDK: Counting casts for FID: ${fid}...`);
 
   try {
-    // 1. Try Storage API (Canonical Hubble count)
-    // This is the most accurate way to get the total number of casts according to Farcaster docs.
-    if (NEYNAR_API_KEY) {
-      try {
-        const storageUrl = `https://api.neynar.com/v2/farcaster/hub/storageLimitsByFid?fid=${fid}`;
-        const res = await fetch(storageUrl, {
-          headers: { 'accept': 'application/json', 'api_key': NEYNAR_API_KEY }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const castLimit = data.limits?.find((l: any) => l.storeType === 'Casts');
-          if (castLimit && typeof castLimit.used === 'number') {
-            console.log(`[NEYNAR] Success via Storage API: ${castLimit.used}`);
-            return castLimit.used;
-          }
-        }
-      } catch (err) {
-        console.warn("[NEYNAR] Storage API failed, falling back to manual count...", err);
-      }
-    }
-
-    // 2. Fallback: Manual Paging (User Suggested Method)
-    // Paginates through all casts to count them.
-    console.log("[NEYNAR] Starting manual cast pagination count...");
-    const client = getNeynarClient();
-    let totalCount = 0;
-    let cursor: string | undefined;
-    let hasMore = true;
-    let pages = 0;
-    const MAX_PAGES = 100; // Safety limit: 100 * 150 = 15,000 casts
-
-    while (hasMore && pages < MAX_PAGES) {
-      const data: any = await client.fetchCastsForUser({
+    while (hasMore && page < MAX_PAGES) {
+      // Try SDK with force-included params (ignoring strict types for reliability)
+      const data = await client.fetchCastsForUser({
         fid,
         limit: 150,
-        ...(cursor && cursor.trim() !== "" ? { cursor } : {}),
-      });
+        cursor,
+        includeReplies: true, // Force include
+        includeRecasts: true
+      } as any);
 
-      totalCount += (data.casts || []).length;
-      cursor = data.next?.cursor;
-      hasMore = !!cursor;
-      pages++;
+      const casts = data.casts || [];
+      totalCasts += casts.length;
+      console.log(`[NEYNAR] SDK Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
 
-      if (pages % 5 === 0) console.log(`[NEYNAR] Counted ${totalCount} casts so far... (${pages} pages)`);
+      cursor = data.next?.cursor || undefined;
+      if (!cursor) hasMore = false;
+      page++;
     }
 
-    console.log(`[NEYNAR] Final manual count: ${totalCount} (${pages} pages)`);
-
-    // 3. Last Fallback: User Stats
-    if (totalCount === 0) {
-      const user = await getNeynarUser(fid);
-      if (user?.stats?.cast_count) return user.stats.cast_count;
+    // Fallback: If SDK returned 0, try Raw Fetch (in case of SDK version mismatch)
+    if (totalCasts === 0) {
+      console.log("[NEYNAR] SDK returned 0. Attempting Raw Fetch Fallback...");
+      const rawCount = await fetchUserCastCountRaw(fid);
+      console.log(`[NEYNAR] Raw Fetch Result: ${rawCount}`);
+      return rawCount;
     }
 
-    return totalCount;
+    return totalCasts;
+
   } catch (e) {
-    console.error("[NEYNAR] Cast count failed", e);
-    return 0;
+    console.error("[NEYNAR] SDK Cast count failed, trying raw...", e);
+    return await fetchUserCastCountRaw(fid);
   }
 }
 

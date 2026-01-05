@@ -76,24 +76,17 @@ export async function GET(request: Request) {
             }
 
             if (results[4].status === 'fulfilled' && results[4].value) {
-                const nUser = results[4].value as any;
-                console.log(`[STATS_API] Neynar User Structure for ${fidParam}:`, JSON.stringify(nUser).slice(0, 500));
+                const nUser = results[4].value as any; // Cast to any to access dynamic props
+                // console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
 
-                // 1. Check root level
-                let extractedCastCount = nUser.cast_count || nUser.castCount || 0;
+                // Robust extraction
+                let extractedCastCount = 0;
+                if (typeof nUser.cast_count === 'number') extractedCastCount = nUser.cast_count;
+                else if (nUser.stats && typeof nUser.stats.cast_count === 'number') extractedCastCount = nUser.stats.cast_count;
+                else if (nUser.profile?.stats?.cast_count) extractedCastCount = nUser.profile.stats.cast_count;
 
-                // 2. Check stats object (standard for bulk endpoint)
-                if (extractedCastCount === 0 && nUser.stats) {
-                    extractedCastCount = nUser.stats.cast_count || nUser.stats.castCount || 0;
-                }
-
-                // 3. Last resort: check deep objects
-                if (extractedCastCount === 0 && nUser.profile?.stats) {
-                    extractedCastCount = nUser.profile.stats.cast_count || 0;
-                }
-
-                console.log(`[STATS_API] Final Extracted Count: ${extractedCastCount}`);
-                (farcasterHoldings as any).cast_count = Number(extractedCastCount);
+                console.log(`[API] Extracted Cast Count for ${fidParam}: ${extractedCastCount}`);
+                (farcasterHoldings as any).cast_count = extractedCastCount;
             }
 
         } catch (err) {

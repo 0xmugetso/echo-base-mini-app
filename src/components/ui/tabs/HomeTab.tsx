@@ -167,110 +167,183 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         loading={baseLoading}
       />
 
-      {/* [REDESIGNED] TECHY STATS BREAKDOWN */}
-      <div className="border-2 border-primary bg-black p-6 shadow-[0_0_20px_rgba(0,180,255,0.2)] relative overflow-hidden group">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] z-0 bg-[length:100%_2px] pointer-events-none" />
+      {/* IDENTITY BANNER */}
+      <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
 
-        <div className="relative z-10">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.2em] mb-2">TOTAL_ECHO_POWER</p>
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-6xl font-pixel text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                  {formatNumber((neynarUser?.score ? Math.floor(neynarUser.score) : 0) + (baseStats?.baseScore || 0))}
-                </h2>
-                <span className="text-xl font-pixel text-primary">PT</span>
-              </div>
-            </div>
-            <div className="opacity-40 grayscale contrast-200">
-              <Skull className="w-16 h-16 text-primary" />
-            </div>
-          </div>
 
-          <div className="h-[2px] w-full bg-white/10 mb-6" />
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        {/* SHARE BUTTON: Retro Outline Style */}
+        <button
+          onClick={() => setIntroOpen(true)}
+          className="group relative bg-black text-white font-pixel text-sm uppercase py-4 border-2 border-white shadow-[4px_4px_0px_0px_#ffffff] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-white hover:text-black transition-all duration-0"
+        >
+          <span className="relative z-10 flex flex-row items-center justify-center gap-2">
+            <PixelShareIcon className="w-6 h-6" />
+            <span>SHARE_STATS</span>
+          </span>
+        </button>
 
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">GRIND_PTS (EARNED)</p>
-              <p className="text-2xl font-pixel text-white">+{neynarUser?.score ? Math.floor(neynarUser.score) : 0}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest mb-1">ONCHAIN_POWER (HISTORY)</p>
-              <p className="text-2xl font-pixel text-white">+{baseStats?.baseScore || 0}</p>
-            </div>
-          </div>
-        </div>
+        {/* MINT BUTTON: Electric Blue Style */}
+        <button
+          onClick={() => setIntroOpen(true)}
+          className="group relative bg-primary text-white font-pixel text-sm uppercase py-4 border-2 border-white shadow-[4px_4px_0px_0px_#ffffff] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:brightness-110 transition-all duration-0"
+        >
+          <span className="relative z-10 flex flex-row items-center justify-center gap-2">
+            <PixelMintIcon className="w-6 h-6 text-white" />
+            <span>MINT_ECHO</span>
+          </span>
+          {/* Scanline overlay for that "electric" feel */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
+        </button>
       </div>
 
-      {/* [REDESIGNED] EARNED BADGES WINDOW */}
-      <RetroWindow title="EARNED_BADGES" icon={<span className="text-primary text-xs mr-2">⊞</span>}>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { id: 'early', label: 'OG', sub: 'EARLY', color: 'bg-blue-600', active: true },
-            { id: 'tester', label: 'V1', sub: 'TESTER', color: 'bg-purple-600', active: true },
-            { id: 'locked1', label: '?', sub: 'LOCKED', color: 'bg-gray-900', active: false },
-            { id: 'locked2', label: '?', sub: 'LOCKED', color: 'bg-gray-900', active: false },
-          ].map((b) => (
-            <div
-              key={b.id}
-              className={`aspect-square border-2 ${b.active ? 'border-white shadow-[4px_4px_0_0_rgba(255,255,255,0.2)]' : 'border-dashed border-gray-800'} p-1 relative group cursor-help`}
-            >
-              <div className={`w-full h-full flex flex-col items-center justify-center gap-1 ${b.active ? b.color : 'bg-black opacity-30'}`}>
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:100%_2px] pointer-events-none" />
-                <h4 className="text-2xl font-pixel text-white">{b.label}</h4>
-                <p className="text-[8px] font-mono text-white/70 uppercase tracking-tighter">{b.sub}</p>
-              </div>
-              {b.active && <div className="absolute -top-1 -left-1 w-2 h-2 bg-white" />}
-            </div>
-          ))}
+      {/* Network Activity Window */}
+      <RetroWindow
+        title="BASE_ACTIVITY"
+        icon={
+          <Image
+            src="/assets/Base_basemark_white.svg"
+            alt="Base"
+            width={48}
+            height={48}
+            className="w-12 h-12 mr-2"
+          />
+        }
+      >
+        <div className="bg-white/5 border border-white/10 p-2 mb-4 text-center">
+          <p className="text-[10px] text-gray-400">CHECK YOUR ONCHAIN ACTIVITY</p>
+          <p className="text-[10px] text-primary">DATA BROUGHT TO YOU BY ECHO</p>
         </div>
-      </RetroWindow>
 
-      {/* [NEW] GLOBAL RANKING SECTION */}
-      <RetroWindow title="GLOBAL_RANKING" icon={<span className="text-primary text-xs mr-2">⌁</span>}>
-        <div className="aspect-video bg-black/50 border-2 border-dashed border-white/10 flex items-center justify-center group">
-          <div className="border-4 border-white/20 p-6 transform -rotate-2 group-hover:rotate-0 transition-transform duration-500">
-            <h3 className="text-2xl font-pixel text-white/40 uppercase tracking-widest">COMING SOON</h3>
-            <p className="text-center font-mono text-[10px] text-gray-600 mt-2 uppercase">SEASON 1 ACTIVATION</p>
+        <div className="flex flex-col gap-4">
+          {/* Row 1: 2 Columns */}
+          <div className="grid grid-cols-2 gap-4">
+            <RetroStatBox
+              label="BIGGEST TX"
+              value={baseLoading ? "..." : `$${formatNumber(baseStats?.biggest_single_tx)}`}
+            />
+            <RetroStatBox
+              label="GAS PAID"
+              value={
+                baseLoading
+                  ? "..."
+                  : `${formatNumber(formatEth(baseStats?.total_fees_paid_wei || 0n), 4)}`
+              }
+              subValue="ETH"
+            />
+          </div>
+
+          {/* Row 2: 3 Columns */}
+          <div className="grid grid-cols-3 gap-2">
+            <RetroStatBox
+              label="TX COUNT"
+              value={baseLoading ? "..." : formatNumber(baseStats?.total_tx)}
+            />
+            <RetroStatBox
+              label="VOLUME"
+              value={
+                baseLoading
+                  ? "..."
+                  : `$${formatNumber(baseStats?.total_volume_usd, 0)}`
+              }
+            />
+            <RetroStatBox label="AGE" value={baseLoading ? "..." : walletAgeText?.split(' ')[0] || "0"} subValue="DAYS" />
           </div>
         </div>
+
+        {baseError && (
+          <div className="mt-2 border border-primary p-2 text-xs text-primary uppercase bg-primary/20">
+            ERROR: CONNECTION_FAILED
+          </div>
+        )}
       </RetroWindow>
 
-      {/* NETWORK ACTIVITY WINDOW (MINIMIZED STYLE) */}
       <RetroWindow
-        title="BASE_STATS"
-        icon={<Image src="/assets/Base_basemark_white.svg" alt="Base" width={24} height={24} className="w-6 h-6 mr-2" />}
+        title="FARCASTER_METRICS"
+        icon={
+          <Image
+            src="/assets/transparent-white.svg"
+            alt="Echo"
+            width={48}
+            height={48}
+            className="w-12 h-12 mr-0"
+          />
+        }
       >
-        <div className="grid grid-cols-2 gap-3">
-          <RetroStatBox label="TX_COUNT" value={baseLoading ? "..." : formatNumber(baseStats?.total_tx)} />
-          <RetroStatBox label="AGE" value={baseLoading ? "..." : walletAgeText?.split(' ')[0] || "0"} subValue="D" />
-          <RetroStatBox label="VOLUME" value={baseLoading ? "..." : `$${formatNumber(baseStats?.total_volume_usd, 0)}`} />
-          <RetroStatBox label="GAS" value={baseLoading ? "..." : `${formatNumber(formatEth(baseStats?.total_fees_paid_wei || 0n), 4)}`} />
+        <div className="bg-white/5 border border-white/10 p-2 mb-4 text-center">
+          <p className="text-[10px] text-gray-400">YOUR SOCIAL LAYER STATUS</p>
+          <p className="text-[10px] text-primary">POWERED BY NEYNAR</p>
         </div>
-      </RetroWindow>
 
-      <RetroWindow
-        title="SOCIAL_LOG"
-        icon={<Image src="/assets/transparent-white.svg" alt="Echo" width={24} height={24} className="w-6 h-6 mr-0" />}
-      >
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
-            <RetroStatBox label="SCORE" value={formatNumber(farcasterScore, 2)} />
+            <RetroStatBox label="NEYNAR SCORE" value={formatNumber(farcasterScore, 2)} />
             <RetroStatBox
-              label="CASTS"
+              label="TOTAL CASTS"
               value={baseLoading ? "..." : formatNumber(baseStats?.farcaster?.cast_count)}
             />
           </div>
 
-          <div className="border-2 border-dashed border-white/10 p-4 bg-[#050505]">
-            <span className="text-[10px] text-gray-600 font-pixel uppercase block mb-2">TOP_LOG</span>
+          {/* BEST CAST SECTION - UPDATED FOR READABILITY */}
+          <div className="border-2 border-dashed border-white/30 p-4 relative bg-[#0a0a0a] shadow-inner">
+            <span className="absolute -top-3 left-3 bg-black px-2 text-xs text-white font-bold border border-white/30">TOP_CAST.LOG</span>
             {baseStats?.farcaster?.best_cast ? (
-              <div>
-                <p className="text-xs text-gray-400 italic line-clamp-2 leading-relaxed">&quot;{baseStats.farcaster.best_cast.text}&quot;</p>
+              <div className="mt-2">
+                <p className="text-base text-gray-200 italic line-clamp-3 leading-relaxed">&quot;{baseStats.farcaster.best_cast.text}&quot;</p>
+                <div className="flex gap-4 mt-3 text-xs text-gray-400 font-mono border-t border-white/10 pt-2">
+                  <span className="font-bold flex items-center gap-1 text-white">♥ LIKES: <span className="text-gray-300">{baseStats.farcaster.best_cast.likes}</span></span>
+                  <span className="font-bold flex items-center gap-1 text-white">↻ RECASTS: <span className="text-gray-300">{baseStats.farcaster.best_cast.recasts}</span></span>
+                </div>
               </div>
             ) : (
-              <p className="text-[10px] text-gray-800 italic">EMPTY_FEED</p>
+              <div className="mt-1 text-center py-4">
+                <p className="text-sm text-gray-400 font-mono">NO_CASTS_FOUND</p>
+              </div>
             )}
+          </div>
+
+          {/* [REDESIGNED] EARNED BADGES SECTION */}
+          <div className="space-y-4 mt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-primary/30" />
+              <h3 className="font-pixel text-xs text-primary uppercase tracking-[0.2em]">EARNED_BADGES</h3>
+              <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-primary/30" />
+            </div>
+
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { id: 'clanker', label: 'CLANKER', color: 'from-blue-600 to-blue-900', icon: '⚡' },
+                { id: 'toshi', label: 'TOSHI', color: 'from-cyan-500 to-cyan-800', icon: '🐱' },
+                { id: 'degen', label: 'DEGEN', color: 'from-purple-600 to-purple-900', icon: '🎩' },
+                { id: 'pro_og', label: 'PRO_OG', color: 'from-yellow-500 to-yellow-800', icon: '👑' },
+                { id: 'warplets', label: 'WARP', color: 'from-orange-500 to-orange-800', icon: '🌀' },
+                { id: 'based_punk', label: 'PUNK', color: 'from-blue-400 to-blue-700', icon: '🎸' },
+                { id: 'bankr_club', label: 'BANKR', color: 'from-red-500 to-red-800', icon: '🏦' },
+                { id: 'jesse', label: 'JESSE', color: 'from-green-500 to-green-800', icon: '✨' },
+              ].map((badge) => {
+                const isOwned = baseStats?.farcaster?.holdings?.[badge.id as keyof typeof baseStats.farcaster.holdings];
+                return (
+                  <div
+                    key={badge.id}
+                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-500 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_10px_rgba(255,255,255,0.2)]` : 'border-white/10 bg-black grayscale opacity-40'}`}
+                  >
+                    {/* Badge Shine */}
+                    {isOwned && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+
+                    <span className="text-lg">{badge.icon}</span>
+                    <span className="text-[7px] font-pixel text-center px-1 leading-tight">{badge.label}</span>
+
+                    {!isOwned && <div className="absolute inset-0 flex items-center justify-center"><span className="text-[10px] opacity-20">?</span></div>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[8px] text-center text-gray-600 font-mono uppercase tracking-widest leading-relaxed">
+              Tokens & Collections detected via Base Network indexing.<br />
+              Hold 10,000+ units or specific NFTs to unlock.
+            </p>
           </div>
         </div>
       </RetroWindow>
