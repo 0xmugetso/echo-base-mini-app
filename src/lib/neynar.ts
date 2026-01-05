@@ -14,30 +14,27 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      // Try SDK with force-included params (ignoring strict types for reliability)
       const data = await client.fetchCastsForUser({
         fid,
         limit: 150,
         cursor,
-        includeReplies: true, // Force include
+        includeReplies: true,
         includeRecasts: true
       } as any);
 
       const casts = data.casts || [];
       totalCasts += casts.length;
-      console.log(`[NEYNAR] SDK Page ${page}: +${casts.length} casts (Total: ${totalCasts})`);
+
+      console.log(`[NEYNAR] Counting casts fid:${fid} - Page ${page}: +${casts.length} (Total: ${totalCasts})`);
 
       cursor = data.next?.cursor || undefined;
-      if (!cursor) hasMore = false;
+      if (!cursor || casts.length === 0) hasMore = false;
       page++;
     }
 
-    // Fallback: If SDK returned 0, try Raw Fetch (in case of SDK version mismatch)
     if (totalCasts === 0) {
       console.log("[NEYNAR] SDK returned 0. Attempting Raw Fetch Fallback...");
-      const rawCount = await fetchUserCastCountRaw(fid);
-      console.log(`[NEYNAR] Raw Fetch Result: ${rawCount}`);
-      return rawCount;
+      return await fetchUserCastCountRaw(fid);
     }
 
     return totalCasts;
