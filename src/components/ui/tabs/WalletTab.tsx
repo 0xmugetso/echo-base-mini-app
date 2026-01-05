@@ -343,14 +343,14 @@ export function WalletTab() {
       <RetroWindow title="EARNED_BADGES.SYS" icon={<span className="text-primary text-xs mr-2">◈</span>}>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { id: 'ECHO_OG', label: 'OG_V', icon: '👑', color: 'from-blue-600/40 to-blue-900/60', check: () => (user?.fid || 0) < 500000 },
-            { id: 'STREAK_7', label: 'STRK', icon: '🔥', color: 'from-gray-600/40 to-gray-800/60', check: () => (profile?.streak?.current || 0) >= 7 },
-            { id: 'MINT_MASTER', label: 'MINT', icon: '💎', color: 'from-blue-400/40 to-blue-600/60', check: () => (profile?.nftTokenId || 0) > 0 },
-            { id: 'REC_ELITE', label: 'RECR', icon: '🤝', color: 'from-slate-600/40 to-slate-800/60', check: () => (profile?.referralStats?.count || 0) >= 5 },
-            { id: 'FEED_CONTRIB', label: 'FEED', icon: '🗣️', color: 'from-blue-800 to-black', check: () => (baseStats?.farcaster?.cast_count || 0) >= 50 },
-            { id: 'VOL_PIONEER', label: 'VOLU', icon: '🌊', color: 'from-zinc-500/40 to-zinc-700/60', check: () => (baseStats?.total_volume_usd || 0) >= 1000 },
-            { id: 'LEGACY_WAL', label: 'LGTC', icon: '🕰️', color: 'from-zinc-800 to-black', check: () => (baseStats?.wallet_age_days || 0) >= 365 },
-            { id: 'EARLY_V1', label: 'V1_S', icon: '🌟', color: 'from-primary/20 to-blue-900/40', check: () => true }, // All current users are V1
+            { id: 'ECHO_OG', label: 'OG_V', icon: '👑', color: 'from-blue-600/40 to-blue-900/60', criteria: 'FID < 500,000', check: () => (user?.fid || 0) < 500000 },
+            { id: 'STREAK_7', label: 'STRK', icon: '🔥', color: 'from-gray-600/40 to-gray-800/60', criteria: '7+ DAY STREAK', check: () => (profile?.streak?.current || 0) >= 7 },
+            { id: 'MINT_MASTER', label: 'MINT', icon: '💎', color: 'from-blue-400/40 to-blue-600/60', criteria: 'MINTED ECHO NFT', check: () => (profile?.nftTokenId || 0) > 0 },
+            { id: 'REC_ELITE', label: 'RECR', icon: '🤝', color: 'from-slate-600/40 to-slate-800/60', criteria: '5+ RECRUITS', check: () => (profile?.referralStats?.count || 0) >= 5 },
+            { id: 'FEED_CONTRIB', label: 'FEED', icon: '🗣️', color: 'from-blue-800 to-black', criteria: '50+ CASTS', check: () => (baseStats?.farcaster?.cast_count || 0) >= 50 },
+            { id: 'VOL_PIONEER', label: 'VOLU', icon: '🌊', color: 'from-zinc-500/40 to-zinc-700/60', criteria: '$1K+ BASE VOL', check: () => (baseStats?.total_volume_usd || 0) >= 1000 },
+            { id: 'LEGACY_WAL', label: 'LGTC', icon: '🕰️', color: 'from-zinc-800 to-black', criteria: '1YR+ WALLET AGE', check: () => (baseStats?.wallet_age_days || 0) >= 365 },
+            { id: 'EARLY_V1', label: 'V1_S', icon: '🌟', color: 'from-primary/20 to-blue-900/40', criteria: 'EARLY V1 USER', check: () => true }, // All current users are V1
           ].map((badge) => {
             const isOwned = badge.check();
             return (
@@ -368,11 +368,9 @@ export function WalletTab() {
                 {!isOwned && <div className="absolute inset-0 flex items-center justify-center font-pixel text-[8px] opacity-10 uppercase tracking-tighter">Locked</div>}
 
                 {/* Micro-tooltip on hover */}
-                {isOwned && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover/badge:opacity-100 bg-white text-black text-[6px] font-pixel px-1 py-0.5 z-50 pointer-events-none whitespace-nowrap">
-                    UNLOCK_VERIFIED
-                  </div>
-                )}
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover/badge:opacity-100 bg-white text-black text-[6px] font-pixel px-1 py-0.5 z-50 pointer-events-none whitespace-nowrap shadow-[2px_2px_0_0_rgba(0,0,0,0.5)] border border-black/10">
+                  {badge.criteria}
+                </div>
               </div>
             );
           })}

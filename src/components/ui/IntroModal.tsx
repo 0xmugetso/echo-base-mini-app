@@ -282,18 +282,17 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         // 1. CLONE
         const clone = templateNode.cloneNode(true) as HTMLElement;
 
-        // 2. STAGE ON-SCREEN (Visible Flash) - Crucial for html-to-image
-        // We place it at top-left but behind a white overlay or just rely on speed
+        // 2. STAGE OFF-SCREEN
         clone.id = 'stats-window-capture-instance';
         clone.style.position = 'fixed';
         clone.style.top = '0px';
-        clone.style.left = '0px';
-        clone.style.zIndex = '9999999'; // On top of everything
+        clone.style.left = '-5000px'; // Move far off-screen to avoid visual flash
+        clone.style.zIndex = '9999999';
         clone.style.display = 'block';
         clone.style.opacity = '1';
         clone.style.pointerEvents = 'none';
         clone.style.width = '380px';
-        clone.style.transform = 'none'; // Reset transforms
+        clone.style.transform = 'none';
 
         // Force images to crossOrigin anonymous in the clone
         const imgs = clone.getElementsByTagName('img');
@@ -455,17 +454,22 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const text = `here's my base stats and farcaster activity powered by @echo`;
         const url = "https://echo-base-mini-app.vercel.app";
 
-        let intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`;
-        if (imageUrl) {
-            intentUrl += `&embeds[]=${encodeURIComponent(imageUrl)}`;
-        }
-
-        if (sdk?.actions?.openUrl) {
-            sdk.actions.openUrl(intentUrl);
-            toast("OPENING CAST...", "SUCCESS");
-        } else {
-            window.open(intentUrl, "_blank");
-            toast("OPENING WINDOW...", "SUCCESS");
+        try {
+            if (sdk?.actions?.composeCast) {
+                await sdk.actions.composeCast({
+                    text,
+                    embeds: imageUrl ? [url, imageUrl] : [url]
+                });
+                toast("OPENING COMPOSER...", "SUCCESS");
+            } else {
+                // Fallback for non-SDK environment
+                const intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}${imageUrl ? `&embeds[]=${encodeURIComponent(imageUrl)}` : ''}`;
+                window.open(intentUrl, "_blank");
+                toast("OPENING WINDOW...", "SUCCESS");
+            }
+        } catch (e) {
+            console.error("Share failed", e);
+            toast("SHARE FAILED", "ERROR");
         }
     }
 

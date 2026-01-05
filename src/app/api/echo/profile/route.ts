@@ -199,8 +199,9 @@ export async function POST(request: Request) {
             // I'll assume we return it and the frontend manages the display sum.
 
             // SAVE STATS
-            // NEW: Persist Onchain Score
-            profile.onchainScore = Math.floor(onchainScore);
+            // NEW: Persist Onchain Score (Take max to avoid perceived deductions)
+            const currentOnchain = Number(profile.onchainScore) || 0;
+            profile.onchainScore = Math.max(currentOnchain, Math.floor(onchainScore));
 
             // Logic to award Welcome Points if this is the first calculation
             if (!profile.dailyActions.completedTasks.includes('welcome_bonus')) {

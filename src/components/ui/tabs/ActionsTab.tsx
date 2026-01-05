@@ -249,18 +249,25 @@ export function ActionsTab({ context }: ActionTabProps) {
                   </div>
                 </div>
 
-                {/* BUTTONS */}
                 {status === 'IDLE' ? (
-                  <button
-                    onClick={handleCompose}
-                    disabled={!isValid}
-                    className={`relative w-full py-4 font-pixel text-sm uppercase transition-all ${isValid
-                      ? 'bg-primary text-white hover:brightness-110 shadow-[0_0_10px_theme(\'colors.primary\')]'
-                      : 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800'
-                      }`}
-                  >
-                    COMPOSE ON WARPCAST ↗
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleCompose}
+                      disabled={!isValid}
+                      className={`relative w-full py-4 font-pixel text-sm uppercase transition-all ${isValid
+                        ? 'bg-primary text-white hover:brightness-110 shadow-[0_0_10px_theme(\'colors.primary\')]'
+                        : 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800'
+                        }`}
+                    >
+                      COMPOSE ON WARPCAST ↗
+                    </button>
+                    <button
+                      onClick={() => setStatus('AWAITING_VERIFICATION')}
+                      className="w-full py-2 font-mono text-[9px] text-gray-500 hover:text-white border border-white/10 hover:border-white/30 transition-all uppercase"
+                    >
+                      Already posted? Skip to verification
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="text-center text-[10px] text-gray-400 font-mono mb-2">
