@@ -175,7 +175,6 @@ export async function POST(request: Request) {
 
             console.log(`[PROFILE_CALC] Resulting Onchain Score: ${onchainScore}`);
             profile.onchainScore = Math.floor(onchainScore);
-            profile.castCount = Number(realCastCount || 0);
 
             // Logic to award Welcome Points if this is the first calculation
             if (!profile.dailyActions.completedTasks.includes('welcome_bonus')) {

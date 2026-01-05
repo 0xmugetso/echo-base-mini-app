@@ -8,30 +8,13 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
   try {
     // 1. Try getting from Neynar User Stats (Most reliable total)
     const user = await getNeynarUser(fid);
-
-    if (!user) {
-      console.warn(`[NEYNAR] User not found for FID: ${fid}`);
-      return 0;
+    if (user && user.stats && typeof user.stats.cast_count === 'number') {
+      console.log(`[NEYNAR] Success via Stats: ${user.stats.cast_count}`);
+      return user.stats.cast_count;
     }
 
-    console.log(`[NEYNAR] User data for FID ${fid}:`, JSON.stringify(user).slice(0, 500));
-
-    // Try all possible paths for cast count in Neynar response
-    const castCount =
-      user.stats?.cast_count ??
-      user.stats?.castCount ??
-      user.cast_count ??
-      user.castCount ??
-      user.profile?.stats?.cast_count ??
-      0;
-
-    if (typeof castCount === 'number' && castCount > 0) {
-      console.log(`[NEYNAR] Success via Stats: ${castCount}`);
-      return castCount;
-    }
-
-    // 2. Fallback to manual counting ONLY if stats missing or 0
-    console.log("[NEYNAR] Stats missing or 0, falling back to manual pagination...");
+    // 2. Fallback to manual counting if stats missing
+    console.log("[NEYNAR] Stats missing, falling back to manual pagination...");
     const client = getNeynarClient();
     let cursor: string | undefined;
     let totalCasts = 0;
@@ -47,12 +30,9 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
         includeRecasts: true
       } as any);
 
-      const pageCount = (data.casts || []).length;
-      totalCasts += pageCount;
-      console.log(`[NEYNAR] Manual Page ${page}: +${pageCount} (Total: ${totalCasts})`);
-
+      totalCasts += (data.casts || []).length;
       cursor = data.next?.cursor || undefined;
-      if (!cursor || pageCount === 0) hasMore = false;
+      if (!cursor) hasMore = false;
       page++;
     }
 

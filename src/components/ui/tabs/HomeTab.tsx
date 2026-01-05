@@ -5,7 +5,7 @@ import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { NeynarUser } from "~/hooks/useNeynarUser";
 import { RetroBanner } from "../RetroBanner";
 import { RetroWindow } from "../RetroWindow";
-import { Skull as NoDecorationSkull } from "../Skull";
+import { Skull } from "../Skull";
 import { PixelMintIcon } from "../PixelMintIcon";
 import { PixelShareIcon } from "../PixelShareIcon";
 import { base64Grid } from "../gridPattern";
@@ -183,7 +183,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               </div>
             </div>
             <div className="opacity-40 grayscale contrast-200">
-              <NoDecorationSkull className="w-16 h-16 text-primary" />
+              <Skull className="w-16 h-16 text-primary" />
             </div>
           </div>
 
