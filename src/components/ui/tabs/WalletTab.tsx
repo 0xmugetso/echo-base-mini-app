@@ -76,9 +76,37 @@ export function WalletTab() {
   }, [user?.fid]);
 
   // Use unified Base Score from hook
-  const baseScore = baseStats?.baseScore || 0;
+  const neynarScore = Number(user?.score) || 0;
+  const onchainRep = Number(profile?.onchainScore) || 0;
+  const totalScore = activityPoints + onchainRep + neynarScore;
 
-  const totalScore = activityPoints + baseScore;
+  const handleSyncPoints = async () => {
+    if (!user?.fid) return;
+    toast("SYNCING ONCHAIN REPUTATION...", "PROCESS");
+    try {
+      const res = await fetch('/api/echo/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fid: user.fid,
+          username: user.username,
+          address: userAddress,
+          action: 'calculate',
+          manualStats: JSON.parse(JSON.stringify(baseStats, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ))
+        })
+      });
+      const data = await res.json();
+      if (data.profile) {
+        setProfile(data.profile);
+        setActivityPoints(data.profile.points);
+        toast("SYNC SUCCESSFUL", "SUCCESS");
+      }
+    } catch (e) {
+      toast("SYNC FAILED", "ERROR");
+    }
+  };
 
   const handleDisconnect = () => disconnect();
 
@@ -255,7 +283,7 @@ export function WalletTab() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-primary animate-pulse" />
-                <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.3em]">PROFILE_IDENTITY.LOG</p>
+                <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.3em]">REPUTATION_ENGINE.OS</p>
               </div>
               <div className="flex items-baseline gap-4">
                 <h2 className="text-7xl font-pixel text-white tracking-tighter text-shadow-glow">
@@ -263,33 +291,44 @@ export function WalletTab() {
                 </h2>
                 <span className="text-2xl font-pixel text-primary animate-pulse">EP</span>
               </div>
-              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest pl-1">Consolidated Echo Power Output</p>
+              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest pl-1">Aggregated Onchain + Social Power</p>
             </div>
             <div className="text-right flex flex-col items-end gap-2">
-              <div className="border border-white/20 p-2 bg-black/50 backdrop-blur-sm">
-                <Skull className="w-12 h-12 text-primary opacity-80" />
-              </div>
+              <button
+                onClick={handleSyncPoints}
+                className="border border-white/20 p-2 bg-black/50 backdrop-blur-sm hover:border-primary hover:bg-primary/10 transition-all group/sync active:scale-95"
+              >
+                <Skull className="w-12 h-12 text-primary opacity-80 group-hover/sync:opacity-100 group-hover/sync:scale-110 transition-transform" />
+                <p className="text-[7px] font-pixel text-primary mt-1 opacity-0 group-hover/sync:opacity-100 transition-opacity">SYNC_OS</p>
+              </button>
               <span className="text-[8px] font-mono text-primary/50 uppercase tracking-[0.2em] leading-none">CORE_OS_V.4.2</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 border-t border-b border-white/10 py-6">
+          <div className="grid grid-cols-3 gap-4 border-t border-b border-white/10 py-6">
             <div className="space-y-1 group/stat">
               <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
                 <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
-                GRIND_PTS (SESSION)
+                ACTIONS
               </p>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-pixel text-white">+{formatNumber(activityPoints)}</p>
-                <div className="text-[8px] font-mono text-[#00ff00] animate-pulse">● FEED</div>
+                <p className="text-2xl font-pixel text-white">+{formatNumber(activityPoints)}</p>
+                <div className="text-[8px] font-mono text-[#00ff00] animate-pulse">● LIVE</div>
               </div>
             </div>
-            <div className="space-y-1 group/stat border-l border-white/10 pl-6">
+            <div className="space-y-1 group/stat border-l border-white/10 pl-4">
               <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
                 <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
-                ONCHAIN_PWR (NODE)
+                REPUTATION
               </p>
-              <p className="text-3xl font-pixel text-white">+{baseLoading ? "..." : formatNumber(baseScore)}</p>
+              <p className="text-2xl font-pixel text-white">+{baseLoading ? "..." : formatNumber(onchainRep)}</p>
+            </div>
+            <div className="space-y-1 group/stat border-l border-white/10 pl-4">
+              <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
+                SOCIAL
+              </p>
+              <p className="text-2xl font-pixel text-white">+{formatNumber(neynarScore)}</p>
             </div>
           </div>
 

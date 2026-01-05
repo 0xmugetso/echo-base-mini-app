@@ -210,7 +210,10 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 });
                 const data = await res.json();
                 if (data.profile) {
-                    setCalculatedPoints((data.profile.points || 0) + (data.profile.onchainScore || 0));
+                    const grindPts = data.profile.points || 0;
+                    const onchainRep = data.profile.onchainScore || 0;
+                    const socialScore = farcasterScore; // neynarUser.score
+                    setCalculatedPoints(grindPts + onchainRep + socialScore);
                 }
             } catch (e) {
                 console.error("Calculation Error", e);

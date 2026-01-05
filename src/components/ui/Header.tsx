@@ -28,9 +28,13 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
       try {
         const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
         const data = await res.json();
-        if (data && data.points !== undefined) {
-          const total = (Number(data.points) || 0) + (Number(data.onchainScore) || 0);
-          setEchoPoints(total);
+        if (data && !data.error) {
+          // Unified Formula: Grind Points + Onchain Score + Neynar Score
+          const grindPoints = Number(data.points) || 0;
+          const onchainRep = Number(data.onchainScore) || 0;
+          const neynarScore = Number(neynarUser?.score) || 0;
+
+          setEchoPoints(grindPoints + onchainRep + neynarScore);
         }
       } catch (e) {
         console.error("Points fetch failed", e);
@@ -41,10 +45,10 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
     // Refresh every 15s to catch check-in updates
     const interval = setInterval(fetchPoints, 15000);
     return () => clearInterval(interval);
-  }, [context?.user?.fid]);
+  }, [context?.user?.fid, neynarUser?.score]);
 
   const totalDisplayScore = useMemo(() => {
-    return Number(echoPoints) || 0;
+    return Math.floor(echoPoints);
   }, [echoPoints]);
 
   return (
