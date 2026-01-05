@@ -343,16 +343,16 @@ export function WalletTab() {
       <RetroWindow title="EARNED_BADGES.SYS" icon={<span className="text-primary text-xs mr-2">◈</span>}>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { id: 'clanker', label: 'CLKR', icon: '⚡', color: 'from-yellow-500 to-orange-600' },
-            { id: 'toshi', label: 'TSHI', icon: '🐱', color: 'from-blue-400 to-blue-600' },
-            { id: 'degen', label: 'DGN', icon: '🎩', color: 'from-purple-500 to-indigo-600' },
-            { id: 'bankr_club', label: 'BNKR', icon: '🏛️', color: 'from-emerald-500 to-green-700' },
-            { id: 'jesse', label: 'JSSE', icon: '🌟', color: 'from-pink-500 to-red-600' },
-            { id: 'brett', label: 'BRTT', icon: '🐸', color: 'from-green-400 to-teal-600' },
-            { id: 'pro_og', label: 'OG_V', icon: '👑', color: 'from-amber-400 to-yellow-600' },
-            { id: 'warplets', icon: '💎', label: 'WRPT', color: 'from-cyan-400 to-blue-500' },
+            { id: 'ECHO_OG', label: 'OG_V', icon: '👑', color: 'from-amber-400 to-yellow-600', check: () => (user?.fid || 0) < 500000 },
+            { id: 'STREAK_7', label: 'STRK', icon: '🔥', color: 'from-orange-500 to-red-600', check: () => (profile?.streak?.current || 0) >= 7 },
+            { id: 'MINT_MASTER', label: 'MINT', icon: '💎', color: 'from-blue-400 to-indigo-600', check: () => (profile?.nftTokenId || 0) > 0 },
+            { id: 'REC_ELITE', label: 'RECR', icon: '🤝', color: 'from-emerald-500 to-teal-600', check: () => (profile?.referralStats?.count || 0) >= 5 },
+            { id: 'FEED_CONTRIB', label: 'FEED', icon: '🗣️', color: 'from-purple-500 to-pink-600', check: () => (baseStats?.farcaster?.cast_count || 0) >= 50 },
+            { id: 'VOL_PIONEER', label: 'VOLU', icon: '🌊', color: 'from-cyan-400 to-blue-500', check: () => (baseStats?.total_volume_usd || 0) >= 1000 },
+            { id: 'LEGACY_WAL', label: 'LGTC', icon: '🕰️', color: 'from-gray-500 to-slate-700', check: () => (baseStats?.wallet_age_days || 0) >= 365 },
+            { id: 'EARLY_V1', label: 'V1_S', icon: '🌟', color: 'from-pink-500 to-rose-600', check: () => true }, // All current users are V1
           ].map((badge) => {
-            const isOwned = (baseStats?.farcaster?.holdings as any)?.[badge.id];
+            const isOwned = badge.check();
             return (
               <div
                 key={badge.id}
