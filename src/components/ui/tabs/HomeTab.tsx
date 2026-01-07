@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useMiniApp } from "@neynar/react";
+import { useAccount } from "wagmi";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { NeynarUser } from "~/hooks/useNeynarUser";
 import { RetroBanner } from "../RetroBanner";
@@ -105,11 +106,13 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
 
-  const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0];
+  const { address: connectedAddress } = useAccount();
+  const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
   const address =
     context?.user?.custody_address ||
     context?.user?.verified_addresses?.eth_addresses?.[0] ||
-    "0x6bD8965a5e66EC06c29800Fb3a79B43f56D758cd";
+    connectedAddress ||
+    "0x0000000000000000000000000000000000000000"; // Truly neutral fallback
 
   if (isFallbackAddress && isSDKLoaded) {
     console.warn("[Echo] Custody address missing. Origin mismatch likely blocking SDK context.");
