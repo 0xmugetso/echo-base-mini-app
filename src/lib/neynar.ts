@@ -34,12 +34,16 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
       }
 
       const data: any = await res.json();
-      const casts: any[] = data.casts || [];
+      console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA KEYS:`, Object.keys(data));
+      console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA:`, JSON.stringify(data, null, 2));
+
+      // Check for common Neynar response structures
+      const casts: any[] = data.casts || data.result?.casts || [];
+      console.log(`[NEYNAR] Page ${page}: +${casts.length} casts found. (Total so far: ${totalCasts + casts.length})`);
+
       totalCasts += casts.length;
 
-      console.log(`[NEYNAR] Page ${page}: +${casts.length} (Running Total: ${totalCasts})`);
-
-      cursor = data.next?.cursor || null;
+      cursor = data.next?.cursor || data.result?.next?.cursor || null;
       if (!cursor || casts.length === 0) {
         hasMore = false;
       }

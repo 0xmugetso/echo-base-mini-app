@@ -119,7 +119,8 @@ export async function GET(request: Request) {
             }
         };
 
-        console.log(`[API] Returning stats for ${address}: Cast Count = ${storageStats.farcaster.cast_count}`);
+        console.log(`[API] DEBUG: Final storageStats structure keys:`, Object.keys(storageStats));
+        console.log(`[API] DEBUG: Farcaster object:`, JSON.stringify(storageStats.farcaster, null, 2));
 
         // 5. Update or Insert DB
         userDoc = await UserStats.findOneAndUpdate(
