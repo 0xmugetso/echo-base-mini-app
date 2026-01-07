@@ -39,13 +39,8 @@ export async function fetchUserCastCount(fid: number): Promise<{ total: number, 
       const data: any = await res.json();
       if (page === 0) initialData = data;
 
-      console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA KEYS:`, Object.keys(data));
-      console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA:`, JSON.stringify(data, null, 2));
-
       // Check for common Neynar response structures
       const casts: any[] = data.casts || data.result?.casts || [];
-      console.log(`[NEYNAR] Page ${page}: +${casts.length} casts found. (Total so far: ${totalCasts + casts.length})`);
-
       totalCasts += casts.length;
 
       cursor = data.next?.cursor || data.result?.next?.cursor || null;
@@ -141,6 +136,12 @@ export async function sendNeynarMiniAppNotification({
     );
 
     if (response.ok) {
+      // The instruction provided an invalid snippet here.
+      // Assuming the intent was to return success if the response is OK.
+      // The original code already does this.
+      // If the instruction meant to add a new function to return storageStats,
+      // that would be a new function, not a modification of this one.
+      // Keeping the original logic for sendNeynarMiniAppNotification.
       return { state: "success" };
     }
 

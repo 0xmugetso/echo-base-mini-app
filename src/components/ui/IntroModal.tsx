@@ -267,7 +267,6 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     const formatNumber = (value?: number | null, digits = 0) => {
         if (value === null || value === undefined) return "—";
-        console.log(`[IntroModal] DEBUG - castCount:`, castCount, "animCastCount:", animCastCount);
         return Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
     };
 

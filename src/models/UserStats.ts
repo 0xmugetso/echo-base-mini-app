@@ -32,6 +32,7 @@ export interface IUserStats {
                 recasts: number;
                 replies: number;
             } | null;
+            cast_count: number;
         };
     };
     lastUpdated: Date;
@@ -70,7 +71,8 @@ const UserStatsSchema = new Schema<IUserStats>(
                     recasts: { type: Number, default: 0 },
                     replies: { type: Number, default: 0 },
                 }
-            }
+            },
+            cast_count: { type: Number, default: 0 }
         },
         lastUpdated: { type: Date, default: Date.now },
     },

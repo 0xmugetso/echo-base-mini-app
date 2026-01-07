@@ -141,7 +141,7 @@ export async function GET(request: Request) {
             { upsert: true, new: true }
         );
 
-        return NextResponse.json(userDoc.stats);
+        return NextResponse.json(storageStats);
 
     } catch (error: any) {
         console.error('[API] Error in stats route:', error);
