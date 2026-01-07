@@ -255,15 +255,15 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const biggestTx = baseStats?.biggest_single_tx || 0;
     const gasPaid = Number(baseStats?.total_fees_paid_wei || 0n) / 1e18;
 
-    const animScore = useCountUp(farcasterScore, isStep3);
-    const animWallet = useCountUp(fcWalletValue, isStep3);
-    const animCastCount = useCountUp(castCount, isStep3);
-    const animVolume = useCountUp(baseVolume, isStep3);
-    const animTotalTx = useCountUp(totalTx, isStep3);
-    const animBiggestTx = useCountUp(biggestTx, isStep3);
-    const animGasPaid = useCountUp(gasPaid, isStep3);
-    const animWalletAge = useCountUp(walletAge, isStep3);
-    const animPoints = useCountUp(calculatedPoints || 0, isStep4 && calculatedPoints !== null);
+    const animScore = useCountUp(farcasterScore, step >= 3);
+    const animWallet = useCountUp(fcWalletValue, step >= 3);
+    const animCastCount = useCountUp(castCount, step >= 3);
+    const animVolume = useCountUp(baseVolume, step >= 3);
+    const animTotalTx = useCountUp(totalTx, step >= 3);
+    const animBiggestTx = useCountUp(biggestTx, step >= 3);
+    const animGasPaid = useCountUp(gasPaid, step >= 3);
+    const animWalletAge = useCountUp(walletAge, step >= 3);
+    const animPoints = useCountUp(calculatedPoints || 0, step >= 4 && calculatedPoints !== null);
 
     const formatNumber = (value?: number | null, digits = 0) => {
         if (value === null || value === undefined) return "—";
@@ -282,12 +282,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         // 1. CLONE
         const clone = templateNode.cloneNode(true) as HTMLElement;
 
-        // 2. STAGE OFF-SCREEN
+        // 2. STAGE IN-VIEWPORT BUT OBSCURED
         clone.id = 'stats-window-capture-instance';
         clone.style.position = 'fixed';
         clone.style.top = '0px';
-        clone.style.left = '-5000px'; // Move far off-screen to avoid visual flash
-        clone.style.zIndex = '9999999';
+        clone.style.left = '0px';
+        clone.style.zIndex = '-9999999'; // Behind everything
         clone.style.display = 'block';
         clone.style.opacity = '1';
         clone.style.pointerEvents = 'none';
@@ -303,7 +303,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         document.body.appendChild(clone);
 
         // 3. WAIT slightly for render
-        await new Promise(r => setTimeout(r, 250));
+        await new Promise(r => setTimeout(r, 500)); // Increased to 500ms for safety
 
         try {
             // 4. CAPTURE
@@ -312,7 +312,14 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 cacheBust: true,
                 skipAutoScale: true,
                 pixelRatio: 2,
+                quality: 1.0,
                 includeQueryParams: true,
+                style: {
+                    display: 'block',
+                    opacity: '1',
+                    transform: 'none',
+                    margin: '0',
+                },
                 fetchRequestInit: {
                     mode: 'cors',
                     credentials: 'omit'

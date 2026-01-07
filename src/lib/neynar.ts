@@ -3,45 +3,55 @@ import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function fetchUserCastCount(fid: number): Promise<number> {
-  const client = getNeynarClient();
-  let cursor: string | undefined;
-  let totalCasts = 0;
-  let hasMore = true;
-  const MAX_PAGES = 1000; // High limit to ensure we get everything
-  let page = 0;
+  if (!NEYNAR_API_KEY) {
+    console.error("[NEYNAR] API key missing");
+    return 0;
+  }
 
-  console.log(`[NEYNAR] SDK: Counting casts for FID: ${fid}...`);
+  let totalCasts = 0;
+  let cursor: string | null = null;
+  let hasMore = true;
+  let page = 0;
+  const MAX_PAGES = 1000; // High safety limit
+
+  console.log(`[NEYNAR] Starting comprehensive count for FID: ${fid}...`);
 
   try {
     while (hasMore && page < MAX_PAGES) {
-      const data = await client.fetchCastsForUser({
-        fid,
-        limit: 150,
-        cursor,
-        includeReplies: true,
-        includeRecasts: true
-      } as any);
+      const cursorParam: string = cursor ? `&cursor=${cursor}` : '';
+      const url: string = `https://api.neynar.com/v2/farcaster/feed/user/casts?fid=${fid}&limit=150&include_replies=true&include_recasts=true${cursorParam}`;
 
-      const casts = data.casts || [];
+      const res: Response = await fetch(url, {
+        headers: {
+          'accept': 'application/json',
+          'api_key': NEYNAR_API_KEY
+        }
+      });
+
+      if (!res.ok) {
+        console.error(`[NEYNAR] API error on page ${page}: ${res.status}`);
+        break;
+      }
+
+      const data: any = await res.json();
+      const casts: any[] = data.casts || [];
       totalCasts += casts.length;
 
-      console.log(`[NEYNAR] Counting casts fid:${fid} - Page ${page}: +${casts.length} (Total: ${totalCasts})`);
+      console.log(`[NEYNAR] Page ${page}: +${casts.length} (Running Total: ${totalCasts})`);
 
-      cursor = data.next?.cursor || undefined;
-      if (!cursor || casts.length === 0) hasMore = false;
+      cursor = data.next?.cursor || null;
+      if (!cursor || casts.length === 0) {
+        hasMore = false;
+      }
       page++;
     }
 
-    if (totalCasts === 0) {
-      console.log("[NEYNAR] SDK returned 0. Attempting Raw Fetch Fallback...");
-      return await fetchUserCastCountRaw(fid);
-    }
-
+    console.log(`[NEYNAR] Final Total for ${fid}: ${totalCasts}`);
     return totalCasts;
 
   } catch (e) {
-    console.error("[NEYNAR] SDK Cast count failed, trying raw...", e);
-    return await fetchUserCastCountRaw(fid);
+    console.error("[NEYNAR] Comprehensive count failed:", e);
+    return 0;
   }
 }
 
