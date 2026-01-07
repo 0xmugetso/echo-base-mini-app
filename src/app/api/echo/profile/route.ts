@@ -132,7 +132,8 @@ export async function POST(request: Request) {
             // NEW: Fetch Real Cast Count via Neynar
             let realCastCount = 0;
             try {
-                realCastCount = await fetchUserCastCount(fid);
+                const result = await fetchUserCastCount(fid);
+                realCastCount = result.total;
             } catch (err) { console.error("Cast count error", err); }
 
 

@@ -40,6 +40,7 @@ export async function GET(request: Request) {
         let farcasterHoldings = { holdings: { warplets: false, pro_og: false, based_punk: false, bankr_club: false, clanker: false, jesse: false, degen: false, brett: false, toshi: false } };
         let fcWalletValue = 0;
         let bestCast = null;
+        let neynarRawFirstPage = null;
 
         try {
             const results = await Promise.allSettled([
@@ -93,12 +94,13 @@ export async function GET(request: Request) {
             console.error('[API] Parallel fetch failed:', err);
         }
 
-        // Calculate Real Cast Count using robust pagination
+        // NEW: Fetch Real Cast Count via Neynar
         let realCastCount = 0;
         if (fid) {
             try {
-                console.log(`[STATS_API] Fetching robust cast count for FID: ${fid}`);
-                realCastCount = await fetchUserCastCount(fid);
+                const result = await fetchUserCastCount(fid);
+                realCastCount = result.total;
+                neynarRawFirstPage = result.firstPage;
                 console.log(`[STATS_API] Robust Cast Count Result: ${realCastCount}`);
             } catch (e) {
                 console.error("[STATS_API] Cast count fetch failed", e);
@@ -116,6 +118,13 @@ export async function GET(request: Request) {
                 holdings: farcasterHoldings.holdings,
                 best_cast: bestCast,
                 cast_count: Number(realCastCount || 0) // Ensure number
+            },
+            _debug: {
+                realCastCount,
+                fidRequested: fid,
+                addressRequested: address,
+                timestamp: new Date().toISOString(),
+                neynarRawFirstPage: neynarRawFirstPage
             }
         };
 

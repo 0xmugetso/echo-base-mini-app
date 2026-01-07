@@ -150,7 +150,10 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   /* DEBUG LOGS */
   useEffect(() => {
     if (baseStats) {
-      console.log("[HomeTab] Full Stats:", baseStats);
+      console.log("[HomeTab] Full Stats Received:", baseStats);
+      if ((baseStats as any)._debug) {
+        console.log("[HomeTab] DEBUG INFO:", (baseStats as any)._debug);
+      }
       console.log("[HomeTab] Cast Count Value:", baseStats?.farcaster?.cast_count);
     }
   }, [baseStats]);

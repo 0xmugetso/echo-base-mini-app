@@ -2,13 +2,14 @@ import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
-export async function fetchUserCastCount(fid: number): Promise<number> {
+export async function fetchUserCastCount(fid: number): Promise<{ total: number, firstPage: any }> {
   if (!NEYNAR_API_KEY) {
     console.error("[NEYNAR] API key missing");
-    return 0;
+    return { total: 0, firstPage: null };
   }
 
   let totalCasts = 0;
+  let initialData: any = null;
   let cursor: string | null = null;
   let hasMore = true;
   let page = 0;
@@ -24,16 +25,20 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
       const res: Response = await fetch(url, {
         headers: {
           'accept': 'application/json',
-          'api_key': NEYNAR_API_KEY
+          'x-api-key': NEYNAR_API_KEY,
+          'api_key': NEYNAR_API_KEY // Backup
         }
       });
 
       if (!res.ok) {
-        console.error(`[NEYNAR] API error on page ${page}: ${res.status}`);
+        const errText = await res.text();
+        console.error(`[NEYNAR] API error on page ${page}: ${res.status} - ${errText}`);
         break;
       }
 
       const data: any = await res.json();
+      if (page === 0) initialData = data;
+
       console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA KEYS:`, Object.keys(data));
       console.log(`[NEYNAR] DEBUG Page ${page} RAW DATA:`, JSON.stringify(data, null, 2));
 
@@ -51,11 +56,14 @@ export async function fetchUserCastCount(fid: number): Promise<number> {
     }
 
     console.log(`[NEYNAR] Final Total for ${fid}: ${totalCasts}`);
-    return totalCasts;
+    return {
+      total: totalCasts,
+      firstPage: initialData // Pass back for debugging
+    };
 
-  } catch (e) {
+  } catch (e: any) {
     console.error("[NEYNAR] Comprehensive count failed:", e);
-    return 0;
+    return { total: 0, firstPage: null };
   }
 }
 
