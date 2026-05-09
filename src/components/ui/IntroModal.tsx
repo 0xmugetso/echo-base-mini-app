@@ -95,7 +95,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.fid) {
-                        setIsNewUser(false);
+                        // setIsNewUser(false);
                     }
                 })
                 .catch(e => console.error("Profile check error", e));
