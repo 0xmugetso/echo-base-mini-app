@@ -63,7 +63,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [inviteCode, setInviteCode] = useState<string[]>(new Array(6).fill(''));
     const [isReclaiming, setIsReclaiming] = useState(false);
     const [inviteStatus, setInviteStatus] = useState<'idle' | 'validating' | 'success' | 'invalid'>('idle');
-    const [isNewUser, setIsNewUser] = useState(true);
+    const [isNewUser, setIsNewUser] = useState(false);
 
     // --- HOOKS ---
     const { signerStatus, checkStatus } = useNeynarSigner();
