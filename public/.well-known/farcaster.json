@@ -10,7 +10,7 @@
         "splashBackgroundColor": "#82008A",
         "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook",
         "subtitle": "Your Retro Base Companion",
-        "description": "Step into the ultimate retro-style hub for Farcaster and Base. Check in daily to unlock mystery boxes, publish casts, track your wallet value, and monitor your Neynar score—all from one seamless mini-app.",
+        "description": "Step into the ultimate retro style hub for Farcaster and Base",
         "primaryCategory": "social",
         "screenshotUrls": [
             "https://echo-base-mini-app.vercel.app/assets/banner_hand.jpg"
