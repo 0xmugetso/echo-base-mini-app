@@ -240,7 +240,7 @@ export function WalletTab() {
             <button
               onClick={() => {
                 if (!profile?.referralCode) return;
-                const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-base-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
+                const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
                 navigator.clipboard.writeText(deepLink);
                 toast("LINK COPIED TO CLIPBOARD", "SUCCESS");
               }}

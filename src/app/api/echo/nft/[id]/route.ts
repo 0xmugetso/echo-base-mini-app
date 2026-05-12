@@ -53,7 +53,7 @@ export async function GET(
             name: `Echo # ${profile?.username?.toUpperCase() || nftRecord.fid}`,
             description: `Echo Card for ${profile?.username || nftRecord.address}. Verifying onchain activity on Base and Farcaster.`,
             image: nftRecord.imageUrl,
-            external_url: `https://echo-base-mini-app.vercel.app/profile/${nftRecord.fid}`,
+            external_url: `https://echo-mini-app.vercel.app/profile/${nftRecord.fid}`,
             attributes: attributes
         });
     } catch (e: any) {

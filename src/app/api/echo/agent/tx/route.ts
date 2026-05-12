@@ -36,7 +36,7 @@ export async function POST(request: Request) {
                     {
                         name: "Daily Check-in",
                         description: "Verify your streak onchain",
-                        image: "https://echo-base-mini-app.vercel.app/assets/banner_eye.jpg"
+                        image: "https://echo-mini-app.vercel.app/assets/banner_eye.jpg"
                     }
                 ]
             }

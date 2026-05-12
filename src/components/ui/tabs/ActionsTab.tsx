@@ -157,7 +157,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   };
 
   const handleShare = async () => {
-    const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-base-mini-app.vercel.app`;
+    const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-mini-app.vercel.app`;
 
     try {
       const sdk = (await import("@farcaster/frame-sdk")).default;

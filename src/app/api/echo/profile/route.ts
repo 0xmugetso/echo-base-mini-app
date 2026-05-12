@@ -284,7 +284,7 @@ export async function POST(request: Request) {
             profile.nftTokenId = nextTokenId;
             await profile.save();
 
-            const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://echo-base-mini-app.vercel.app';
+            const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://echo-mini-app.vercel.app';
             const tokenURI = `${baseUrl}/api/echo/nft/${nextTokenId}`;
 
             return NextResponse.json({ success: true, tokenURI, tokenId: nextTokenId });

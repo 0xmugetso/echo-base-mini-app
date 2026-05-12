@@ -465,7 +465,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
 
         const text = `here's my base stats and farcaster activity powered by @echo`;
-        const url = "https://echo-base-mini-app.vercel.app";
+        const url = "https://echo-mini-app.vercel.app";
 
         try {
             if (sdk?.actions?.composeCast) {

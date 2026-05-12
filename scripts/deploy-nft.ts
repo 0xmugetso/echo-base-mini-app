@@ -105,8 +105,8 @@ async function main() {
         args: [
             "Echo Cards", // Name
             "ECHO",       // Symbol
-            "https://echo-base-mini-app.vercel.app/api/echo/nft/", // baseURI
-            "https://echo-base-mini-app.vercel.app/api/echo/nft/contract" // contractURI
+            "https://echo-mini-app.vercel.app/api/echo/nft/", // baseURI
+            "https://echo-mini-app.vercel.app/api/echo/nft/contract" // contractURI
         ],
         chain: base,
         gas: 3_500_000n, // Slightly more room

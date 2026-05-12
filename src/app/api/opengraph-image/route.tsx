@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
           </div>
         )}
         <div tw="flex items-center absolute bottom-12 right-12 bg-black/50 p-4 rounded-xl border border-white/20">
-          <img src="https://echo-base-mini-app.vercel.app/assets/echo-logo.PNG" tw="w-16 h-16 mr-4" />
+          <img src="https://echo-mini-app.vercel.app/assets/echo-logo.PNG" tw="w-16 h-16 mr-4" />
           <div tw="flex flex-col">
             <span tw="text-4xl text-white font-bold">ECHO</span>
             <span tw="text-xl text-primary font-mono opacity-80 uppercase">uncover your onchain legacy</span>
