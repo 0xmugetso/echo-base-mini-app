@@ -1,18 +1,36 @@
 {
-    "accountAssociation": {
-        "header": "eyJmaWQiOjg4OTQ5MiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGNhQjY1QzM1MDUxZmZiNDY3M0Q5NTRBMjRCNmIyMjg4NTBCNzMyM0gifQ",
-        "payload": "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
-        "signature": "MHg5NjBlZmMzZDIyZTY5NzY1MDQ4ZThiOTk2NzQ3OTdlNzI4M2ExOGFlMjZkMzdhMjdlNTU2ZGY4YjZkZDE3YjQ2N2Q1OTgxNTM4Njg3YmFkZmU2ZGE0ZGY3ZGUwZTIwNDRkZTA0NjM3ODA3ZmY5N2FkNmY0MzRiYjBiN2YyOTM3NzFi"
-    },
     "frame": {
-        "version": "1",
         "name": "Echo",
-        "iconUrl": "https://echo-base-mini-app.vercel.app/echo-logo.png",
+        "version": "1",
+        "iconUrl": "https://echo-base-mini-app.vercel.app/icon.png",
         "homeUrl": "https://echo-base-mini-app.vercel.app",
-        "imageUrl": "https://echo-base-mini-app.vercel.app/assets/banner_skull.jpg",
-        "buttonTitle": "Launch Echo",
+        "imageUrl": "https://echo-base-mini-app.vercel.app/assets/banner-modal.jpg",
+        "buttonTitle": "Open Echo",
         "splashImageUrl": "https://echo-base-mini-app.vercel.app/splash.png",
-        "splashBackgroundColor": "#000000",
-        "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook"
+        "splashBackgroundColor": "#82008A",
+        "webhookUrl": "https://echo-base-mini-app.vercel.app/api/webhook",
+        "subtitle": "Your Retro Base Companion",
+        "description": "Step into the ultimate retro-style hub for Farcaster and Base. Check in daily to unlock mystery boxes, publish casts, track your wallet value, and monitor your Neynar score—all from one seamless mini-app.",
+        "primaryCategory": "social",
+        "screenshotUrls": [
+            "https://echo-base-mini-app.vercel.app/assets/banner_hand.jpg"
+        ],
+        "heroImageUrl": "https://echo-base-mini-app.vercel.app/assets/banner_data.jpg",
+        "tags": [
+            "social",
+            "base",
+            "farcaster",
+            "rewards"
+        ],
+        "tagline": "Check in. Cast. Collect.",
+        "ogTitle": "Echo Your Retro Base Companion",
+        "ogDescription": "Track your Farcaster stats, and manage your Base portfolio in retro style.",
+        "ogImageUrl": "https://echo-base-mini-app.vercel.app/icon.png",
+        "castShareUrl": "https://warpcast.com/~/compose?text=Just+checked+in+and+claimed+my+daily+mystery+box+on+Echo!+Check+it+out:"
+    },
+    "accountAssociation": {
+        "header": "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGY4NDgzMzQwMEE2QkU2ZWY4NUJDZTNFQTEzOThGMDU3ZjQxOEY5N2QifQ",
+        "payload": "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
+        "signature": "8/Wz7Nq+tmuAm9y3431ompFIz63xU4LHBW0oRKlrNQ5Hc1FNFVdl15B2DnwMRIeKoz6N7FmP9YCNRSW9hyv8ths="
     }
 }
