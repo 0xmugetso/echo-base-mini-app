@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 
 import localFont from 'next/font/local';
+import { useEffect } from 'react';
 import '~/app/globals.css';
 import { Providers } from '~/app/providers';
 import { APP_NAME, APP_DESCRIPTION } from '~/lib/constants';
+import { sdk } from '@farcaster/miniapp-sdk'
 
 const boldPixels = localFont({
   src: '../../public/fonts/BoldPixels.otf',
@@ -24,6 +26,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  useEffect(() => {
+    async function init() {
+      await sdk.actions.ready()
+    }
+    init();
+  }, [])
+
   return (
     <html lang="en">
       <body className={`${boldPixels.variable} font-pixel`}>
