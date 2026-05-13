@@ -5,7 +5,7 @@
         "iconUrl": "https://echo-base-app.vercel.app/icon.png",
         "homeUrl": "https://echo-base-app.vercel.app",
         "imageUrl": "https://echo-base-app.vercel.app/image.png",
-        "buttonTitle": "OpenEcho",
+        "buttonTitle": "Open Echo",
         "splashImageUrl": "https://echo-base-app.vercel.app/splash.png",
         "splashBackgroundColor": "#82008A",
         "webhookUrl": "https://echo-base-app.vercel.app/api/webhook",
