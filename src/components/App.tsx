@@ -7,6 +7,8 @@ import { Footer } from "~/components/ui/Footer";
 import { HomeTab, ActionsTab, TasksTab, WalletTab } from "~/components/ui/tabs";
 import { USE_WALLET } from "~/lib/constants";
 import { useNeynarUser } from "../hooks/useNeynarUser";
+import { sdk } from '@farcaster/miniapp-sdk'
+
 
 export enum Tab {
   Home = "home",
@@ -43,6 +45,10 @@ export default function App(
   // Scroll to top on tab change
   useEffect(() => {
     window.scrollTo(0, 0);
+    async function init() {
+      await sdk.actions.ready()
+    }
+    init();
   }, [currentTab]);
 
   if (!isSDKLoaded) {
