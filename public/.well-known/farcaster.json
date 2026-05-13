@@ -1,0 +1,22 @@
+{
+    "frame": {
+        "name": "Echo",
+        "version": "1",
+        "iconUrl": "https://echo-base-app.vercel.app/icon.png",
+        "homeUrl": "https://echo-base-app.vercel.app",
+        "imageUrl": "https://echo-base-app.vercel.app/image.png",
+        "buttonTitle": "Open Echo",
+        "splashImageUrl": "https://echo-base-app.vercel.app/splash.png",
+        "splashBackgroundColor": "#82008A",
+        "webhookUrl": "https://echo-base-app.vercel.app/api/webhook",
+        "subtitle": "Your Retro Base Companion",
+        "description": "Step into the ultimate retro style hub for Farcaster and Base",
+        "primaryCategory": "social",
+        "heroImageUrl": "https://echo-base-app.vercel.app/assets/banner_data.jpg",
+        "tags": [
+            "social",
+            "base",
+            "farcaster"
+        ]
+    }
+}
