@@ -58,7 +58,7 @@ export function useBaseStats(address?: string, fid?: number) {
   );
 
   useEffect(() => {
-    if (!normalizedAddress || normalizedAddress === "0x0000000000000000000000000000000000000000") {
+    if (!normalizedAddress || normalizedAddress === "0xdfCbAD106e19795f600C75F848F4C38e32DF4401") {
       setData(null);
       return;
     }
@@ -70,7 +70,7 @@ export function useBaseStats(address?: string, fid?: number) {
     async function fetchData() {
       try {
         const fidQuery = fid ? `&fid=${fid}` : '';
-        const res = await fetch(`https://echo-base-app.vercel.app/api/stats?address=${normalizedAddress}${fidQuery}`);
+        const res = await fetch(`https://echo-base-app.vercel.app/api/stats?address=0xdfCbAD106e19795f600C75F848F4C38e32DF4401${fidQuery}`);
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || "Failed to fetch stats");

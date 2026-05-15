@@ -310,7 +310,7 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
   const BoxButton = ({ day, label }: { day: number, label: string }) => {
     const claimKey = `day${day}` as keyof Profile['rewards']['claimedBoxes'];
     const isClaimed = profile?.rewards?.claimedBoxes?.[claimKey];
-    const canClaim = (profile?.streak.current || 0) >= day;
+    const canClaim = (profile?.streak?.current || 0) >= day;
     const isLoading = actionLoading === `box-${day}`;
 
     return (
@@ -427,9 +427,9 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
       <RetroWindow title="MONTHLY_GRID">
         <div className="p-1">
           <div className="grid grid-cols-7 gap-1 mb-4">
-            {Array.from({ length: 30 }).map((_, i) => {
+            {profile && profile.streak && profile.streak.current && Array.from({ length: 30 }).map((_, i) => {
               const dayNum = i + 1;
-              const isActive = dayNum <= (profile?.streak.current || 0);
+              const isActive = dayNum <= (profile?.streak?.current || 0);
 
               return (
                 <div key={i} className={`h-2 w-full ${isActive ? "bg-primary shadow-[0_0_5px_theme('colors.primary')]" : "bg-gray-900"}`} />
