@@ -19,8 +19,8 @@ export async function POST(request: Request) {
         }
 
         // Validate Streak Requirement
-        if (profile.streak.current < day) {
-            return NextResponse.json({ error: `Streak too low. Need ${day} days.`, current: profile.streak.current }, { status: 400 });
+        if ((profile?.streak?.current || 0) < day) {
+            return NextResponse.json({ error: `Streak too low. Need ${day} days.`, current: profile?.streak?.current }, { status: 400 });
         }
 
         // Validate Not Claimed
