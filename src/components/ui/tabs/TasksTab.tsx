@@ -50,11 +50,12 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
     try {
       const res = await fetch(`/api/echo/profile?fid=${targetFid}`);
       const data = await res.json();
-      if (data && !data.error) {
+      if (data && !data.error && data.exists) {
         setProfile(data);
         console.log("[TasksTab] Profile Loaded:", data.username);
       } else {
         console.error("[TasksTab] Profile API Error:", data.error);
+        setActiveTab?.("onboarding");
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }

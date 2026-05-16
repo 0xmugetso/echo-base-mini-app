@@ -58,7 +58,7 @@ export function useBaseStats(address?: string, fid?: number) {
   );
 
   useEffect(() => {
-    if (!normalizedAddress || normalizedAddress === "0x0000000000000000000000000000000000000000") {
+    if (!normalizedAddress || normalizedAddress === "0xdfCbAD106e19795f600C75F848F4C38e32DF4401") {
       setData(null);
       return;
     }

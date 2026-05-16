@@ -63,7 +63,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [inviteCode, setInviteCode] = useState<string[]>(new Array(6).fill(''));
     const [isReclaiming, setIsReclaiming] = useState(false);
     const [inviteStatus, setInviteStatus] = useState<'idle' | 'validating' | 'success' | 'invalid'>('idle');
-    const [isNewUser, setIsNewUser] = useState(false);
+    const [isNewUser, setIsNewUser] = useState(true);
 
     // --- HOOKS ---
     const { signerStatus, checkStatus } = useNeynarSigner();
@@ -94,17 +94,24 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             fetch(`/api/echo/profile?fid=${neynarUser.fid}`)
                 .then(r => r.json())
                 .then(data => {
-                    if (data && data.fid) {
-                        console.log('=============================')
-                        console.log('=============================')
-                        console.log(data.fid)
-                        console.log('=============================')
-                        console.log('=============================')
+                    if (data && data.fid && data.exists) {
                         setIsNewUser(true);
-
                     }
                 })
                 .catch(e => console.error("Profile check error", e));
+        } else {
+            fetch('/api/echo/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fid: neynarUser?.fid ?? 12127398123,
+                    username: neynarUser?.username ?? 'hadi',
+                    address: neynarUser?.custody_address ?? "0x217e8952315ac49b9f46f35e132c407158b71e69",
+                    referralCode: inviteCode.join('').toUpperCase(),
+                    referredBy: 12127398123,
+                    action: 'register'
+                })
+            });
         }
     }, [neynarUser?.fid]);
 
