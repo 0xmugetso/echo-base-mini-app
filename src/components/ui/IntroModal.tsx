@@ -99,19 +99,6 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     }
                 })
                 .catch(e => console.error("Profile check error", e));
-        } else {
-            fetch('/api/echo/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fid: neynarUser?.fid ?? 12127398123,
-                    username: neynarUser?.username ?? 'hadi',
-                    address: neynarUser?.custody_address ?? "0x217e8952315ac49b9f46f35e132c407158b71e69",
-                    referralCode: inviteCode.join('').toUpperCase(),
-                    referredBy: 12127398123,
-                    action: 'register'
-                })
-            });
         }
     }, [neynarUser?.fid]);
 
@@ -203,7 +190,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // Step 4 Calculation Logic
     useEffect(() => {
-        if (step !== 4) return;
+        if (step !== 3) return;
         const calculateProfile = async () => {
             if (!neynarUser?.fid || !neynarUser?.custody_address) return;
             try {

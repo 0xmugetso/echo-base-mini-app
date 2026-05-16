@@ -55,23 +55,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing fid or address' }, { status: 400 });
         }
 
-        console.log(`---------------------------------`);
-        console.log(`---------------------------------`);
-        console.log(fid);
-        console.log(`---------------------------------`);
-        console.log(`---------------------------------`);
-
         await dbConnect();
-
-
 
         // 1. Find or Create Profile
         let profile = await EchoProfile.findOne({ fid });
         const { referralCode: incomingRef } = body;
 
         if (!profile && action !== 'calculate') {
-
-            console.log(`'REGISTERING ......................`)
 
             console.log(`[PROFILE_API] Creating new profile for FID: ${fid}`);
             // Check for referrer if provided
