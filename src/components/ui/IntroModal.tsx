@@ -177,7 +177,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
             if (current >= 100) {
                 clearInterval(interval);
-                setTimeout(() => setStep(3), 500);
+                setTimeout(() => setStep(4), 500);
             } else if (current < target) {
                 // Random jump for "hacker" feel
                 const jump = Math.random() * 15;
@@ -190,7 +190,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
     // Step 4 Calculation Logic
     useEffect(() => {
-        if (step !== 3) return;
+        if (step !== 4) return;
         const calculateProfile = async () => {
             if (!neynarUser?.fid || !neynarUser?.custody_address) return;
             try {

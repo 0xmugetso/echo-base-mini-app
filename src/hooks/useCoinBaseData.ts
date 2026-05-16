@@ -70,7 +70,7 @@ export function useBaseStats(address?: string, fid?: number) {
     async function fetchData() {
       try {
         const fidQuery = fid ? `&fid=${fid}` : '';
-        const res = await fetch(`https://echo-base-app.vercel.app/api/stats?address=${normalizedAddress}${fidQuery}`);
+        const res = await fetch(`/api/stats?address=${normalizedAddress}${fidQuery}`);
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || "Failed to fetch stats");
