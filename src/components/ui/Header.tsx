@@ -42,8 +42,8 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
     };
 
     fetchPoints();
-    // Refresh every 15s to catch check-in updates
-    const interval = setInterval(fetchPoints, 15000);
+    // Refresh every 60s to catch check-in updates
+    const interval = setInterval(fetchPoints, 60000);
     return () => clearInterval(interval);
   }, [context?.user?.fid, neynarUser?.score]);
 

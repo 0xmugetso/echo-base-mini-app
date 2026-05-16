@@ -27,7 +27,7 @@ type Profile = {
   };
 };
 
-export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void }) {
+export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void, isActive?: boolean }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +50,7 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
     try {
       const res = await fetch(`/api/echo/profile?fid=${targetFid}`);
       const data = await res.json();
-      if (data && !data.error && data.exists) {
+      if (data && !data.error) {
         setProfile(data);
         console.log("[TasksTab] Profile Loaded:", data.username);
       } else {
@@ -85,10 +85,10 @@ export function TasksTab({ context, neynarUser, setActiveTab }: { context?: any,
   }, [profile?.fid]); // Only run when profile loaded/changed
 
   useEffect(() => {
-    if (neynarUser?.fid || context?.user?.fid) {
+    if ((neynarUser?.fid || context?.user?.fid) && isActive) {
       fetchProfile();
     }
-  }, [context?.user?.fid, neynarUser?.fid]);
+  }, [context?.user?.fid, neynarUser?.fid, isActive]);
 
   // --- ACTIONS ---
   const [actionLoading, setActionLoading] = useState<string | null>(null);

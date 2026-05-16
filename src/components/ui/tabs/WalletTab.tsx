@@ -40,7 +40,7 @@ const RetroStatBox = ({ label, value, subValue }: { label: string; value: string
   </div>
 );
 
-export function WalletTab() {
+export function WalletTab({ isActive }: { isActive?: boolean }) {
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
@@ -72,8 +72,10 @@ export function WalletTab() {
         setActivityPoints(saved ? parseInt(saved) : 0);
       }
     };
-    fetchPoints();
-  }, [user?.fid]);
+    if (isActive) {
+      fetchPoints();
+    }
+  }, [user?.fid, isActive]);
 
   // Use unified Base Score from hook
   const neynarScore = Number(user?.score) || 0;
