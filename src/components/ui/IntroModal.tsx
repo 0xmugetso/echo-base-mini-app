@@ -177,7 +177,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
             if (current >= 100) {
                 clearInterval(interval);
-                setTimeout(() => setStep(4), 500);
+                setTimeout(() => setStep(3), 500);
             } else if (current < target) {
                 // Random jump for "hacker" feel
                 const jump = Math.random() * 15;
