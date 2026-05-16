@@ -61,7 +61,7 @@ export async function POST(request: Request) {
         let profile = await EchoProfile.findOne({ fid });
         const { referralCode: incomingRef } = body;
 
-        if (!profile && action !== 'calculate') {
+        if (!profile) {
 
             console.log(`[PROFILE_API] Creating new profile for FID: ${fid}`);
             // Check for referrer if provided
