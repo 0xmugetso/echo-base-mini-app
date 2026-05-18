@@ -65,6 +65,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [inviteCode, setInviteCode] = useState<string[]>(new Array(6).fill(''));
     const [isReclaiming, setIsReclaiming] = useState(false);
     const [inviteStatus, setInviteStatus] = useState<'idle' | 'validating' | 'success' | 'invalid'>('idle');
+    const [inviteErrorMsg, setInviteErrorMsg] = useState("");
     const [isNewUser, setIsNewUser] = useState(true);
 
     // --- HOOKS ---
@@ -120,19 +121,34 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         if (fullCode.length < 6) return;
 
         setInviteStatus('validating');
+        setInviteErrorMsg("");
+        
         try {
+            if (neynarUser?.fid) {
+                const resProfile = await fetch(`/api/echo/profile?fid=${neynarUser.fid}`);
+                const dataProfile = await resProfile.json();
+                if (dataProfile && dataProfile.referralCode && dataProfile.referralCode.toUpperCase() === fullCode) {
+                    setInviteStatus('invalid');
+                    setInviteErrorMsg("YOU CANNOT USE YOUR OWN INVITE CODE");
+                    setTimeout(() => setInviteStatus('idle'), 3000);
+                    return;
+                }
+            }
+
             // Check if code exists on bankend
             const res = await fetch(`/api/echo/profile?checkCode=${fullCode}`);
             const data = await res.json();
             if (data.exists) {
                 setInviteStatus('success');
-                toast("Code applied! Bonus activates on sign up.", "SUCCESS");
+                toast("VALID REFERRAL CODE", "SUCCESS");
             } else {
                 setInviteStatus('invalid');
+                setInviteErrorMsg("INVALID INVITE CODE");
                 setTimeout(() => setInviteStatus('idle'), 2000);
             }
         } catch (e) {
             setInviteStatus('invalid');
+            setInviteErrorMsg("ERROR CHECKING CODE");
             setTimeout(() => setInviteStatus('idle'), 2000);
         }
     };
@@ -482,24 +498,19 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const imageUrl = dataUrl ? await uploadImage(dataUrl) : null;
 
         const text = `here's my base stats and farcaster activity powered by @echo`;
-        const url = "https://echo-mini-app.vercel.app";
+        const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
 
         try {
-            if (sdk?.actions?.composeCast) {
-                await sdk.actions.composeCast({
-                    text,
-                    embeds: imageUrl ? [url, imageUrl] : [url]
-                });
-                toast("OPENING COMPOSER...", "SUCCESS");
-            } else {
-                // Fallback for non-SDK environment
-                const intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}${imageUrl ? `&embeds[]=${encodeURIComponent(imageUrl)}` : ''}`;
-                window.open(intentUrl, "_blank");
-                toast("OPENING WINDOW...", "SUCCESS");
-            }
+            const sdk = (await import("@farcaster/frame-sdk")).default;
+            await sdk.actions.composeCast({
+                text,
+                embeds: imageUrl ? [appUrl, imageUrl] : [appUrl]
+            });
+            toast("OPENING COMPOSER...", "SUCCESS");
         } catch (e) {
-            console.error("Share failed", e);
-            toast("SHARE FAILED", "ERROR");
+            const intentUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(appUrl)}${imageUrl ? `&embeds[]=${encodeURIComponent(imageUrl)}` : ''}`;
+            window.open(intentUrl, "_blank");
+            toast("OPENING WINDOW...", "SUCCESS");
         }
     }
 
@@ -628,6 +639,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                                     );
                                 })}
                             </div>
+                            {inviteStatus === 'success' && <p className="text-green-500 font-pixel text-[10px] mt-2 uppercase">VALID REFERRAL CODE</p>}
+                            {inviteStatus === 'invalid' && <p className="text-red-500 font-pixel text-[10px] mt-2 uppercase">{inviteErrorMsg || "INVALID CODE"}</p>}
                         </div>
                         <div className="text-[7px] font-mono text-gray-500 text-center uppercase leading-tight italic">
                             <p>* Bonuses activate after your first Echo transaction.</p>
@@ -767,12 +780,20 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     
                     <div className="space-y-3">
                         <button 
-                            onClick={() => {
+                            onClick={async () => {
                                 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
                                 const shareText = `I just minted my Echo Card! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${myRefCode || "ECHO"}`;
                                 const embedUrl = `${appUrl}?ref=${myRefCode || "ECHO"}`;
-                                const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-                                window.open(composeUrl, '_blank');
+                                try {
+                                    const sdk = (await import("@farcaster/frame-sdk")).default;
+                                    await sdk.actions.composeCast({
+                                        text: shareText,
+                                        embeds: [embedUrl]
+                                    });
+                                } catch (e) {
+                                    const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                                    window.open(composeUrl, '_blank');
+                                }
                                 setIsMintSuccess(false);
                                 onClose();
                             }}

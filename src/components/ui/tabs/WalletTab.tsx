@@ -236,13 +236,21 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
             </div>
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!profile?.referralCode) return;
                 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
                 const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${profile.referralCode}`;
                 const embedUrl = `${appUrl}?ref=${profile.referralCode}`;
-                const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-                window.open(composeUrl, '_blank');
+                try {
+                  const sdk = (await import("@farcaster/frame-sdk")).default;
+                  await sdk.actions.composeCast({
+                    text,
+                    embeds: [embedUrl]
+                  });
+                } catch (e) {
+                  const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                  window.open(composeUrl, '_blank');
+                }
               }}
               className="w-full py-2 bg-primary border-2 border-white/20 text-white text-[10px] font-bold font-pixel hover:bg-blue-600 transition-colors shadow-[4px_4px_0_0_theme('colors.primary')] flex items-center justify-center gap-2"
             >

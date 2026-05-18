@@ -23,7 +23,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   const { toast } = useToast();
 
   // Limits
-  const MIN_CHARS = 100;
+  const MIN_CHARS = 50;
   const MAX_CHARS = 250;
 
   // Checks
@@ -235,7 +235,7 @@ export function ActionsTab({ context }: ActionTabProps) {
                   />
                   {/* Char Count */}
                   <div className={`absolute bottom-2 right-2 text-[10px] font-bold ${isLengthValid ? 'text-primary' : 'text-red-500'}`}>
-                    {length}/{MAX_CHARS}
+                    {length < MIN_CHARS ? `${length}/${MIN_CHARS}` : `${length}/${MAX_CHARS}`}
                   </div>
                 </div>
 
