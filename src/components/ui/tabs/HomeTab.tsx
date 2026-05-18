@@ -1,7 +1,9 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useMiniApp } from "@neynar/react";
-import { useAccount } from "wagmi";
+import { useAccount, useSendTransaction } from "wagmi";
+import { parseEther, getAddress } from "viem";
+import { useToast } from "../ToastProvider";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { NeynarUser } from "~/hooks/useNeynarUser";
 import { RetroBanner } from "../RetroBanner";
@@ -105,6 +107,44 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(true);
+  const [hasMinted, setHasMinted] = useState(false);
+
+  const { toast } = useToast();
+  const { sendTransactionAsync } = useSendTransaction();
+  const [extAddress, setExtAddress] = useState("");
+  const [extStats, setExtStats] = useState<any>(null);
+  const [calculatingExt, setCalculatingExt] = useState(false);
+
+  const handleCalculateExt = async () => {
+    if (!extAddress) return;
+    try {
+      setCalculatingExt(true);
+      const hash = await sendTransactionAsync({
+        to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
+        value: parseEther("0.00015"),
+      });
+      toast("PAYMENT SUCCESS! SCANNING...", "SUCCESS");
+      
+      const res = await fetch(`/api/stats?address=${extAddress}`);
+      const data = await res.json();
+      setExtStats(data);
+    } catch(e: any) {
+      toast("FAILED: " + e.message, "ERROR");
+    } finally {
+      setCalculatingExt(false);
+    }
+  };
+
+  useEffect(() => {
+    if (context?.user?.fid) {
+      fetch(`/api/echo/profile?fid=${context.user.fid}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.nftTokenId > 0) setHasMinted(true);
+        })
+        .catch(() => null);
+    }
+  }, [context?.user?.fid]);
 
   const { address: connectedAddress } = useAccount();
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
@@ -193,7 +233,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         >
           <span className="relative z-10 flex flex-row items-center justify-center gap-2">
             <PixelMintIcon className="w-6 h-6 text-white" />
-            <span>MINT_ECHO</span>
+            <span>{hasMinted ? 'MINTED!' : 'MINT_ECHO'}</span>
           </span>
           {/* Scanline overlay for that "electric" feel */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
@@ -347,6 +387,53 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               Hold 10,000+ units or specific NFTs to unlock.
             </p>
           </div>
+        </div>
+      </RetroWindow>
+
+      {/* External Stats Calculator */}
+      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl">🔍</span>}>
+        <div className="flex flex-col gap-3">
+          <p className="text-[10px] text-gray-400">
+            Scan any Base address. Cost: $0.50 (0.00015 ETH)
+          </p>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Paste 0x address..." 
+              value={extAddress}
+              onChange={e => setExtAddress(e.target.value)}
+              className="flex-1 bg-black border border-white/20 p-2 font-mono text-xs text-white placeholder-gray-600 focus:border-primary outline-none"
+            />
+            <button 
+              onClick={handleCalculateExt}
+              disabled={calculatingExt || !extAddress}
+              className="bg-primary text-black font-pixel text-[10px] px-3 py-2 border-2 border-white/20 disabled:opacity-50"
+            >
+              {calculatingExt ? 'SCANNING...' : 'SCAN'}
+            </button>
+          </div>
+
+          {extStats && (
+            <div className="mt-4 border border-primary/50 bg-primary/5 p-3 space-y-3">
+              <h3 className="font-pixel text-primary text-sm">SCAN COMPLETE</h3>
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-gray-300">
+                <div>BIGGEST TX: <span className="text-white">${formatNumber(extStats.biggest_single_tx, 0)}</span></div>
+                <div>TX COUNT: <span className="text-white">{formatNumber(extStats.total_tx)}</span></div>
+                <div>VOLUME: <span className="text-white">${formatNumber(extStats.total_volume_usd, 0)}</span></div>
+                <div>AGE: <span className="text-white">{Math.floor(extStats.wallet_age_days || 0)} DAYS</span></div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  toast("MINT FOR EXTERNAL ADDRESS INITIATED...", "PROCESS");
+                  setIntroOpen(true);
+                }}
+                className="w-full mt-2 bg-white text-black font-pixel text-xs py-2 hover:bg-gray-200"
+              >
+                MINT ECHO NFT FOR ADDRESS
+              </button>
+            </div>
+          )}
         </div>
       </RetroWindow>
 

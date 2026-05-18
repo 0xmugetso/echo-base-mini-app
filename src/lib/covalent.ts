@@ -149,7 +149,7 @@ export async function getBaseNativeVolume(address: string): Promise<Stats> {
     };
 }
 
-export async function getFarcasterHoldings(address: string) {
+export async function getFarcasterHoldings(addresses: string[]) {
     const TARGETS = {
         // NFTs
         "0x699727f9e01a822efdcf7333073f0461e5914b4e": "warplets",
@@ -178,34 +178,37 @@ export async function getFarcasterHoldings(address: string) {
 
     let wallet_value_usd = 0;
 
-    try {
-        const url = `https://api.covalenthq.com/v1/${BASE_CHAIN}/address/${address}/balances_v2/?nft=true`;
-        const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${GOLDRUSH_API_KEY}` }
-        });
+    for (const address of addresses) {
+        try {
+            const url = `https://api.covalenthq.com/v1/${BASE_CHAIN}/address/${address}/balances_v2/?nft=true`;
+            const res = await fetch(url, {
+                headers: { Authorization: `Bearer ${GOLDRUSH_API_KEY}` }
+            });
 
-        if (res.ok) {
-            const json = await res.json();
-            const items = json.data?.items || [];
+            if (res.ok) {
+                const json = await res.json();
+                const items = json.data?.items || [];
 
-            for (const item of items) {
-                // Check if it's a Farcaster related asset
-                const contract = item.contract_address?.toLowerCase();
-                const key = TARGETS[contract as keyof typeof TARGETS];
+                for (const item of items) {
+                    // Check if it's a Farcaster related asset
+                    const contract = item.contract_address?.toLowerCase();
+                    const key = TARGETS[contract as keyof typeof TARGETS];
 
-                if (key) {
-                    // Only sum value for specific Farcaster assets
-                    wallet_value_usd += item.quote || 0;
+                    if (key) {
+                        // Only sum value for specific Farcaster assets
+                        wallet_value_usd += item.quote || 0;
 
-                    // If it's a token/NFT with balance > 0
-                    if (BigInt(item.balance || 0) > 0n) {
-                        holdings[key as keyof typeof holdings] = true;
+                        // If it's a token/NFT with balance > 0
+                        // For NFTs, balance is string. For tokens, it's string.
+                        if (BigInt(item.balance || 0) > 0n) {
+                            holdings[key as keyof typeof holdings] = true;
+                        }
                     }
                 }
             }
+        } catch (e) {
+            console.error(`[CovalentLib] Error fetching balances for ${address}:`, e);
         }
-    } catch (e) {
-        console.error("[CovalentLib] Error fetching balances:", e);
     }
 
     console.log(`[CovalentLib] Wallet Value: ${wallet_value_usd}, Holdings found:`, holdings);

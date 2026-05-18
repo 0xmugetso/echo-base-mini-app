@@ -8,19 +8,19 @@ import Counter from '../../../../models/Counter';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const fid = searchParams.get('fid');
-
-    if (!fid) return NextResponse.json({ error: 'FID required' }, { status: 400 });
+    const checkCode = searchParams.get('checkCode');
 
     try {
         await dbConnect();
 
-        // 1. Check if referral code exists
-        const checkCode = searchParams.get('checkCode');
+        // 1. Check if referral code exists (bypass FID check)
         if (checkCode) {
             const referrer = await EchoProfile.findOne({ referralCode: checkCode.toUpperCase() });
             return NextResponse.json({ exists: !!referrer });
         }
+
+        const fid = searchParams.get('fid');
+        if (!fid) return NextResponse.json({ error: 'FID required' }, { status: 400 });
 
         const profile = await EchoProfile.findOne({ fid: parseInt(fid) });
 
@@ -150,33 +150,33 @@ export async function POST(request: Request) {
             let onchainScore = 0;
 
             if (statsToUse) {
-                // A. Wallet Age (Max 300)
-                // 1 year = 100 pts, 3 years = 300 pts
+                // A. Wallet Age (Max 3000)
+                // 1 year = 1000 pts, 3 years = 3000 pts
                 const age = statsToUse.wallet_age_days || 0;
-                onchainScore += Math.min(Math.floor(age / 3.65), 300);
+                onchainScore += Math.min(Math.floor(age / 3.65) * 10, 3000);
 
-                // B. Transaction Count (Max 300)
-                // 100 tx = 50 pts, 1000 tx = 300 pts
+                // B. Transaction Count (Max 3000)
+                // 100 tx = 500 pts, 1000 tx = 3000 pts
                 const tx = statsToUse.total_tx || 0;
-                onchainScore += Math.min(Math.floor(tx * 0.3), 300);
+                onchainScore += Math.min(Math.floor(tx * 0.3) * 10, 3000);
 
-                // C. Farcaster Value / Volume (Max 300)
-                // $1000 = 100 pts, $5000 = 300 pts
+                // C. Farcaster Value / Volume (Max 3000)
+                // $1000 = 1000 pts, $5000 = 3000 pts
                 const fcVal = statsToUse.farcaster?.wallet_value_usd || 0;
                 const volume = statsToUse.total_volume_usd || 0;
                 const valueMetric = Math.max(fcVal, volume);
-                onchainScore += Math.min(Math.floor(valueMetric / 10), 300);
+                onchainScore += Math.min(Math.floor(valueMetric / 10) * 10, 3000);
 
-                // D. Badges / Holdings (Max 100)
+                // D. Badges / Holdings (Max 1000)
                 const holdings = statsToUse.farcaster?.holdings || {};
                 const badgeCount = Object.values(holdings).filter(Boolean).length;
-                onchainScore += Math.min(badgeCount * 25, 100);
+                onchainScore += Math.min(badgeCount * 250, 1000);
             } else {
                 // Minimal fallback for fresh wallets connected manually
-                onchainScore = 10;
+                onchainScore = 100;
             }
 
-            console.log(`[PROFILE_CALC] Onchain Score: ${onchainScore}/1000`);
+            console.log(`[PROFILE_CALC] Onchain Score: ${onchainScore}/10000`);
 
             // Save Onchain Score to Profile for persistence (if we add a field)
             // For now, we return it to be displayed. 

@@ -46,12 +46,14 @@ export function ActionsTab({ context }: ActionTabProps) {
       const data = await res.json();
       if (data?.dailyActions?.castHistory) {
         setHistory(data.dailyActions.castHistory.reverse());
-        // Check if casted today
+        // Check if casted in the last 12 hours
         const lastDate = data.dailyActions.lastCastDate;
-        const today = new Date().toISOString().split('T')[0];
-        if (lastDate === today) {
-          setStatus('SUCCESS');
-          setLastCast(data.dailyActions.castHistory[0]); // Most recent
+        if (lastDate) {
+          const lastTime = new Date(lastDate).getTime();
+          if (Date.now() - lastTime < 12 * 60 * 60 * 1000) {
+            setStatus('SUCCESS');
+            setLastCast(data.dailyActions.castHistory[0]); // Most recent
+          }
         }
       }
     } catch (e) { console.error("Failed to load history", e); }
@@ -122,10 +124,10 @@ export function ActionsTab({ context }: ActionTabProps) {
       setStatus('CLAIMING');
       const txHash = match.hash;
 
-      // Claim Points
-      const lengthScore = castText.length > 200 ? 5 : 3;
-      const tagScore = (castText.includes('@base') ? 2 : 0) + (castText.includes('#echocast') ? 3 : 0);
-      const score = Math.min(10, lengthScore + tagScore);
+      // Claim Points (20 - 50 range)
+      const lengthScore = castText.length > 200 ? 20 : (castText.length > 150 ? 10 : 0);
+      const tagScore = (castText.includes('@base') ? 10 : 0) + (castText.includes('#echocast') ? 10 : 0);
+      const score = Math.min(50, 10 + lengthScore + tagScore);
 
       const claimRes = await fetch('/api/echo/action', {
         method: 'POST',
@@ -157,7 +159,8 @@ export function ActionsTab({ context }: ActionTabProps) {
   };
 
   const handleShare = async () => {
-    const shareText = `I just earned ${lastCast?.points || 10} points on Echo! 🛡️\n\nDaily Cast Mission Complete.\n\nVerify yours: https://echo-mini-app.vercel.app`;
+    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+    const shareText = `I just earned ${lastCast?.points || 20} points on Echo! 🛡️\n\nEcho Cast Mission Complete.\n\nVerify yours: ${appUrl}`;
 
     try {
       const sdk = (await import("@farcaster/frame-sdk")).default;

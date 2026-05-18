@@ -155,11 +155,7 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
             </div>
 
             <div>
-              {isConnected ? (
-                <button onClick={handleDisconnect} className="text-[10px] text-red-400 hover:text-white border border-red-500/50 px-2 py-1 bg-black hover:bg-red-500 transition-colors">
-                  UNLINK WALLET
-                </button>
-              ) : (
+              {!isConnected && (
                 <button onClick={handleConnect} className="text-[10px] text-primary hover:text-white border border-primary/50 px-2 py-1 bg-black hover:bg-primary transition-colors">
                   CONNECT WALLET
                 </button>
@@ -242,9 +238,11 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
             <button
               onClick={() => {
                 if (!profile?.referralCode) return;
-                const deepLink = `https://warpcast.com/~/mini-app?url=${encodeURIComponent(`https://echo-mini-app.vercel.app?ref=${profile.referralCode}`)}`;
-                navigator.clipboard.writeText(deepLink);
-                toast("LINK COPIED TO CLIPBOARD", "SUCCESS");
+                const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+                const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${profile.referralCode}`;
+                const embedUrl = `${appUrl}?ref=${profile.referralCode}`;
+                const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                window.open(composeUrl, '_blank');
               }}
               className="w-full py-2 bg-primary border-2 border-white/20 text-white text-[10px] font-bold font-pixel hover:bg-blue-600 transition-colors shadow-[4px_4px_0_0_theme('colors.primary')] flex items-center justify-center gap-2"
             >

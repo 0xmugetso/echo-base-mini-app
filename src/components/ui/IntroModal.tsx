@@ -57,6 +57,8 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const [isMinting, setIsMinting] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
+    const [myRefCode, setMyRefCode] = useState<string>("");
+    const [isMintSuccess, setIsMintSuccess] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // Referral State
@@ -124,6 +126,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const data = await res.json();
             if (data.exists) {
                 setInviteStatus('success');
+                toast("Code applied! Bonus activates on sign up.", "SUCCESS");
             } else {
                 setInviteStatus('invalid');
                 setTimeout(() => setInviteStatus('idle'), 2000);
@@ -154,6 +157,25 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
             const prev = document.getElementById(`ref-input-${index - 1}`);
             prev?.focus();
+        }
+    };
+
+    const handlePaste = (e: React.ClipboardEvent) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+        if (pasteData) {
+            const newCode = [...inviteCode];
+            for (let i = 0; i < pasteData.length; i++) {
+                newCode[i] = pasteData[i];
+            }
+            setInviteCode(newCode);
+            if (newCode.every(char => char !== '')) {
+                validateInvite(newCode);
+            }
+            // focus the next empty input or the last one
+            const nextIndex = Math.min(pasteData.length, 5);
+            const next = document.getElementById(`ref-input-${nextIndex}`);
+            next?.focus();
         }
     };
 
@@ -447,6 +469,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
             console.log("MINT SUBMITTED: " + hash);
             toast("MINT SUCCESSFUL! CARD IS YOURS", "SUCCESS");
+            setIsMintSuccess(true);
         } catch (e: any) {
             console.error("[Mint] Error:", e.message);
             toast("MINT FAILED: " + e.message, "ERROR");
@@ -595,8 +618,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                                             value={char}
                                             onChange={(e) => handleInputChange(e.target.value, i)}
                                             onKeyDown={(e) => handleKeyDown(e, i)}
+                                            onPaste={handlePaste}
                                             className={`w-10 h-12 bg-black border-2 text-center font-pixel text-xl transition-all duration-300 outline-none
-                                                ${isSuccess ? 'border-primary text-primary shadow-primary shadow-sm animate-bounce' :
+                                                ${isSuccess ? 'border-green-500 text-green-500 shadow-[0_0_10px_#00ff00] animate-bounce' :
                                                     isInvalid ? 'border-red-500 text-red-500 animate-shake' :
                                                         'border-white/30 text-white focus:border-primary'}`}
                                             style={{ animationDelay: `${i * 0.1}s` }}
@@ -733,6 +757,44 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     );
 
     if (!isOpen || !mounted) return null;
+
+    if (isMintSuccess) {
+        return createPortal(
+            <div className="fixed inset-0 z-[99999] bg-black/90 flex flex-col items-center justify-center p-4">
+                <div className="bg-[#050505] border-4 border-primary p-6 max-w-sm w-full text-center space-y-6 shadow-[0_0_20px_theme('colors.primary')]">
+                    <h2 className="font-pixel text-2xl text-white">MINT SUCCESSFUL!</h2>
+                    <p className="font-mono text-[10px] text-gray-400">Your Echo Card is now on-chain. Share it and your referral code on Warpcast to earn points!</p>
+                    
+                    <div className="space-y-3">
+                        <button 
+                            onClick={() => {
+                                const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+                                const shareText = `I just minted my Echo Card! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${myRefCode || "ECHO"}`;
+                                const embedUrl = `${appUrl}?ref=${myRefCode || "ECHO"}`;
+                                const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                                window.open(composeUrl, '_blank');
+                                setIsMintSuccess(false);
+                                onClose();
+                            }}
+                            className="w-full py-3 bg-primary text-black font-pixel text-sm hover:brightness-110"
+                        >
+                            SHARE_ON_WARPCAST
+                        </button>
+                        <button 
+                            onClick={() => {
+                                setIsMintSuccess(false);
+                                onClose();
+                            }}
+                            className="w-full py-3 bg-transparent border border-white/30 text-white font-pixel text-sm hover:bg-white/10"
+                        >
+                            SKIP_FOR_NOW
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        );
+    }
 
     return createPortal(
         <div className="fixed inset-0 z-[99999] bg-black flex flex-col overflow-hidden">

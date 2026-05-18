@@ -43,12 +43,29 @@ export async function GET(request: Request) {
         let neynarRawFirstPage = null;
 
         try {
+            const nUserResults = await Promise.allSettled([
+                fidParam ? getNeynarUser(parseInt(fidParam)) : Promise.resolve(null)
+            ]);
+            
+            let nUser: any = null;
+            if (nUserResults[0].status === 'fulfilled') nUser = nUserResults[0].value;
+
+            let addressesToCheck = [address];
+            if (nUser && nUser.verifications) {
+                addressesToCheck = [...addressesToCheck, ...nUser.verifications];
+            }
+            if (nUser && nUser.verified_addresses?.eth_addresses) {
+                addressesToCheck = [...addressesToCheck, ...nUser.verified_addresses.eth_addresses];
+            }
+            
+            // Remove duplicates
+            addressesToCheck = [...new Set(addressesToCheck.map(a => a.toLowerCase()))];
+
             const results = await Promise.allSettled([
                 getBaseNativeVolume(address),
-                getFarcasterHoldings(address),
+                getFarcasterHoldings(addressesToCheck),
                 fidParam ? getUserWalletValue(parseInt(fidParam)) : Promise.resolve(0),
-                fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null),
-                fidParam ? getNeynarUser(parseInt(fidParam)) : Promise.resolve(null)
+                fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null)
             ]);
 
             if (results[0].status === 'fulfilled') baseStats = results[0].value;
@@ -76,8 +93,7 @@ export async function GET(request: Request) {
                 console.error('[API] bestCast failed:', results[3].reason);
             }
 
-            if (results[4].status === 'fulfilled' && results[4].value) {
-                const nUser = results[4].value as any; // Cast to any to access dynamic props
+            if (nUser) {
                 // console.log(`[API] Neynar User Keys for ${fidParam}:`, Object.keys(nUser));
 
                 // Robust extraction

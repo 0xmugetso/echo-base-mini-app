@@ -25,9 +25,10 @@ export async function POST(request: Request) {
 
             if (!castHash || !castText) return NextResponse.json({ error: 'Missing cast data' }, { status: 400 });
 
-            // Check if already rewarded today
-            if (profile.dailyActions?.lastCastDate === todayStr) {
-                return NextResponse.json({ error: 'Daily cast already rewarded', pointsAdded: 0 });
+            // Check if already rewarded in the last 12 hours
+            const lastCastTime = profile.dailyActions?.lastCastDate ? new Date(profile.dailyActions.lastCastDate).getTime() : 0;
+            if (now.getTime() - lastCastTime < 12 * 60 * 60 * 1000) {
+                return NextResponse.json({ error: 'Daily cast already rewarded (12hr cooldown)', pointsAdded: 0 });
             }
 
             // Check if hash already used (Duplicate cast)
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Cast already claimed', pointsAdded: 0 });
             }
 
-            points = castScore || 5; // Default 5 if no score provided
+            points = castScore || 20; // Default 20 if no score provided
 
-            profile.dailyActions.lastCastDate = todayStr;
+            profile.dailyActions.lastCastDate = now.toISOString();
             profile.dailyActions.castHistory.push({
                 hash: castHash,
                 text: castText,
