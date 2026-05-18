@@ -114,6 +114,8 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [extAddress, setExtAddress] = useState("");
   const [extStats, setExtStats] = useState<any>(null);
   const [calculatingExt, setCalculatingExt] = useState(false);
+  const [extModalOpen, setExtModalOpen] = useState(false);
+  const [scanHistory, setScanHistory] = useState<string[]>([]);
 
   const handleCalculateExt = async () => {
     if (!extAddress) return;
@@ -128,6 +130,10 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       const res = await fetch(`/api/stats?address=${extAddress}`);
       const data = await res.json();
       setExtStats(data);
+      if (!scanHistory.includes(extAddress)) {
+        setScanHistory([extAddress, ...scanHistory].slice(0, 5));
+      }
+      setExtModalOpen(true);
     } catch(e: any) {
       toast("FAILED: " + e.message, "ERROR");
     } finally {
@@ -239,6 +245,49 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
         </button>
       </div>
+
+      {/* External Stats Calculator */}
+      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl">🔍</span>}>
+        <div className="flex flex-col gap-3">
+          <p className="text-[10px] text-gray-400">
+            Scan any Base address. Cost: $0.50 (0.00015 ETH)
+          </p>
+
+          {scanHistory.length > 0 && (
+            <div className="mb-2">
+              <p className="text-[8px] text-primary uppercase mb-1">RECENT_SCANS</p>
+              <div className="flex flex-wrap gap-1">
+                {scanHistory.map((addr, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setExtAddress(addr)}
+                    className="text-[8px] font-mono border border-gray-600 bg-gray-900 text-gray-300 px-1 py-0.5 hover:border-primary hover:text-white"
+                  >
+                    {addr.slice(0, 6)}...{addr.slice(-4)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Paste 0x address..." 
+              value={extAddress}
+              onChange={e => setExtAddress(e.target.value)}
+              className="flex-1 bg-black border border-white/20 p-2 font-mono text-xs text-white placeholder-gray-600 focus:border-primary outline-none"
+            />
+            <button 
+              onClick={handleCalculateExt}
+              disabled={calculatingExt || !extAddress}
+              className="bg-primary text-black font-pixel text-[10px] px-3 py-2 border-2 border-white/20 disabled:opacity-50"
+            >
+              {calculatingExt ? 'SCANNING...' : 'SCAN'}
+            </button>
+          </div>
+        </div>
+      </RetroWindow>
 
       {/* Network Activity Window */}
       <RetroWindow
@@ -390,52 +439,41 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         </div>
       </RetroWindow>
 
-      {/* External Stats Calculator */}
-      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl">🔍</span>}>
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] text-gray-400">
-            Scan any Base address. Cost: $0.50 (0.00015 ETH)
-          </p>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Paste 0x address..." 
-              value={extAddress}
-              onChange={e => setExtAddress(e.target.value)}
-              className="flex-1 bg-black border border-white/20 p-2 font-mono text-xs text-white placeholder-gray-600 focus:border-primary outline-none"
-            />
-            <button 
-              onClick={handleCalculateExt}
-              disabled={calculatingExt || !extAddress}
-              className="bg-primary text-black font-pixel text-[10px] px-3 py-2 border-2 border-white/20 disabled:opacity-50"
-            >
-              {calculatingExt ? 'SCANNING...' : 'SCAN'}
-            </button>
-          </div>
-
-          {extStats && (
-            <div className="mt-4 border border-primary/50 bg-primary/5 p-3 space-y-3">
-              <h3 className="font-pixel text-primary text-sm">SCAN COMPLETE</h3>
-              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-gray-300">
-                <div>BIGGEST TX: <span className="text-white">${formatNumber(extStats.biggest_single_tx, 0)}</span></div>
-                <div>TX COUNT: <span className="text-white">{formatNumber(extStats.total_tx)}</span></div>
-                <div>VOLUME: <span className="text-white">${formatNumber(extStats.total_volume_usd, 0)}</span></div>
-                <div>AGE: <span className="text-white">{Math.floor(extStats.wallet_age_days || 0)} DAYS</span></div>
+      {/* EXTERNAL SCAN MODAL */}
+      {extModalOpen && extStats && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <RetroWindow title={`SCANNED: ${extAddress.slice(0,6)}...${extAddress.slice(-4)}`} icon={<span className="text-xl">🔍</span>}>
+            <div className="flex flex-col gap-4 min-w-[300px]">
+              <div className="border border-white/20 bg-black p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-gray-300">
+                  <div className="bg-gray-900 p-2 border border-gray-700">
+                    <p className="text-gray-500 mb-1 uppercase">BIGGEST_TX</p>
+                    <p className="text-white text-sm font-pixel">${formatNumber(extStats.biggest_single_tx, 0)}</p>
+                  </div>
+                  <div className="bg-gray-900 p-2 border border-gray-700">
+                    <p className="text-gray-500 mb-1 uppercase">TX_COUNT</p>
+                    <p className="text-white text-sm font-pixel">{formatNumber(extStats.total_tx)}</p>
+                  </div>
+                  <div className="bg-gray-900 p-2 border border-gray-700">
+                    <p className="text-gray-500 mb-1 uppercase">TOTAL_VOLUME</p>
+                    <p className="text-white text-sm font-pixel">${formatNumber(extStats.total_volume_usd, 0)}</p>
+                  </div>
+                  <div className="bg-gray-900 p-2 border border-gray-700">
+                    <p className="text-gray-500 mb-1 uppercase">WALLET_AGE</p>
+                    <p className="text-white text-sm font-pixel">{Math.floor(extStats.wallet_age_days || 0)} DAYS</p>
+                  </div>
+                </div>
               </div>
-              
               <button 
-                onClick={() => {
-                  toast("MINT FOR EXTERNAL ADDRESS INITIATED...", "PROCESS");
-                  setIntroOpen(true);
-                }}
-                className="w-full mt-2 bg-white text-black font-pixel text-xs py-2 hover:bg-gray-200"
+                onClick={() => setExtModalOpen(false)}
+                className="w-full bg-primary text-black font-pixel text-xs py-3 border-2 border-white hover:brightness-110"
               >
-                MINT ECHO NFT FOR ADDRESS
+                CLOSE WINDOW
               </button>
             </div>
-          )}
+          </RetroWindow>
         </div>
-      </RetroWindow>
+      )}
 
     </div>
   );

@@ -20,9 +20,25 @@ export async function GET(request: Request) {
         }
 
         const fid = searchParams.get('fid');
+        const referralCode = searchParams.get('referralCode');
         if (!fid) return NextResponse.json({ error: 'FID required' }, { status: 400 });
 
         const profile = await EchoProfile.findOne({ fid: parseInt(fid) });
+
+        if (profile && referralCode && !profile.referredBy) {
+            const referrer = await EchoProfile.findOne({ referralCode: referralCode.toUpperCase() });
+            if (referrer && referrer.fid !== profile.fid) {
+                // Apply referral bonus
+                profile.referredBy = referrer.fid;
+                profile.points = (profile.points || 0) + 20; // Bonus for joining
+                await profile.save();
+
+                referrer.points = (referrer.points || 0) + 20; // Bonus for referring
+                referrer.referralStats.count = (referrer.referralStats.count || 0) + 1;
+                referrer.referralStats.earnings = (referrer.referralStats.earnings || 0) + 20;
+                await referrer.save();
+            }
+        }
 
         // 2. Fetch Invitees if profile exists
         let invitees: any[] = [];

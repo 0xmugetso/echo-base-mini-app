@@ -649,7 +649,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     </div>
                 )}
 
-                <button onClick={() => setStep(2)} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">INITIALIZE {'>'}</button>
+                <button onClick={() => isNewUser ? setStep(2) : onClose()} className="btn btn-primary w-full py-4 text-xl shadow-[4px_4px_0_0_theme('colors.primary')] font-pixel uppercase">
+                    {isNewUser ? "INITIALIZE >" : "ENTER ECHO >"}
+                </button>
             </div>
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>

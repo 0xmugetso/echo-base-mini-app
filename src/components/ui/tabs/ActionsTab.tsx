@@ -17,6 +17,7 @@ export function ActionsTab({ context }: ActionTabProps) {
   const [castText, setCastText] = useState('');
   const [status, setStatus] = useState<'IDLE' | 'VALIDATING' | 'PUBLISHING' | 'AWAITING_VERIFICATION' | 'CLAIMING' | 'SUCCESS'>('IDLE');
   const [lastCast, setLastCast] = useState<any>(null);
+  const [nextCastDate, setNextCastDate] = useState<Date | null>(null);
   const [viewHistory, setViewHistory] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
 
@@ -50,9 +51,11 @@ export function ActionsTab({ context }: ActionTabProps) {
         const lastDate = data.dailyActions.lastCastDate;
         if (lastDate) {
           const lastTime = new Date(lastDate).getTime();
-          if (Date.now() - lastTime < 12 * 60 * 60 * 1000) {
+          const nextTime = lastTime + 12 * 60 * 60 * 1000;
+          if (Date.now() < nextTime) {
             setStatus('SUCCESS');
             setLastCast(data.dailyActions.castHistory[0]); // Most recent
+            setNextCastDate(new Date(nextTime));
           }
         }
       }
@@ -215,7 +218,7 @@ export function ActionsTab({ context }: ActionTabProps) {
 
                 <p className="text-[10px] text-gray-500 mt-4 uppercase">NEXT_MISSION_IN:</p>
                 <div className="flex justify-center mt-1">
-                  <RetroTimer />
+                  <RetroTimer targetDate={nextCastDate || undefined} />
                 </div>
               </div>
             ) : (

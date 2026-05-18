@@ -479,16 +479,16 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
             </div>
 
             {/* Daily Echo Cast */}
-            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate && (Date.now() - new Date(profile.dailyActions.lastCastDate).getTime() < 12 * 60 * 60 * 1000) ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
               <div className="mb-2">
                 <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
-                <p className="font-mono text-[8px] text-gray-400 uppercase">+5-10 PTS • CAST</p>
+                <p className="font-mono text-[8px] text-gray-400 uppercase">+20-50 PTS • CAST</p>
               </div>
               <div className="w-full">
-                {profile?.dailyActions?.lastCastDate === new Date().toISOString().split('T')[0] ? (
+                {profile?.dailyActions?.lastCastDate && (Date.now() - new Date(profile.dailyActions.lastCastDate).getTime() < 12 * 60 * 60 * 1000) ? (
                   <div className="space-y-2">
                     <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                    <RetroTimer />
+                    <RetroTimer targetDate={new Date(new Date(profile.dailyActions.lastCastDate).getTime() + 12 * 60 * 60 * 1000)} />
                   </div>
                 ) : (
                   <button

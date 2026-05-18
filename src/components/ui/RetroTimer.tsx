@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react';
 
-export function RetroTimer() {
+interface RetroTimerProps {
+    targetDate?: string | Date;
+}
+
+export function RetroTimer({ targetDate }: RetroTimerProps) {
     const [timeLeft, setTimeLeft] = useState('');
 
     useEffect(() => {
         const calculateTimeLeft = () => {
             const now = new Date();
-            // Calculate next UTC Midnight
-            const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
-            const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+            let targetTime: number;
 
-            const diff = tomorrowUTC.getTime() - nowUTC.getTime();
+            if (targetDate) {
+                targetTime = new Date(targetDate).getTime();
+            } else {
+                // Default to next UTC Midnight
+                const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
+                const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+                targetTime = tomorrowUTC.getTime();
+                now.setTime(nowUTC.getTime()); // Align 'now' with UTC for the diff calculation
+            }
+
+            const diff = targetTime - now.getTime();
 
             if (diff <= 0) return "00:00:00";
 

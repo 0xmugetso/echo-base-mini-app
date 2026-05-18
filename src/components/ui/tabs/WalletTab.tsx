@@ -258,6 +258,51 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
             </button>
           </div>
 
+          {/* Referral Input (For Existing Users) */}
+          <div className="mt-4 pt-4 border-t border-dashed border-gray-600">
+            <p className="text-[9px] text-gray-500 uppercase mb-2">REDEEM_INVITE_CODE</p>
+            {profile?.referredBy ? (
+              <div className="bg-green-500/10 border border-green-500 text-green-500 text-center py-2 font-pixel text-xs">
+                ALREADY INVITED
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  id="wallet-ref-input"
+                  type="text"
+                  maxLength={6}
+                  placeholder="ENTER CODE"
+                  className="flex-1 bg-black border border-white/20 p-2 font-pixel text-xs text-center text-white uppercase outline-none focus:border-primary"
+                />
+                <button
+                  onClick={async () => {
+                    const input = document.getElementById("wallet-ref-input") as HTMLInputElement;
+                    const code = input?.value?.toUpperCase();
+                    if (!code || code.length < 6) return;
+                    try {
+                      // Submit referral code to backend
+                      // Note: We need a backend route to handle this logic if it's not present.
+                      // For now, let's use the profile calculation endpoint with checkCode and then update the profile.
+                      const res = await fetch(`/api/echo/profile?fid=${neynarUser?.fid}&referralCode=${code}`);
+                      const data = await res.json();
+                      if (data.profile) {
+                         toast("REFERRAL APPLIED!", "SUCCESS");
+                         fetchProfile(); // reload profile to show ALREADY INVITED
+                      } else {
+                         toast("INVALID CODE", "ERROR");
+                      }
+                    } catch {
+                      toast("ERROR", "ERROR");
+                    }
+                  }}
+                  className="px-4 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
+                >
+                  APPLY
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Invitee List (NEW) */}
           {profile?.invitees && profile.invitees.length > 0 && (
             <div className="mt-6">

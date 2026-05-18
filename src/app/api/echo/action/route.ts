@@ -97,13 +97,28 @@ export async function POST(request: Request) {
             if (profile.dailyActions.completedTasks.includes(actionType)) {
                 return NextResponse.json({ error: 'Task already completed', pointsAdded: 0 });
             }
+
+            const usernameToFollow = actionType === 'follow_echo' ? 'echo' : 'khash';
+            const API_KEY = process.env.NEYNAR_API_KEY;
+            if (!API_KEY) throw new Error("Server Config Error");
+
+            const res = await fetch(`https://api.neynar.com/v2/farcaster/user/search?q=${usernameToFollow}&viewer_fid=${fid}`, {
+                headers: { 'accept': 'application/json', 'api_key': API_KEY }
+            });
+            const data = await res.json();
+            const targetUser = data.result?.users?.find((u: any) => u.username.toLowerCase() === usernameToFollow.toLowerCase());
+            
+            if (!targetUser || !targetUser.viewer_context?.following) {
+                return NextResponse.json({ error: `You are not following @${usernameToFollow} yet!`, pointsAdded: 0 });
+            }
+
             points = 50;
             profile.dailyActions.completedTasks.push(actionType);
             profile.dailyActions.pointsHistory.push({
                 action: actionType,
                 points: points,
                 date: new Date(),
-                description: `Followed @${actionType === 'follow_echo' ? 'echo' : 'khash'}`
+                description: `Followed @${usernameToFollow}`
             });
         }
 
