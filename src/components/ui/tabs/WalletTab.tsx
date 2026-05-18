@@ -283,11 +283,11 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
                       // Submit referral code to backend
                       // Note: We need a backend route to handle this logic if it's not present.
                       // For now, let's use the profile calculation endpoint with checkCode and then update the profile.
-                      const res = await fetch(`/api/echo/profile?fid=${neynarUser?.fid}&referralCode=${code}`);
+                      const res = await fetch(`/api/echo/profile?fid=${context?.user?.fid}&referralCode=${code}`);
                       const data = await res.json();
-                      if (data.profile) {
+                      if (data && data.fid) {
                          toast("REFERRAL APPLIED!", "SUCCESS");
-                         fetchProfile(); // reload profile to show ALREADY INVITED
+                         setProfile(data); // reload profile to show ALREADY INVITED
                       } else {
                          toast("INVALID CODE", "ERROR");
                       }
