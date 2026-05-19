@@ -106,7 +106,7 @@ import { IntroModal } from "../IntroModal";
 export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
-  const [introOpen, setIntroOpen] = useState(true);
+  const [introOpen, setIntroOpen] = useState(false);
   const [hasMinted, setHasMinted] = useState(false);
 
   const { toast } = useToast();
@@ -116,6 +116,13 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [calculatingExt, setCalculatingExt] = useState(false);
   const [extModalOpen, setExtModalOpen] = useState(false);
   const [scanHistory, setScanHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("echo_scan_history");
+    if (saved) {
+      try { setScanHistory(JSON.parse(saved)); } catch (e) {}
+    }
+  }, []);
 
   const handleCalculateExt = async () => {
     if (!extAddress) return;
@@ -131,7 +138,9 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       const data = await res.json();
       setExtStats(data);
       if (!scanHistory.includes(extAddress)) {
-        setScanHistory([extAddress, ...scanHistory].slice(0, 5));
+        const newHistory = [extAddress, ...scanHistory].slice(0, 10);
+        setScanHistory(newHistory);
+        localStorage.setItem("echo_scan_history", JSON.stringify(newHistory));
       }
       setExtModalOpen(true);
     } catch(e: any) {
@@ -141,16 +150,49 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
     }
   };
 
+  const handleShareStats = async () => {
+    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+    let refCode = context?.user?.username || "ECHO";
+    try {
+      if (context?.user?.fid) {
+        const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
+        const data = await res.json();
+        if (data?.referralCode) refCode = data.referralCode;
+      }
+    } catch (e) {}
+    
+    const cleanRefCode = refCode.replace("ECHO_", "");
+    const shareText = `I just checked my onchain Echo Stats! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${cleanRefCode}`;
+    const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
+    try {
+        const sdk = (await import("@farcaster/frame-sdk")).default;
+        await sdk.actions.composeCast({
+            text: shareText,
+            embeds: [embedUrl]
+        });
+    } catch (e) {
+        const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+        window.open(composeUrl, '_blank');
+    }
+  };
+
   useEffect(() => {
     if (context?.user?.fid) {
       fetch(`/api/echo/profile?fid=${context.user.fid}`)
         .then(r => r.json())
         .then(data => {
-          if (data?.nftTokenId > 0) setHasMinted(true);
+          if (data?.exists) {
+            if (data?.nftTokenId > 0) setHasMinted(true);
+          } else {
+            setIntroOpen(true);
+          }
         })
         .catch(() => null);
+    } else if (context) {
+      // If we have context but no fid (e.g. testing?), we could open it anyway
+      setIntroOpen(true);
     }
-  }, [context?.user?.fid]);
+  }, [context]);
 
   const { address: connectedAddress } = useAccount();
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
@@ -223,7 +265,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       <div className="grid grid-cols-2 gap-3 mb-6">
         {/* SHARE BUTTON: Retro Outline Style */}
         <button
-          onClick={() => setIntroOpen(true)}
+          onClick={handleShareStats}
           className="group relative bg-black text-white font-pixel text-sm uppercase py-4 border-2 border-white shadow-[4px_4px_0px_0px_#ffffff] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-white hover:text-black transition-all duration-0"
         >
           <span className="relative z-10 flex flex-row items-center justify-center gap-2">
@@ -247,21 +289,21 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       </div>
 
       {/* External Stats Calculator */}
-      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl">🔍</span>}>
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] text-gray-400">
-            Scan any Base address. Cost: $0.50 (0.00015 ETH)
+      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl text-primary">🔍</span>}>
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-gray-400 font-mono">
+            Scan any Base address. <span className="text-white">Cost: $0.50 (0.00015 ETH)</span>
           </p>
 
           {scanHistory.length > 0 && (
-            <div className="mb-2">
-              <p className="text-[8px] text-primary uppercase mb-1">RECENT_SCANS</p>
-              <div className="flex flex-wrap gap-1">
+            <div className="mb-2 p-2 border border-white/10 bg-white/5">
+              <p className="text-[10px] text-primary uppercase mb-2 font-pixel">RECENT_SCANS</p>
+              <div className="flex flex-wrap gap-2">
                 {scanHistory.map((addr, i) => (
                   <button
                     key={i}
                     onClick={() => setExtAddress(addr)}
-                    className="text-[8px] font-mono border border-gray-600 bg-gray-900 text-gray-300 px-1 py-0.5 hover:border-primary hover:text-white"
+                    className="text-[10px] font-mono border border-gray-600 bg-black text-gray-300 px-2 py-1 hover:border-primary hover:text-white transition-colors"
                   >
                     {addr.slice(0, 6)}...{addr.slice(-4)}
                   </button>
@@ -276,14 +318,14 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               placeholder="Paste 0x address..." 
               value={extAddress}
               onChange={e => setExtAddress(e.target.value)}
-              className="flex-1 bg-black border border-white/20 p-2 font-mono text-xs text-white placeholder-gray-600 focus:border-primary outline-none"
+              className="flex-1 bg-black border border-white/20 p-3 font-mono text-sm text-white placeholder-gray-600 focus:border-primary outline-none"
             />
             <button 
               onClick={handleCalculateExt}
               disabled={calculatingExt || !extAddress}
-              className="bg-primary text-black font-pixel text-[10px] px-3 py-2 border-2 border-white/20 disabled:opacity-50"
+              className="bg-primary text-white font-pixel text-sm px-6 py-3 border-2 border-white disabled:opacity-50 hover:brightness-110 active:translate-y-1 transition-all"
             >
-              {calculatingExt ? 'SCANNING...' : 'SCAN'}
+              {calculatingExt ? 'SCANNING...' : 'SCAN NOW'}
             </button>
           </div>
         </div>
@@ -441,40 +483,59 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
 
       {/* EXTERNAL SCAN MODAL */}
       {extModalOpen && extStats && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <RetroWindow title={`SCANNED: ${extAddress.slice(0,6)}...${extAddress.slice(-4)}`} icon={<span className="text-xl">🔍</span>}>
-            <div className="flex flex-col gap-4 min-w-[300px]">
-              <div className="border border-white/20 bg-black p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-gray-300">
-                  <div className="bg-gray-900 p-2 border border-gray-700">
-                    <p className="text-gray-500 mb-1 uppercase">BIGGEST_TX</p>
-                    <p className="text-white text-sm font-pixel">${formatNumber(extStats.biggest_single_tx, 0)}</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="w-full max-w-2xl">
+            <RetroWindow title={`SCANNED: ${extAddress}`} icon={<span className="text-xl text-primary">🔍</span>}>
+              <div className="flex flex-col gap-6">
+                
+                <div className="bg-white/5 border border-white/10 p-3 text-center">
+                  <p className="text-xs text-gray-400">EXTERNAL ONCHAIN ACTIVITY</p>
+                  <p className="text-xs text-primary mt-1">ADDRESS: {extAddress.slice(0, 6)}...{extAddress.slice(-4)}</p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  {/* Row 1: 2 Columns */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <RetroStatBox
+                      label="BIGGEST TX"
+                      value={`$${formatNumber(extStats.biggest_single_tx, 0)}`}
+                    />
+                    <RetroStatBox
+                      label="GAS PAID"
+                      value={`${formatNumber(formatEth(BigInt(extStats.total_fees_paid_wei || 0)), 4)}`}
+                      subValue="ETH"
+                    />
                   </div>
-                  <div className="bg-gray-900 p-2 border border-gray-700">
-                    <p className="text-gray-500 mb-1 uppercase">TX_COUNT</p>
-                    <p className="text-white text-sm font-pixel">{formatNumber(extStats.total_tx)}</p>
-                  </div>
-                  <div className="bg-gray-900 p-2 border border-gray-700">
-                    <p className="text-gray-500 mb-1 uppercase">TOTAL_VOLUME</p>
-                    <p className="text-white text-sm font-pixel">${formatNumber(extStats.total_volume_usd, 0)}</p>
-                  </div>
-                  <div className="bg-gray-900 p-2 border border-gray-700">
-                    <p className="text-gray-500 mb-1 uppercase">WALLET_AGE</p>
-                    <p className="text-white text-sm font-pixel">{Math.floor(extStats.wallet_age_days || 0)} DAYS</p>
+
+                  {/* Row 2: 3 Columns */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <RetroStatBox
+                      label="TX COUNT"
+                      value={formatNumber(extStats.total_tx)}
+                    />
+                    <RetroStatBox
+                      label="VOLUME"
+                      value={`$${formatNumber(extStats.total_volume_usd, 0)}`}
+                    />
+                    <RetroStatBox 
+                      label="AGE" 
+                      value={`${Math.floor(extStats.wallet_age_days || 0)}`} 
+                      subValue="DAYS" 
+                    />
                   </div>
                 </div>
+
+                <button 
+                  onClick={() => setExtModalOpen(false)}
+                  className="w-full bg-primary text-white font-pixel text-sm py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all"
+                >
+                  CLOSE WINDOW
+                </button>
               </div>
-              <button 
-                onClick={() => setExtModalOpen(false)}
-                className="w-full bg-primary text-black font-pixel text-xs py-3 border-2 border-white hover:brightness-110"
-              >
-                CLOSE WINDOW
-              </button>
-            </div>
-          </RetroWindow>
+            </RetroWindow>
+          </div>
         </div>
       )}
-
     </div>
   );
 }

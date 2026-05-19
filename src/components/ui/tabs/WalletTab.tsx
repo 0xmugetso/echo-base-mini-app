@@ -212,50 +212,55 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
           </div>
 
           {/* Invite Code & Link Buttons */}
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <div className="flex-1 bg-black border border-dashed border-gray-600 p-2 flex items-center justify-between overflow-hidden">
-                <div>
-                  <p className="text-[7px] text-gray-500 uppercase mb-1">INVITE_CODE</p>
-                  <code className="text-lg text-primary font-pixel leading-none">
-                    {profile?.referralCode || "---"}
-                  </code>
-                </div>
+          <div className="space-y-4 mt-4">
+            <div className="flex flex-col gap-2 border-2 border-primary bg-primary/5 p-4 shadow-[4px_4px_0_0_theme('colors.primary')] relative overflow-hidden">
+              {/* Scanline decoration */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
+              
+              <div className="relative z-10 text-center mb-2">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">YOUR_INVITE_CODE</p>
+                <p className="text-3xl text-primary font-pixel mt-1 tracking-wider text-shadow-glow">
+                  {profile?.referralCode?.replace("ECHO_", "") || "---"}
+                </p>
+              </div>
+
+              <div className="relative z-10 grid grid-cols-2 gap-2 mt-2">
                 <button
                   onClick={() => {
                     if (!profile?.referralCode) return;
-                    navigator.clipboard.writeText(profile.referralCode);
+                    navigator.clipboard.writeText(profile.referralCode.replace("ECHO_", ""));
                     toast("CODE COPIED", "SUCCESS");
                   }}
-                  className="px-3 py-1 bg-white text-black text-[10px] font-bold font-pixel hover:bg-primary transition-colors h-fit flex items-center gap-1"
+                  className="w-full py-3 bg-white text-black text-xs font-bold font-pixel hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  COPY CODE
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  COPY
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (!profile?.referralCode) return;
+                    const cleanRefCode = profile.referralCode.replace("ECHO_", "");
+                    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+                    const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${cleanRefCode}`;
+                    const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
+                    try {
+                      const sdk = (await import("@farcaster/frame-sdk")).default;
+                      await sdk.actions.composeCast({
+                        text,
+                        embeds: [embedUrl]
+                      });
+                    } catch (e) {
+                      const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                      window.open(composeUrl, '_blank');
+                    }
+                  }}
+                  className="w-full py-3 bg-primary text-black font-pixel text-xs hover:brightness-110 flex items-center justify-center gap-2"
+                >
+                  CAST INVITE
                 </button>
               </div>
             </div>
-
-            <button
-              onClick={async () => {
-                if (!profile?.referralCode) return;
-                const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
-                const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${profile.referralCode}`;
-                const embedUrl = `${appUrl}?ref=${profile.referralCode}`;
-                try {
-                  const sdk = (await import("@farcaster/frame-sdk")).default;
-                  await sdk.actions.composeCast({
-                    text,
-                    embeds: [embedUrl]
-                  });
-                } catch (e) {
-                  const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-                  window.open(composeUrl, '_blank');
-                }
-              }}
-              className="w-full py-2 bg-primary border-2 border-white/20 text-white text-[10px] font-bold font-pixel hover:bg-blue-600 transition-colors shadow-[4px_4px_0_0_theme('colors.primary')] flex items-center justify-center gap-2"
-            >
-              SHARE_FULL_INVITE_LINK
-            </button>
           </div>
 
           {/* Referral Input (For Existing Users) */}
