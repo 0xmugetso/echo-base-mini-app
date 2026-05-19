@@ -47,15 +47,31 @@ export function ActionsTab({ context }: ActionTabProps) {
       const data = await res.json();
       if (data?.dailyActions?.castHistory) {
         setHistory(data.dailyActions.castHistory.reverse());
-        // Check if casted in the last 12 hours
+        // Check if casted in the current 12hr UTC block
         const lastDate = data.dailyActions.lastCastDate;
         if (lastDate) {
-          const lastTime = new Date(lastDate).getTime();
-          const nextTime = lastTime + 12 * 60 * 60 * 1000;
-          if (Date.now() < nextTime) {
+          const lastCastDateObj = new Date(lastDate);
+          const now = new Date();
+          const lastCastBlock = Math.floor(lastCastDateObj.getUTCHours() / 12);
+          const currentBlock = Math.floor(now.getUTCHours() / 12);
+          
+          const isSameDay = lastCastDateObj.getUTCFullYear() === now.getUTCFullYear() && 
+                            lastCastDateObj.getUTCMonth() === now.getUTCMonth() && 
+                            lastCastDateObj.getUTCDate() === now.getUTCDate();
+          
+          if (isSameDay && lastCastBlock === currentBlock) {
             setStatus('SUCCESS');
             setLastCast(data.dailyActions.castHistory[0]); // Most recent
-            setNextCastDate(new Date(nextTime));
+            
+            // Next block starts at either 12:00 UTC or 00:00 UTC next day
+            const nextTime = new Date(now);
+            if (currentBlock === 0) {
+              nextTime.setUTCHours(12, 0, 0, 0);
+            } else {
+              nextTime.setUTCDate(nextTime.getUTCDate() + 1);
+              nextTime.setUTCHours(0, 0, 0, 0);
+            }
+            setNextCastDate(nextTime);
           }
         }
       }

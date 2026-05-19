@@ -58,6 +58,12 @@ export interface IEchoProfile {
         }[];
     };
 
+    scanHistory?: {
+        address: string;
+        timestamp: Date;
+        stats: any;
+    }[];
+
     lastUpdated: Date;
 }
 
@@ -120,6 +126,12 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
                 description: String
             }]
         },
+
+        scanHistory: [{
+            address: String,
+            timestamp: { type: Date, default: Date.now },
+            stats: { type: Schema.Types.Mixed }
+        }],
 
         lastUpdated: { type: Date, default: Date.now },
     },

@@ -107,6 +107,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [hasMinted, setHasMinted] = useState(false);
 
   const { toast } = useToast();
@@ -115,14 +116,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [extStats, setExtStats] = useState<any>(null);
   const [calculatingExt, setCalculatingExt] = useState(false);
   const [extModalOpen, setExtModalOpen] = useState(false);
-  const [scanHistory, setScanHistory] = useState<string[]>([]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("echo_scan_history");
-    if (saved) {
-      try { setScanHistory(JSON.parse(saved)); } catch (e) {}
-    }
-  }, []);
+  const [scanHistory, setScanHistory] = useState<{address: string, stats: any}[]>([]);
 
   const handleCalculateExt = async () => {
     if (!extAddress) return;
@@ -137,12 +131,26 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       const res = await fetch(`/api/stats?address=${extAddress}`);
       const data = await res.json();
       setExtStats(data);
-      if (!scanHistory.includes(extAddress)) {
-        const newHistory = [extAddress, ...scanHistory].slice(0, 10);
-        setScanHistory(newHistory);
-        localStorage.setItem("echo_scan_history", JSON.stringify(newHistory));
-      }
       setExtModalOpen(true);
+      
+      // Save scan to profile
+      if (context?.user?.fid) {
+        await fetch('/api/echo/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fid: context.user.fid,
+                actionType: 'save_scan',
+                address: extAddress,
+                stats: data
+            })
+        });
+        setScanHistory(prev => {
+            const exists = prev.find(p => p.address.toLowerCase() === extAddress.toLowerCase());
+            if (exists) return prev;
+            return [{address: extAddress, stats: data}, ...prev];
+        });
+      }
     } catch(e: any) {
       toast("FAILED: " + e.message, "ERROR");
     } finally {
@@ -183,6 +191,11 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         .then(data => {
           if (data?.exists) {
             if (data?.nftTokenId > 0) setHasMinted(true);
+            if (data?.scanHistory) {
+                // sort by most recent
+                setScanHistory(data.scanHistory.reverse());
+            }
+            setWelcomeOpen(true); // Open Welcome Back Modal
           } else {
             setIntroOpen(true);
           }
@@ -299,13 +312,17 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
             <div className="mb-2 p-2 border border-white/10 bg-white/5">
               <p className="text-[10px] text-primary uppercase mb-2 font-pixel">RECENT_SCANS</p>
               <div className="flex flex-wrap gap-2">
-                {scanHistory.map((addr, i) => (
+                {scanHistory.map((item, i) => (
                   <button
                     key={i}
-                    onClick={() => setExtAddress(addr)}
+                    onClick={() => {
+                        setExtAddress(item.address);
+                        setExtStats(item.stats);
+                        setExtModalOpen(true);
+                    }}
                     className="text-[10px] font-mono border border-gray-600 bg-black text-gray-300 px-2 py-1 hover:border-primary hover:text-white transition-colors"
                   >
-                    {addr.slice(0, 6)}...{addr.slice(-4)}
+                    {item.address.slice(0, 6)}...{item.address.slice(-4)}
                   </button>
                 ))}
               </div>
@@ -536,6 +553,42 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           </div>
         </div>
       )}
+
+      {/* WELCOME BACK MODAL */}
+      {welcomeOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md">
+          {/* Animated Background Overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-50" />
+          
+          <div className="w-[90%] max-w-md bg-black border-4 border-primary p-8 shadow-[12px_12px_0px_0px_theme('colors.primary')] flex flex-col gap-8 transform relative z-10 animate-fade-in-up">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl font-pixel text-white uppercase tracking-widest text-shadow-glow animate-pulse">
+                WELCOME_BACK
+              </h2>
+              <div className="bg-primary/10 border border-primary p-4 inline-block shadow-[4px_4px_0_0_theme('colors.primary')]">
+                <p className="text-lg font-mono text-primary font-bold">
+                  {neynarUser?.display_name || context?.user?.username || "OPERATOR"}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1 uppercase">IDENTITY_VERIFIED</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 border-l-2 border-dashed border-gray-600 pl-4 py-2">
+              <p className="text-xs font-mono text-white">&gt; INITIALIZING_ECHO_OS...</p>
+              <p className="text-xs font-mono text-green-500">&gt; SYNCING_ONCHAIN_DATA: OK</p>
+              <p className="text-xs font-mono text-green-500">&gt; LOADING_MODULES: DONE</p>
+            </div>
+
+            <button 
+              onClick={() => setWelcomeOpen(false)}
+              className="w-full bg-primary text-black font-pixel text-lg py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all uppercase shadow-[4px_4px_0_0_#ffffff] active:shadow-none"
+            >
+              ENTER SYSTEM
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

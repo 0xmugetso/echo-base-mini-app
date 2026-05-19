@@ -25,10 +25,19 @@ export async function POST(request: Request) {
 
             if (!castHash || !castText) return NextResponse.json({ error: 'Missing cast data' }, { status: 400 });
 
-            // Check if already rewarded in the last 12 hours
-            const lastCastTime = profile.dailyActions?.lastCastDate ? new Date(profile.dailyActions.lastCastDate).getTime() : 0;
-            if (now.getTime() - lastCastTime < 12 * 60 * 60 * 1000) {
-                return NextResponse.json({ error: 'Daily cast already rewarded (12hr cooldown)', pointsAdded: 0 });
+            // Check if already rewarded in the current 12hr UTC block
+            if (profile.dailyActions?.lastCastDate) {
+                const lastCastDateObj = new Date(profile.dailyActions.lastCastDate);
+                const lastCastBlock = Math.floor(lastCastDateObj.getUTCHours() / 12);
+                const currentBlock = Math.floor(now.getUTCHours() / 12);
+                
+                const isSameDay = lastCastDateObj.getUTCFullYear() === now.getUTCFullYear() && 
+                                  lastCastDateObj.getUTCMonth() === now.getUTCMonth() && 
+                                  lastCastDateObj.getUTCDate() === now.getUTCDate();
+                
+                if (isSameDay && lastCastBlock === currentBlock) {
+                    return NextResponse.json({ error: 'Daily cast already rewarded in this block (resets at 00:00 and 12:00 UTC)', pointsAdded: 0 });
+                }
             }
 
             // Check if hash already used (Duplicate cast)
@@ -121,7 +130,29 @@ export async function POST(request: Request) {
                 description: `Followed @${usernameToFollow}`
             });
         }
-
+        else if (actionType === 'save_scan') {
+            const { address, stats } = body;
+            if (!address || !stats) {
+                return NextResponse.json({ error: 'Missing scan data' }, { status: 400 });
+            }
+            if (!profile.scanHistory) profile.scanHistory = [];
+            
+            // Check if already in history, if so update it
+            const existingIndex = profile.scanHistory.findIndex((s: any) => s.address.toLowerCase() === address.toLowerCase());
+            if (existingIndex >= 0) {
+                profile.scanHistory[existingIndex].stats = stats;
+                profile.scanHistory[existingIndex].timestamp = new Date();
+            } else {
+                profile.scanHistory.push({
+                    address,
+                    stats,
+                    timestamp: new Date()
+                });
+            }
+            
+            await profile.save();
+            return NextResponse.json({ success: true, scanHistory: profile.scanHistory });
+        }
         if (points > 0) {
             profile.points += points;
             profile.pointsGrinded = (profile.pointsGrinded || 0) + points;

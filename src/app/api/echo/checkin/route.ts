@@ -24,15 +24,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Already checked in today', profile }, { status: 400 });
         }
 
-        // Streak Logic
+        // Streak Logic strictly based on UTC calendar days
         let newStreak = 1;
         if (lastCheckIn) {
-            const diffTime = Math.abs(now.getTime() - lastCheckIn.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const yesterday = new Date(now);
+            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+            const yesterdayUtcStr = yesterday.toISOString().split('T')[0];
 
-            if (diffDays <= 2) { // Allow roughly 48 hours for leeway, or strictly 1 day? "Resets if < today - 1 day"
-                // Actually simple check: Is last checkin yesterday?
-                // Let's go with < 48 hours diff for "next day" continuity
+            if (lastUtcStr === yesterdayUtcStr) {
                 newStreak = profile.streak.current + 1;
             } else {
                 newStreak = 1; // Reset

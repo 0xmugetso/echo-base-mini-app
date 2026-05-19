@@ -479,27 +479,57 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
             </div>
 
             {/* Daily Echo Cast */}
-            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${profile?.dailyActions?.lastCastDate && (Date.now() - new Date(profile.dailyActions.lastCastDate).getTime() < 12 * 60 * 60 * 1000) ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-              <div className="mb-2">
-                <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
-                <p className="font-mono text-[8px] text-gray-400 uppercase">+20-50 PTS • CAST</p>
-              </div>
-              <div className="w-full">
-                {profile?.dailyActions?.lastCastDate && (Date.now() - new Date(profile.dailyActions.lastCastDate).getTime() < 12 * 60 * 60 * 1000) ? (
-                  <div className="space-y-2">
-                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                    <RetroTimer targetDate={new Date(new Date(profile.dailyActions.lastCastDate).getTime() + 12 * 60 * 60 * 1000)} />
+            {(() => {
+                let isCompleted = false;
+                let nextTargetDate: Date | null = null;
+                
+                if (profile?.dailyActions?.lastCastDate) {
+                  const lastCastDateObj = new Date(profile.dailyActions.lastCastDate);
+                  const now = new Date();
+                  const lastCastBlock = Math.floor(lastCastDateObj.getUTCHours() / 12);
+                  const currentBlock = Math.floor(now.getUTCHours() / 12);
+                  
+                  const isSameDay = lastCastDateObj.getUTCFullYear() === now.getUTCFullYear() && 
+                                    lastCastDateObj.getUTCMonth() === now.getUTCMonth() && 
+                                    lastCastDateObj.getUTCDate() === now.getUTCDate();
+                  
+                  if (isSameDay && lastCastBlock === currentBlock) {
+                    isCompleted = true;
+                    const nextTime = new Date(now);
+                    if (currentBlock === 0) {
+                      nextTime.setUTCHours(12, 0, 0, 0);
+                    } else {
+                      nextTime.setUTCDate(nextTime.getUTCDate() + 1);
+                      nextTime.setUTCHours(0, 0, 0, 0);
+                    }
+                    nextTargetDate = nextTime;
+                  }
+                }
+                
+                return (
+                  <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCompleted ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+                    <div className="mb-2">
+                      <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
+                      <p className="font-mono text-[8px] text-gray-400 uppercase">+20-50 PTS • CAST</p>
+                    </div>
+                    <div className="w-full">
+                      {isCompleted ? (
+                        <div className="space-y-2">
+                          <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                          <RetroTimer targetDate={nextTargetDate || undefined} />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setActiveTab?.('actions')}
+                          className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
+                        >
+                          GO TO CAST
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setActiveTab?.('actions')}
-                    className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
-                  >
-                    GO TO CAST
-                  </button>
-                )}
-              </div>
-            </div>
+                );
+            })()}
           </div>
 
           {/* LIMITED MISSION - YELLOW STYLE */}
