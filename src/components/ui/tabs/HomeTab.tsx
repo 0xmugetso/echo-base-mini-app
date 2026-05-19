@@ -116,7 +116,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
   const [extStats, setExtStats] = useState<any>(null);
   const [calculatingExt, setCalculatingExt] = useState(false);
   const [extModalOpen, setExtModalOpen] = useState(false);
-  const [scanHistory, setScanHistory] = useState<{address: string, stats: any}[]>([]);
+  const [scanHistory, setScanHistory] = useState<{ address: string, stats: any }[]>([]);
 
   const handleCalculateExt = async () => {
     if (!extAddress) return;
@@ -127,31 +127,31 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         value: parseEther("0.00015"),
       });
       toast("PAYMENT SUCCESS! SCANNING...", "SUCCESS");
-      
+
       const res = await fetch(`/api/stats?address=${extAddress}`);
       const data = await res.json();
       setExtStats(data);
       setExtModalOpen(true);
-      
+
       // Save scan to profile
       if (context?.user?.fid) {
         await fetch('/api/echo/action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fid: context.user.fid,
-                actionType: 'save_scan',
-                address: extAddress,
-                stats: data
-            })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fid: context.user.fid,
+            actionType: 'save_scan',
+            address: extAddress,
+            stats: data
+          })
         });
         setScanHistory(prev => {
-            const exists = prev.find(p => p.address.toLowerCase() === extAddress.toLowerCase());
-            if (exists) return prev;
-            return [{address: extAddress, stats: data}, ...prev];
+          const exists = prev.find(p => p.address.toLowerCase() === extAddress.toLowerCase());
+          if (exists) return prev;
+          return [{ address: extAddress, stats: data }, ...prev];
         });
       }
-    } catch(e: any) {
+    } catch (e: any) {
       toast("FAILED: " + e.message, "ERROR");
     } finally {
       setCalculatingExt(false);
@@ -167,20 +167,20 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         const data = await res.json();
         if (data?.referralCode) refCode = data.referralCode;
       }
-    } catch (e) {}
-    
+    } catch (e) { }
+
     const cleanRefCode = refCode.replace("ECHO_", "");
     const shareText = `I just checked my onchain Echo Stats! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${cleanRefCode}`;
     const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
     try {
-        const sdk = (await import("@farcaster/frame-sdk")).default;
-        await sdk.actions.composeCast({
-            text: shareText,
-            embeds: [embedUrl]
-        });
+      const sdk = (await import("@farcaster/frame-sdk")).default;
+      await sdk.actions.composeCast({
+        text: shareText,
+        embeds: [embedUrl]
+      });
     } catch (e) {
-        const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-        window.open(composeUrl, '_blank');
+      const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+      window.open(composeUrl, '_blank');
     }
   };
 
@@ -196,8 +196,8 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           if (data?.exists) {
             if (data?.nftTokenId > 0) setHasMinted(true);
             if (data?.scanHistory) {
-                // sort by most recent
-                setScanHistory(data.scanHistory.reverse());
+              // sort by most recent
+              setScanHistory(data.scanHistory.reverse());
             }
             setWelcomeOpen(true); // Open Welcome Back Modal
           } else {
@@ -206,7 +206,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           setHasCheckedProfile(true);
         })
         .catch(() => {
-            setHasCheckedProfile(true);
+          setHasCheckedProfile(true);
         });
     } else if (isSDKLoaded && (!context || !context.user)) {
       // If SDK is loaded and we have no user, we are likely testing locally or outside farcaster
@@ -313,7 +313,8 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
       <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl text-primary">🔍</span>}>
         <div className="flex flex-col gap-4">
           <p className="text-xs text-gray-400 font-mono">
-            Scan any Base address. <span className="text-white">Cost: $0.50 (0.00015 ETH)</span>
+            Scan Any Address on Base.
+            <span className="text-white">Cost: $0.50 (0.00015 ETH)</span>
           </p>
 
           {scanHistory.length > 0 && (
@@ -324,9 +325,9 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
                   <button
                     key={i}
                     onClick={() => {
-                        setExtAddress(item.address);
-                        setExtStats(item.stats);
-                        setExtModalOpen(true);
+                      setExtAddress(item.address);
+                      setExtStats(item.stats);
+                      setExtModalOpen(true);
                     }}
                     className="text-[10px] font-mono border border-gray-600 bg-black text-gray-300 px-2 py-1 hover:border-primary hover:text-white transition-colors"
                   >
@@ -338,14 +339,14 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           )}
 
           <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Paste 0x address..." 
+            <input
+              type="text"
+              placeholder="Paste 0x address..."
               value={extAddress}
               onChange={e => setExtAddress(e.target.value)}
               className="flex-1 bg-black border border-white/20 p-3 font-mono text-sm text-white placeholder-gray-600 focus:border-primary outline-none"
             />
-            <button 
+            <button
               onClick={handleCalculateExt}
               disabled={calculatingExt || !extAddress}
               className="bg-primary text-white font-pixel text-sm px-6 py-3 border-2 border-white disabled:opacity-50 hover:brightness-110 active:translate-y-1 transition-all"
@@ -512,7 +513,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           <div className="w-full max-w-2xl">
             <RetroWindow title={`SCANNED: ${extAddress}`} icon={<span className="text-xl text-primary">🔍</span>}>
               <div className="flex flex-col gap-6">
-                
+
                 <div className="bg-white/5 border border-white/10 p-3 text-center">
                   <p className="text-xs text-gray-400">EXTERNAL ONCHAIN ACTIVITY</p>
                   <p className="text-xs text-primary mt-1">ADDRESS: {extAddress.slice(0, 6)}...{extAddress.slice(-4)}</p>
@@ -542,15 +543,15 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
                       label="VOLUME"
                       value={`$${formatNumber(extStats.total_volume_usd, 0)}`}
                     />
-                    <RetroStatBox 
-                      label="AGE" 
-                      value={`${Math.floor(extStats.wallet_age_days || 0)}`} 
-                      subValue="DAYS" 
+                    <RetroStatBox
+                      label="AGE"
+                      value={`${Math.floor(extStats.wallet_age_days || 0)}`}
+                      subValue="DAYS"
                     />
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => setExtModalOpen(false)}
                   className="w-full bg-primary text-white font-pixel text-sm py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all"
                 >
@@ -567,7 +568,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md">
           {/* Animated Background Overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-50" />
-          
+
           <div className="w-[90%] max-w-md bg-black border-4 border-primary p-8 shadow-[12px_12px_0px_0px_theme('colors.primary')] flex flex-col gap-8 transform relative z-10 animate-fade-in-up">
             <div className="text-center space-y-4">
               <h2 className="text-4xl font-pixel text-white uppercase tracking-widest text-shadow-glow animate-pulse">
@@ -587,7 +588,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               <p className="text-xs font-mono text-green-500">&gt; LOADING_MODULES: DONE</p>
             </div>
 
-            <button 
+            <button
               onClick={() => setWelcomeOpen(false)}
               className="w-full bg-primary text-black font-pixel text-lg py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all uppercase shadow-[4px_4px_0_0_#ffffff] active:shadow-none"
             >
