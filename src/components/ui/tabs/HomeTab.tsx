@@ -184,7 +184,11 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
     }
   };
 
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
+
   useEffect(() => {
+    if (hasCheckedProfile) return;
+
     if (context?.user?.fid) {
       fetch(`/api/echo/profile?fid=${context.user.fid}`)
         .then(r => r.json())
@@ -199,13 +203,17 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           } else {
             setIntroOpen(true);
           }
+          setHasCheckedProfile(true);
         })
-        .catch(() => null);
-    } else if (context) {
-      // If we have context but no fid (e.g. testing?), we could open it anyway
+        .catch(() => {
+            setHasCheckedProfile(true);
+        });
+    } else if (isSDKLoaded && (!context || !context.user)) {
+      // If SDK is loaded and we have no user, we are likely testing locally or outside farcaster
       setIntroOpen(true);
+      setHasCheckedProfile(true);
     }
-  }, [context]);
+  }, [context, isSDKLoaded, hasCheckedProfile]);
 
   const { address: connectedAddress } = useAccount();
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
