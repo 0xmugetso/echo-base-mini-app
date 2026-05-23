@@ -36,6 +36,14 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
   const { sendTransactionAsync } = useSendTransaction();
   const { sdk } = useMiniApp() as any;
 
+  const primaryEthAddress =
+    neynarUser?.verified_addresses?.primary?.eth_address ||
+    neynarUser?.verified_addresses?.eth_addresses?.[0] ||
+    context?.user?.verified_addresses?.eth_addresses?.[0] ||
+    (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0] ||
+    (context?.user as any)?.custodyAddress ||
+    '0x0000000000000000000000000000000000000000';
+
   // --- FETCH PROFILE ---
   const fetchProfile = async () => {
     const targetFid = neynarUser?.fid || context?.user?.fid;
@@ -73,7 +81,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
             body: JSON.stringify({
               action: 'calculate',
               fid: profile.fid,
-              address: (context?.user?.verifications?.[0] || '0x0000000000000000000000000000000000000000')
+              address: primaryEthAddress
             })
           });
           // Re-fetch after short delay
@@ -356,7 +364,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                     body: JSON.stringify({
                       action: 'calculate',
                       fid: neynarUser?.fid || context?.user?.fid,
-                      address: (context?.user?.verifications?.[0] || '0x0000000000000000000000000000000000000000')
+                      address: primaryEthAddress
                     })
                   });
                   await fetchProfile();

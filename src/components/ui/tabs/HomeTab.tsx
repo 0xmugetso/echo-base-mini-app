@@ -217,12 +217,21 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   }, [context, hasCheckedProfile, setActiveTab]);
 
   const { address: connectedAddress } = useAccount();
-  const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
-  const address =
+  
+  const primaryEthAddress =
+    neynarUser?.verified_addresses?.primary?.eth_address ||
+    neynarUser?.verified_addresses?.eth_addresses?.[0] ||
     context?.user?.verified_addresses?.eth_addresses?.[0] ||
+    (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0];
+
+  const address =
+    primaryEthAddress ||
     context?.user?.custody_address ||
+    (context?.user as any)?.custodyAddress ||
     connectedAddress ||
     "0x0000000000000000000000000000000000000000"; // Truly neutral fallback
+
+  const isFallbackAddress = !address || address === "0x0000000000000000000000000000000000000000";
 
   if (isFallbackAddress && isSDKLoaded) {
     console.warn("[Echo] Custody address missing. Origin mismatch likely blocking SDK context.");

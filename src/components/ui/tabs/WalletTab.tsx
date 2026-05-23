@@ -40,7 +40,7 @@ const RetroStatBox = ({ label, value, subValue }: { label: string; value: string
   </div>
 );
 
-export function WalletTab({ isActive }: { isActive?: boolean }) {
+export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynarUser?: any }) {
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
@@ -90,7 +90,19 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
   };
   // Fetch Base Stats for Base Score
   const user = (context?.user as any);
-  const userAddress = address || user?.verified_addresses?.eth_addresses?.[0] || user?.custody_address;
+  
+  const primaryEthAddress =
+    neynarUser?.verified_addresses?.primary?.eth_address ||
+    neynarUser?.verified_addresses?.eth_addresses?.[0] ||
+    user?.verified_addresses?.eth_addresses?.[0] ||
+    user?.verifiedAddresses?.ethAddresses?.[0];
+
+  const userAddress =
+    primaryEthAddress ||
+    user?.custody_address ||
+    user?.custodyAddress ||
+    address ||
+    "0x0000000000000000000000000000000000000000";
   const { data: baseStats, loading: baseLoading } = useBaseStats(userAddress || "0x0000000000000000000000000000000000000000");
 
   useEffect(() => {

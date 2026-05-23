@@ -80,7 +80,12 @@ export default function App(
         <Header
           neynarUser={neynarUser}
           tab={currentTab as Tab}
-          address={(context?.user as any)?.custodyAddress || (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0]}
+          address={
+            neynarUser?.verified_addresses?.primary?.eth_address ||
+            neynarUser?.verified_addresses?.eth_addresses?.[0] ||
+            (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0] ||
+            (context?.user as any)?.custodyAddress
+          }
         />
 
         <main className="flex-1 p-4">
@@ -94,7 +99,7 @@ export default function App(
             <TasksTab context={context} neynarUser={neynarUser} setActiveTab={setActiveTab} isActive={currentTab === Tab.Context} />
           </TabContent>
           <TabContent isActive={currentTab === Tab.Wallet}>
-            <WalletTab isActive={currentTab === Tab.Wallet} />
+            <WalletTab isActive={currentTab === Tab.Wallet} neynarUser={neynarUser} />
           </TabContent>
         </main>
       </div>

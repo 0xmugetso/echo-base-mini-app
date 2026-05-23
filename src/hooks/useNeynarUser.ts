@@ -13,6 +13,14 @@ export interface NeynarUser {
   score: number;
   follower_count: number;
   following_count: number;
+  verified_addresses?: {
+    eth_addresses: string[];
+    sol_addresses: string[];
+    primary: {
+      eth_address: string;
+      sol_address: string;
+    };
+  };
 }
 
 export function useNeynarUser(context?: { user?: { fid?: number } }) {
