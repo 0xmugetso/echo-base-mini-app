@@ -282,13 +282,16 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
                 <button
                   onClick={async () => {
                     const input = document.getElementById("wallet-ref-input") as HTMLInputElement;
-                    const code = input?.value?.toUpperCase();
-                    if (!code || code.length < 6) return;
+                    const enteredCode = input?.value?.toUpperCase();
+                    if (!enteredCode || enteredCode.length < 6) return;
+                    
+                    // Prepend ECHO_ before sending request
+                    const fullCode = enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`;
                     try {
                       // Submit referral code to backend
                       // Note: We need a backend route to handle this logic if it's not present.
                       // For now, let's use the profile calculation endpoint with checkCode and then update the profile.
-                      const res = await fetch(`/api/echo/profile?fid=${context?.user?.fid}&referralCode=${code}`);
+                      const res = await fetch(`/api/echo/profile?fid=${context?.user?.fid}&referralCode=${fullCode}`);
                       const data = await res.json();
                       if (data && data.fid) {
                          toast("REFERRAL APPLIED!", "SUCCESS");

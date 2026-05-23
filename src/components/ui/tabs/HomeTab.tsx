@@ -16,6 +16,7 @@ import { base64Grid } from "../gridPattern";
 type HomeTabProps = {
   neynarUser?: NeynarUser | null;
   context?: any;
+  setActiveTab?: (tab: string) => void;
 };
 
 const formatNumber = (value?: number | null, digits = 0) => {
@@ -103,7 +104,7 @@ const RetroLoader = () => {
 
 import { IntroModal } from "../IntroModal";
 
-export function HomeTab({ neynarUser, context }: HomeTabProps) {
+export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
@@ -199,7 +200,11 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
               // sort by most recent
               setScanHistory(data.scanHistory.reverse());
             }
-            setWelcomeOpen(true); // Open Welcome Back Modal
+            if (setActiveTab) {
+              setActiveTab("context");
+            } else {
+              setWelcomeOpen(true); // Open Welcome Back Modal fallback
+            }
           } else {
             setIntroOpen(true);
           }
@@ -208,12 +213,8 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
         .catch(() => {
           setHasCheckedProfile(true);
         });
-    } else if (isSDKLoaded && (!context || !context.user)) {
-      // If SDK is loaded and we have no user, we are likely testing locally or outside farcaster
-      setIntroOpen(true);
-      setHasCheckedProfile(true);
     }
-  }, [context, isSDKLoaded, hasCheckedProfile]);
+  }, [context, hasCheckedProfile, setActiveTab]);
 
   const { address: connectedAddress } = useAccount();
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
@@ -569,7 +570,7 @@ export function HomeTab({ neynarUser, context }: HomeTabProps) {
           {/* Animated Background Overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-50" />
 
-          <div className="w-[90%] max-w-md bg-black border-4 border-primary p-8 shadow-[12px_12px_0px_0px_theme('colors.primary')] flex flex-col gap-8 transform relative z-10 animate-fade-in-up">
+          <div className="w-[90%] max-w-md bg-black border-4 border-primary p-8 shadow-[12px_12px_0px_0px_theme('colors.primary')] flex flex-col gap-8 transform relative z-10 animate-in fade-in zoom-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-4">
               <h2 className="text-4xl font-pixel text-white uppercase tracking-widest text-shadow-glow animate-pulse">
                 WELCOME_BACK

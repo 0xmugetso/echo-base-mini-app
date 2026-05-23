@@ -99,6 +99,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                 .then(data => {
                     if (data && data.fid && data.exists) {
                         setIsNewUser(false);
+                        if (data.referralCode) {
+                            setMyRefCode(data.referralCode.replace("ECHO_", ""));
+                        }
                     }
                 })
                 .catch(e => console.error("Profile check error", e));
@@ -108,17 +111,23 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     // Handle Deep Link Invite Code
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const code = params.get('invite') || params.get('referral');
-        if (code && code.length === 6) {
-            const arr = code.toUpperCase().split('').slice(0, 6);
-            setInviteCode(arr);
-            setInviteStatus('success'); // Assume success if coming from link for now
+        const code = params.get('invite') || params.get('referral') || params.get('ref');
+        if (code) {
+            const cleanCode = code.toUpperCase().replace("ECHO_", "");
+            if (cleanCode.length === 6) {
+                const arr = cleanCode.split('').slice(0, 6);
+                setInviteCode(arr);
+                setInviteStatus('success'); // Assume success if coming from link for now
+            }
         }
     }, []);
 
     const validateInvite = async (codeArr: string[]) => {
-        const fullCode = codeArr.join('').toUpperCase();
-        if (fullCode.length < 6) return;
+        const enteredCode = codeArr.join('').toUpperCase();
+        if (enteredCode.length < 6) return;
+
+        // Prepend ECHO_ before sending request
+        const fullCode = enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`;
 
         setInviteStatus('validating');
         setInviteErrorMsg("");
@@ -232,6 +241,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
         const calculateProfile = async () => {
             if (!neynarUser?.fid || !neynarUser?.custody_address) return;
             try {
+                const enteredCode = inviteCode.join('').toUpperCase();
+                const fullCode = enteredCode ? (enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`) : "";
+
                 const res = await fetch('/api/echo/profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -240,7 +252,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                         username: neynarUser.username,
                         address: neynarUser.custody_address,
                         action: 'calculate',
-                        referralCode: inviteCode.join('').toUpperCase(),
+                        referralCode: fullCode,
                         manualStats: JSON.parse(JSON.stringify(baseStats, (key, value) =>
                             typeof value === 'bigint' ? value.toString() : value
                         ))
@@ -252,6 +264,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     const onchainRep = data.profile.onchainScore || 0;
                     const socialScore = farcasterScore; // neynarUser.score
                     setCalculatedPoints(grindPts + onchainRep + socialScore);
+                    if (data.profile.referralCode) {
+                        setMyRefCode(data.profile.referralCode.replace("ECHO_", ""));
+                    }
                 }
             } catch (e) {
                 console.error("Calculation Error", e);
