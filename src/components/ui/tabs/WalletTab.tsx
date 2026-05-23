@@ -49,8 +49,45 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
   // Data State
   const [profile, setProfile] = useState<any>(null); // Quick 'any' for now, ideally EchoProfile type
   const [activityPoints, setActivityPoints] = useState(0);
+  const [referrerUsername, setReferrerUsername] = useState<string>("");
+  const [refreshingReferrals, setRefreshingReferrals] = useState(false);
 
   const { toast } = useToast();
+
+  // Fetch Referrer Username if present
+  useEffect(() => {
+    if (profile?.referredBy) {
+      fetch(`/api/echo/profile?fid=${profile.referredBy}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.username) {
+            setReferrerUsername(data.username);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [profile?.referredBy]);
+
+  const handleRefreshReferrals = async () => {
+    if (!user?.fid) return;
+    setRefreshingReferrals(true);
+    toast("REFRESHING REFERRAL STATS...", "PROCESS");
+    try {
+      const res = await fetch(`/api/echo/profile?fid=${user.fid}`);
+      const data = await res.json();
+      if (data && !data.error) {
+        setProfile(data);
+        if (data.points !== undefined) setActivityPoints(data.points);
+        toast("STATS UPDATED", "SUCCESS");
+      } else {
+        toast("FAILED TO REFRESH", "ERROR");
+      }
+    } catch {
+      toast("REFRESH ERROR", "ERROR");
+    } finally {
+      setRefreshingReferrals(false);
+    }
+  };
   // Fetch Base Stats for Base Score
   const user = (context?.user as any);
   const userAddress = address || user?.custody_address || user?.verified_addresses?.eth_addresses?.[0];
@@ -170,7 +207,16 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
         <div className="p-2 space-y-4">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <p className="font-pixel text-lg text-white mb-1">ECHO_RECRUITMENT</p>
+              <div className="flex items-center gap-3 mb-1">
+                <p className="font-pixel text-lg text-white leading-none">ECHO_RECRUITMENT</p>
+                <button
+                  onClick={handleRefreshReferrals}
+                  disabled={refreshingReferrals}
+                  className="px-2 py-0.5 border border-primary text-[9px] font-pixel text-primary bg-black hover:bg-primary hover:text-black transition-colors disabled:opacity-50"
+                >
+                  {refreshingReferrals ? "SYNCING..." : "REFRESH ↻"}
+                </button>
+              </div>
               <p className="text-[10px] text-gray-400 leading-tight">
                 Invite friends and earn a cut of their grind points. Every 5 active recruits gives you a <span className="text-primary font-bold">+2% BONUS</span>.
               </p>
@@ -268,7 +314,7 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
             <p className="text-[9px] text-gray-500 uppercase mb-2">REDEEM_INVITE_CODE</p>
             {profile?.referredBy ? (
               <div className="bg-green-500/10 border border-green-500 text-green-500 text-center py-2 font-pixel text-xs">
-                ALREADY INVITED
+                INVITED BY: {referrerUsername ? `@${referrerUsername.toUpperCase()}` : `FID ${profile.referredBy}`}
               </div>
             ) : (
               <div className="flex gap-2">

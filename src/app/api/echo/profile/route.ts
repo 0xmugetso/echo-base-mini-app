@@ -31,11 +31,32 @@ export async function GET(request: Request) {
                 // Apply referral bonus
                 profile.referredBy = referrer.fid;
                 profile.points = (profile.points || 0) + 20; // Bonus for joining
+                if (!profile.dailyActions) {
+                    profile.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                }
+                profile.dailyActions.pointsHistory.push({
+                    action: 'referral_joining_bonus',
+                    points: 20,
+                    date: new Date(),
+                    description: 'Bonus points for signing up with an invite code'
+                });
                 await profile.save();
 
                 referrer.points = (referrer.points || 0) + 20; // Bonus for referring
+                if (!referrer.referralStats) {
+                    referrer.referralStats = { count: 0, earnings: 0 };
+                }
                 referrer.referralStats.count = (referrer.referralStats.count || 0) + 1;
                 referrer.referralStats.earnings = (referrer.referralStats.earnings || 0) + 20;
+                if (!referrer.dailyActions) {
+                    referrer.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                }
+                referrer.dailyActions.pointsHistory.push({
+                    action: 'referral_bonus',
+                    points: 20,
+                    date: new Date(),
+                    description: `Bonus points for inviting FID ${fid}`
+                });
                 await referrer.save();
             }
         }
@@ -51,6 +72,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             ...(profile?.toObject() || { exists: false }),
+            exists: !!profile,
             invitees
         });
     } catch (e: any) {
@@ -78,12 +100,12 @@ export async function POST(request: Request) {
         const { referralCode: incomingRef } = body;
 
         if (!profile) {
-
             console.log(`[PROFILE_API] Creating new profile for FID: ${fid}`);
             // Check for referrer if provided
             let referrerFid = null;
+            let referrer = null;
             if (incomingRef) {
-                const referrer = await EchoProfile.findOne({ referralCode: incomingRef.toUpperCase() });
+                referrer = await EchoProfile.findOne({ referralCode: incomingRef.toUpperCase() });
                 if (referrer) {
                     referrerFid = referrer.fid;
                     console.log(`[PROFILE_API] Referrer found: ${referrerFid} for code: ${incomingRef}`);
@@ -99,7 +121,7 @@ export async function POST(request: Request) {
                 fid,
                 username,
                 address,
-                points: 0,
+                points: referrerFid ? 20 : 0, // Joiner bonus
                 streak: { current: 0, highest: 0, lastCheckIn: null },
 
                 // Referral Data
@@ -108,7 +130,44 @@ export async function POST(request: Request) {
                 referralStatus: 'pending',
                 pointsGrinded: 0
             });
+
+            // Add points history for joining
+            if (referrerFid) {
+                if (!profile.dailyActions) {
+                    profile.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                }
+                profile.dailyActions.pointsHistory.push({
+                    action: 'referral_joining_bonus',
+                    points: 20,
+                    date: new Date(),
+                    description: 'Bonus points for signing up with an invite code'
+                });
+            }
+
             await profile.save();
+
+            // Award Referrer points!
+            if (referrer && referrer.fid !== fid) {
+                referrer.points = (referrer.points || 0) + 20;
+                if (!referrer.referralStats) {
+                    referrer.referralStats = { count: 0, earnings: 0 };
+                }
+                referrer.referralStats.count = (referrer.referralStats.count || 0) + 1;
+                referrer.referralStats.earnings = (referrer.referralStats.earnings || 0) + 20;
+
+                if (!referrer.dailyActions) {
+                    referrer.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                }
+                referrer.dailyActions.pointsHistory.push({
+                    action: 'referral_bonus',
+                    points: 20,
+                    date: new Date(),
+                    description: `Bonus points for inviting FID ${fid}`
+                });
+
+                await referrer.save();
+                console.log(`[PROFILE_API] Successfully updated referrer stats for new user FID: ${referrer.fid}`);
+            }
         } else {
             // Update username if provided and different
             if (username && profile.username !== username) {
@@ -120,6 +179,46 @@ export async function POST(request: Request) {
                 // Lazy Migration: Generate code for existing users
                 profile.referralCode = `ECHO_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
                 await profile.save();
+            }
+
+            // Check if we need to apply a referral code to this existing profile
+            if (incomingRef && !profile.referredBy) {
+                const referrer = await EchoProfile.findOne({ referralCode: incomingRef.toUpperCase() });
+                if (referrer && referrer.fid !== profile.fid) {
+                    profile.referredBy = referrer.fid;
+                    profile.points = (profile.points || 0) + 20;
+                    
+                    if (!profile.dailyActions) {
+                        profile.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                    }
+                    profile.dailyActions.pointsHistory.push({
+                        action: 'referral_joining_bonus',
+                        points: 20,
+                        date: new Date(),
+                        description: 'Bonus points for signing up with an invite code'
+                    });
+
+                    referrer.points = (referrer.points || 0) + 20;
+                    if (!referrer.referralStats) {
+                        referrer.referralStats = { count: 0, earnings: 0 };
+                    }
+                    referrer.referralStats.count = (referrer.referralStats.count || 0) + 1;
+                    referrer.referralStats.earnings = (referrer.referralStats.earnings || 0) + 20;
+
+                    if (!referrer.dailyActions) {
+                        referrer.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                    }
+                    referrer.dailyActions.pointsHistory.push({
+                        action: 'referral_bonus',
+                        points: 20,
+                        date: new Date(),
+                        description: `Bonus points for inviting FID ${fid}`
+                    });
+
+                    await referrer.save();
+                    await profile.save();
+                    console.log(`[PROFILE_API] Successfully updated referrer stats for existing user FID: ${referrer.fid}`);
+                }
             }
         }
 
