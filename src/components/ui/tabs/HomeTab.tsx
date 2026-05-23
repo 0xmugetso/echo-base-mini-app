@@ -119,41 +119,77 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const [extModalOpen, setExtModalOpen] = useState(false);
   const [scanHistory, setScanHistory] = useState<{ address: string, stats: any }[]>([]);
 
+  // Load paid scan history on load
+  useEffect(() => {
+    if (context?.user?.fid) {
+      fetch(`/api/echo/paid-scan?fid=${context.user.fid}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.history) {
+            setScanHistory(data.history);
+          }
+        })
+        .catch(err => console.error("Failed to load paid scan history", err));
+    }
+  }, [context?.user?.fid]);
+
   const handleCalculateExt = async () => {
     if (!extAddress) return;
+    const targetAddress = extAddress.trim().toLowerCase();
+
+    setCalculatingExt(true);
     try {
-      setCalculatingExt(true);
-      const hash = await sendTransactionAsync({
-        to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
-        value: parseEther("0.00015"),
-      });
-      toast("PAYMENT SUCCESS! SCANNING...", "SUCCESS");
+      // 1. Check if they already paid/scanned this address
+      toast("VERIFYING SCAN RECORD...", "PROCESS");
+      const checkRes = await fetch(`/api/echo/paid-scan?fid=${context?.user?.fid}&address=${targetAddress}`);
+      const checkData = await checkRes.json();
 
-      const res = await fetch(`/api/stats?address=${extAddress}`);
-      const data = await res.json();
-      setExtStats(data);
-      setExtModalOpen(true);
+      let data;
 
-      // Save scan to profile
-      if (context?.user?.fid) {
-        await fetch('/api/echo/action', {
+      if (checkData.exists) {
+        toast("PAID SCAN LOCATED! FETCHING...", "SUCCESS");
+        data = checkData.stats;
+      } else {
+        // 2. Prompt payment transaction
+        toast("INITIALIZING PAYMENT MODULE...", "PROCESS");
+        const hash = await sendTransactionAsync({
+          to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
+          value: parseEther("0.00015"),
+        });
+        toast("PAYMENT VERIFIED! ANALYZING ONCHAIN DATA...", "PROCESS");
+
+        // 3. Fetch fresh stats
+        const res = await fetch(`/api/stats?address=${targetAddress}`);
+        data = await res.json();
+
+        // 4. Save scan in the new PaidScan collection
+        await fetch('/api/echo/paid-scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            fid: context.user.fid,
-            actionType: 'save_scan',
-            address: extAddress,
-            stats: data
+            fid: context?.user?.fid,
+            address: targetAddress,
+            stats: data,
+            txHash: hash
           })
         });
-        setScanHistory(prev => {
-          const exists = prev.find(p => p.address.toLowerCase() === extAddress.toLowerCase());
-          if (exists) return prev;
-          return [{ address: extAddress, stats: data }, ...prev];
-        });
       }
+
+      setExtStats(data);
+      setExtModalOpen(true);
+
+      // Update history in local state
+      setScanHistory(prev => {
+        const exists = prev.find(p => p.address.toLowerCase() === targetAddress);
+        if (exists) return prev;
+        return [{ address: targetAddress, stats: data }, ...prev];
+      });
     } catch (e: any) {
-      toast("FAILED: " + e.message, "ERROR");
+      if (e.message?.includes("User rejected")) {
+        toast("TRANSACTION DECLINED", "INFO");
+      } else {
+        toast("SCAN ERROR: " + e.message, "ERROR");
+      }
     } finally {
       setCalculatingExt(false);
     }
@@ -319,18 +355,55 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         </button>
       </div>
 
-      {/* External Stats Calculator */}
-      <RetroWindow title="EXTERNAL_SCAN.EXE" icon={<span className="text-xl text-primary">🔍</span>}>
-        <div className="flex flex-col gap-4">
-          <p className="text-xs text-gray-400 font-mono">
-            Scan Any Address on Base.
-            <span className="text-white">Cost: $0.50 (0.00015 ETH)</span>
-          </p>
+      {/* Premium Cyberpunk External Stats Calculator */}
+      <div className="relative border-4 border-primary bg-gradient-to-b from-[#050515] via-black to-[#050515] p-6 shadow-[0_0_30px_rgba(0,180,255,0.3)] overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,180,255,0.5)] group/scanner">
+        {/* Corner Neon Crosses */}
+        <div className="absolute top-2 left-2 text-primary font-bold text-xs animate-pulse">+</div>
+        <div className="absolute top-2 right-2 text-primary font-bold text-xs animate-pulse">+</div>
+        <div className="absolute bottom-2 left-2 text-primary font-bold text-xs animate-pulse">+</div>
+        <div className="absolute bottom-2 right-2 text-primary font-bold text-xs animate-pulse">+</div>
 
+        {/* Glowing Grid Scanlines */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,180,255,0)_50%,rgba(0,180,255,0.06)_50%),linear-gradient(90deg,rgba(0,0,0,0.1),rgba(0,180,255,0.03))] z-0 bg-[length:100%_4px,20px_100%] pointer-events-none" />
+
+        {/* Header bar */}
+        <div className="flex justify-between items-center border-b-2 border-dashed border-primary/50 pb-4 mb-4 relative z-10">
+          <div className="flex items-center gap-2">
+            <span className="text-xl animate-bounce">⚡</span>
+            <div>
+              <p className="font-pixel text-[8px] text-primary uppercase tracking-[0.2em] leading-none">PREMIUM_MODULE.EXE</p>
+              <h3 className="font-pixel text-base text-white mt-1 leading-none tracking-wider text-shadow-glow">ADDR_EXPLORER_V2</h3>
+            </div>
+          </div>
+          <div className="bg-primary/20 border border-primary px-3 py-1 flex items-center gap-1.5 shadow-[2px_2px_0_0_theme('colors.primary')]">
+            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
+            <span className="text-[8px] font-pixel text-white uppercase tracking-widest">PAID_SECURE</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-4 relative z-10">
+          <div className="flex flex-col gap-1.5 bg-primary/5 border border-primary/20 p-3 relative">
+            <div className="absolute top-0 right-0 bg-primary/20 text-white font-mono text-[7px] px-1 py-0.5 border-l border-b border-primary/20">LOG.SYS</div>
+            <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
+              Unlock standard Base network volume, gas metrics, and Farcaster holdings of <span className="text-white font-bold">ANY</span> Ethereum address.
+            </p>
+            <div className="flex justify-between items-center mt-1 pt-1 border-t border-primary/10">
+              <span className="text-[8px] font-pixel text-primary uppercase tracking-wider">Fee Per Address:</span>
+              <span className="text-[10px] font-mono text-[#00ff00] font-bold tracking-widest bg-black px-1.5 py-0.5 border border-primary/20">0.00015 ETH ($0.50)</span>
+            </div>
+          </div>
+
+          {/* Scanned history tracker */}
           {scanHistory.length > 0 && (
-            <div className="mb-2 p-2 border border-white/10 bg-white/5">
-              <p className="text-[10px] text-primary uppercase mb-2 font-pixel">RECENT_SCANS</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="border border-primary/30 bg-black/60 p-3">
+              <div className="flex justify-between items-center mb-2 pb-1 border-b border-primary/15">
+                <p className="text-[8px] text-primary uppercase font-pixel tracking-wider flex items-center gap-1.5">
+                  <span>●</span> PREVIOUSLY_UNLOCKED_SCANS
+                </p>
+                <span className="text-[7px] text-gray-500 font-mono">[{scanHistory.length} ADDR]</span>
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-[88px] overflow-y-auto pr-1">
                 {scanHistory.map((item, i) => (
                   <button
                     key={i}
@@ -338,34 +411,47 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                       setExtAddress(item.address);
                       setExtStats(item.stats);
                       setExtModalOpen(true);
+                      toast("FETCHED FREE SCAN FROM DB", "SUCCESS");
                     }}
-                    className="text-[10px] font-mono border border-gray-600 bg-black text-gray-300 px-2 py-1 hover:border-primary hover:text-white transition-colors"
+                    className="group/btn text-[9px] font-mono border border-primary/30 bg-[#070712] text-gray-300 px-2 py-1 flex items-center gap-1.5 transition-all duration-300 hover:border-primary hover:text-white hover:bg-primary/10 active:scale-95"
                   >
-                    {item.address.slice(0, 6)}...{item.address.slice(-4)}
+                    <span className="text-primary text-[8px]">⚡</span>
+                    <span className="font-mono">{item.address.slice(0, 6)}...{item.address.slice(-4)}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
+          {/* Input bar */}
           <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Paste 0x address..."
-              value={extAddress}
-              onChange={e => setExtAddress(e.target.value)}
-              className="flex-1 bg-black border border-white/20 p-3 font-mono text-sm text-white placeholder-gray-600 focus:border-primary outline-none"
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="PASTE ETH ADDRESS (0x...)"
+                value={extAddress}
+                onChange={e => setExtAddress(e.target.value)}
+                className="w-full bg-black border-2 border-primary/40 p-3.5 font-mono text-xs text-white placeholder-primary/30 focus:border-primary outline-none transition-all shadow-inner focus:shadow-[0_0_10px_rgba(0,180,255,0.2)]"
+              />
+              {extAddress && (
+                <button 
+                  onClick={() => setExtAddress("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white font-mono text-[9px] bg-white/5 border border-white/10 px-1.5"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
             <button
               onClick={handleCalculateExt}
               disabled={calculatingExt || !extAddress}
-              className="bg-primary text-white font-pixel text-sm px-6 py-3 border-2 border-white disabled:opacity-50 hover:brightness-110 active:translate-y-1 transition-all"
+              className="bg-primary text-black font-pixel text-xs px-6 py-3.5 border-2 border-white hover:brightness-110 active:translate-y-[2px] transition-all disabled:opacity-30 disabled:pointer-events-none shadow-[4px_4px_0_0_#fff] active:shadow-none font-bold uppercase tracking-wider relative overflow-hidden"
             >
               {calculatingExt ? 'SCANNING...' : 'SCAN NOW'}
             </button>
           </div>
         </div>
-      </RetroWindow>
+      </div>
 
       {/* Network Activity Window */}
       <RetroWindow
