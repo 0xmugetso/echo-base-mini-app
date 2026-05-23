@@ -63,7 +63,9 @@ export async function GET(request: Request) {
 
             // Prioritize verified Ethereum address over custody/request address for base calculation service
             let primaryEthAddress = address;
-            if (nUser && nUser.verified_addresses?.eth_addresses && nUser.verified_addresses.eth_addresses.length > 0) {
+            if (nUser && nUser.verified_addresses?.primary?.eth_address) {
+                primaryEthAddress = nUser.verified_addresses.primary.eth_address.toLowerCase();
+            } else if (nUser && nUser.verified_addresses?.eth_addresses && nUser.verified_addresses.eth_addresses.length > 0) {
                 primaryEthAddress = nUser.verified_addresses.eth_addresses[0].toLowerCase();
             } else if (nUser && nUser.verifications && nUser.verifications.length > 0) {
                 primaryEthAddress = nUser.verifications[0].toLowerCase();

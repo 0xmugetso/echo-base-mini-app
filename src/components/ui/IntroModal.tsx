@@ -239,12 +239,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     useEffect(() => {
         if (step !== 4) return;
         const calculateProfile = async () => {
-            if (!neynarUser?.fid || (!neynarUser?.custody_address && !neynarUser?.verified_addresses?.eth_addresses?.[0])) return;
+            if (!neynarUser?.fid || (!neynarUser?.custody_address && !neynarUser?.verified_addresses?.primary?.eth_address && !neynarUser?.verified_addresses?.eth_addresses?.[0])) return;
             try {
                 const enteredCode = inviteCode.join('').toUpperCase();
                 const fullCode = enteredCode ? (enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`) : "";
 
                 const userEthAddress = 
+                    neynarUser?.verified_addresses?.primary?.eth_address ||
                     neynarUser?.verified_addresses?.eth_addresses?.[0] || 
                     neynarUser?.verifications?.[0] || 
                     neynarUser?.custody_address;
@@ -425,6 +426,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
 
             // 1. Determine Recipient (Connected Address > SDK user address > Verified Eth > Custody address)
             const userEthAddress = 
+                neynarUser?.verified_addresses?.primary?.eth_address ||
                 neynarUser?.verified_addresses?.eth_addresses?.[0] || 
                 neynarUser?.verifications?.[0] || 
                 neynarUser?.custody_address;

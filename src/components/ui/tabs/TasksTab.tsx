@@ -25,6 +25,7 @@ type Profile = {
       description: string;
     }[];
   };
+  referredBy?: number;
 };
 
 export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void, isActive?: boolean }) {
@@ -392,28 +393,45 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
               </tr>
             </thead>
             <tbody className="text-[11px] font-mono">
-              {profile?.dailyActions?.pointsHistory && profile.dailyActions.pointsHistory.length > 0 ? (
-                profile.dailyActions.pointsHistory.slice().reverse().map((item: any, i: number) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-2 pl-2 text-gray-400">
-                      {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
-                    </td>
-                    <td className="py-2">
-                      <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
-                      <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
-                    </td>
-                    <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
-                      +{item.points}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
-                    NO_HISTORY_FOUND
-                  </td>
-                </tr>
-              )}
+              {(() => {
+                const pointsList = [...(profile?.dailyActions?.pointsHistory || [])];
+                
+                // If referredBy is set but referral_joining_bonus is not in pointsHistory, synthesize it
+                const hasReferralBonus = pointsList.some((item: any) => item.action === 'referral_joining_bonus');
+                if (profile?.referredBy && !hasReferralBonus) {
+                  pointsList.push({
+                    action: 'referral_joining_bonus',
+                    points: 20,
+                    date: new Date(2026, 4, 24).toISOString(), // Use fallback date
+                    description: 'Bonus points for signing up with an invite code'
+                  });
+                }
+
+                if (pointsList.length > 0) {
+                  return pointsList.slice().reverse().map((item: any, i: number) => (
+                    <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-2 pl-2 text-gray-400">
+                        {new Date(item.date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}
+                      </td>
+                      <td className="py-2">
+                        <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
+                        <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
+                      </td>
+                      <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
+                        +{item.points}
+                      </td>
+                    </tr>
+                  ));
+                } else {
+                  return (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-gray-500 uppercase italic">
+                        NO_HISTORY_FOUND
+                      </td>
+                    </tr>
+                  );
+                }
+              })()}
               {/* Onchain Row if present */}
               {profile?.onchainScore && profile.onchainScore > 0 && (
                 <tr className="bg-yellow-500/10 border-t-2 border-yellow-500/20">

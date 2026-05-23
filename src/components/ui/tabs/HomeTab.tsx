@@ -232,10 +232,6 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         .then(data => {
           if (data?.exists) {
             if (data?.nftTokenId > 0) setHasMinted(true);
-            if (data?.scanHistory) {
-              // sort by most recent
-              setScanHistory(data.scanHistory.reverse());
-            }
             if (setActiveTab) {
               setActiveTab("context");
             } else {
@@ -348,28 +344,40 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         >
           <span className="relative z-10 flex flex-row items-center justify-center gap-2">
             <PixelMintIcon className="w-6 h-6 text-white" />
-            <span>{hasMinted ? 'MINTED!' : 'MINT_ECHO'}</span>
+            <span>{hasMinted ? 'Already Minted!' : 'MINT_ECHO'}</span>
           </span>
           {/* Scanline overlay for that "electric" feel */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
         </button>
       </div>
 
+      {/* Inline animations for scanner */}
+      <style>{`
+        @keyframes grow-and-shrink {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.25); }
+        }
+        .animate-grow-shrink {
+          animation: grow-and-shrink 2s infinite ease-in-out;
+          display: inline-block;
+        }
+      `}</style>
+
       {/* Premium Cyberpunk External Stats Calculator */}
-      <div className="relative border-4 border-primary bg-gradient-to-b from-[#050515] via-black to-[#050515] p-6 shadow-[0_0_30px_rgba(0,180,255,0.3)] overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,180,255,0.5)] group/scanner">
+      <div className="relative border-4 border-primary bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-black/95 to-black p-6 shadow-[0_0_30px_rgba(0,180,255,0.3)] overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,180,255,0.5)] group/scanner">
         {/* Corner Neon Crosses */}
         <div className="absolute top-2 left-2 text-primary font-bold text-xs animate-pulse">+</div>
         <div className="absolute top-2 right-2 text-primary font-bold text-xs animate-pulse">+</div>
         <div className="absolute bottom-2 left-2 text-primary font-bold text-xs animate-pulse">+</div>
         <div className="absolute bottom-2 right-2 text-primary font-bold text-xs animate-pulse">+</div>
 
-        {/* Glowing Grid Scanlines */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,180,255,0)_50%,rgba(0,180,255,0.06)_50%),linear-gradient(90deg,rgba(0,0,0,0.1),rgba(0,180,255,0.03))] z-0 bg-[length:100%_4px,20px_100%] pointer-events-none" />
+        {/* Glowing Radial Highlight */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none z-0" />
 
         {/* Header bar */}
         <div className="flex justify-between items-center border-b-2 border-dashed border-primary/50 pb-4 mb-4 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="text-xl animate-bounce">⚡</span>
+            <span className="text-xl animate-grow-shrink">🔍</span>
             <div>
               <p className="font-pixel text-[8px] text-primary uppercase tracking-[0.2em] leading-none">PREMIUM_MODULE.EXE</p>
               <h3 className="font-pixel text-base text-white mt-1 leading-none tracking-wider text-shadow-glow">ADDR_EXPLORER_V2</h3>
@@ -386,7 +394,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
           <div className="flex flex-col gap-1.5 bg-primary/5 border border-primary/20 p-3 relative">
             <div className="absolute top-0 right-0 bg-primary/20 text-white font-mono text-[7px] px-1 py-0.5 border-l border-b border-primary/20">LOG.SYS</div>
             <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-              Unlock standard Base network volume, gas metrics, and Farcaster holdings of <span className="text-white font-bold">ANY</span> Ethereum address.
+              Unlock Base network transaction volume, gas metrics, and address age statistics of <span className="text-white font-bold">ANY</span> Ethereum address.
             </p>
             <div className="flex justify-between items-center mt-1 pt-1 border-t border-primary/10">
               <span className="text-[8px] font-pixel text-primary uppercase tracking-wider">Fee Per Address:</span>
@@ -415,7 +423,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                     }}
                     className="group/btn text-[9px] font-mono border border-primary/30 bg-[#070712] text-gray-300 px-2 py-1 flex items-center gap-1.5 transition-all duration-300 hover:border-primary hover:text-white hover:bg-primary/10 active:scale-95"
                   >
-                    <span className="text-primary text-[8px]">⚡</span>
+                    <span className="text-primary text-[8px]">🔍</span>
                     <span className="font-mono">{item.address.slice(0, 6)}...{item.address.slice(-4)}</span>
                   </button>
                 ))}
@@ -431,16 +439,35 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                 placeholder="PASTE ETH ADDRESS (0x...)"
                 value={extAddress}
                 onChange={e => setExtAddress(e.target.value)}
-                className="w-full bg-black border-2 border-primary/40 p-3.5 font-mono text-xs text-white placeholder-primary/30 focus:border-primary outline-none transition-all shadow-inner focus:shadow-[0_0_10px_rgba(0,180,255,0.2)]"
+                className="w-full bg-black border-2 border-primary/40 p-3.5 pr-20 font-mono text-xs text-white placeholder-primary/30 focus:border-primary outline-none transition-all shadow-inner focus:shadow-[0_0_10px_rgba(0,180,255,0.2)]"
               />
-              {extAddress && (
-                <button 
-                  onClick={() => setExtAddress("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white font-mono text-[9px] bg-white/5 border border-white/10 px-1.5"
-                >
-                  CLEAR
-                </button>
-              )}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {extAddress ? (
+                  <button 
+                    onClick={() => setExtAddress("")}
+                    className="text-gray-500 hover:text-white font-mono text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5"
+                  >
+                    CLEAR
+                  </button>
+                ) : (
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                          setExtAddress(text.trim());
+                          toast("PASTED FROM CLIPBOARD", "SUCCESS");
+                        }
+                      } catch (err) {
+                        toast("CLIPBOARD PERMISSION DENIED", "ERROR");
+                      }
+                    }}
+                    className="text-primary hover:text-white font-mono text-[9px] bg-primary/10 border border-primary/30 px-2 py-0.5 animate-pulse"
+                  >
+                    📋 PASTE
+                  </button>
+                )}
+              </div>
             </div>
             <button
               onClick={handleCalculateExt}
