@@ -239,10 +239,15 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     useEffect(() => {
         if (step !== 4) return;
         const calculateProfile = async () => {
-            if (!neynarUser?.fid || !neynarUser?.custody_address) return;
+            if (!neynarUser?.fid || (!neynarUser?.custody_address && !neynarUser?.verified_addresses?.eth_addresses?.[0])) return;
             try {
                 const enteredCode = inviteCode.join('').toUpperCase();
                 const fullCode = enteredCode ? (enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`) : "";
+
+                const userEthAddress = 
+                    neynarUser?.verified_addresses?.eth_addresses?.[0] || 
+                    neynarUser?.verifications?.[0] || 
+                    neynarUser?.custody_address;
 
                 const res = await fetch('/api/echo/profile', {
                     method: 'POST',
@@ -250,7 +255,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                     body: JSON.stringify({
                         fid: neynarUser.fid,
                         username: neynarUser.username,
-                        address: neynarUser.custody_address,
+                        address: userEthAddress,
                         action: 'calculate',
                         referralCode: fullCode,
                         manualStats: JSON.parse(JSON.stringify(baseStats, (key, value) =>
@@ -418,10 +423,14 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
             const imgRes = await uploadImage(dataUrl);
             if (!imgRes) throw new Error("Upload failed");
 
-            // 1. Determine Recipient (Connected Address > SDK user address > Custody address)
-            const recipientAddress = connectedAddress || (sdk as any)?.context?.user?.address || neynarUser.custody_address;
+            // 1. Determine Recipient (Connected Address > SDK user address > Verified Eth > Custody address)
+            const userEthAddress = 
+                neynarUser?.verified_addresses?.eth_addresses?.[0] || 
+                neynarUser?.verifications?.[0] || 
+                neynarUser?.custody_address;
+            const recipientAddress = connectedAddress || (sdk as any)?.context?.user?.address || userEthAddress;
             console.log("[Mint] Recipient:", recipientAddress);
-            console.log("[Mint] Sources - Connected:", connectedAddress, "SDK:", (sdk as any)?.context?.user?.address, "Custody:", neynarUser.custody_address);
+            console.log("[Mint] Sources - Connected:", connectedAddress, "SDK:", (sdk as any)?.context?.user?.address, "Verified Eth/Custody:", userEthAddress);
 
             // 2. Fetch Next Token ID from Contract
             let nextTokenId = 1;

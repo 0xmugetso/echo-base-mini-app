@@ -90,7 +90,7 @@ export function WalletTab({ isActive }: { isActive?: boolean }) {
   };
   // Fetch Base Stats for Base Score
   const user = (context?.user as any);
-  const userAddress = address || user?.custody_address || user?.verified_addresses?.eth_addresses?.[0];
+  const userAddress = address || user?.verified_addresses?.eth_addresses?.[0] || user?.custody_address;
   const { data: baseStats, loading: baseLoading } = useBaseStats(userAddress || "0x0000000000000000000000000000000000000000");
 
   useEffect(() => {

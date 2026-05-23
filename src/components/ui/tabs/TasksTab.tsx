@@ -428,7 +428,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       <RetroWindow title="MONTHLY_GRID">
         <div className="p-1">
           <div className="grid grid-cols-7 gap-1 mb-4">
-            {profile && profile.streak && profile.streak.current && Array.from({ length: 30 }).map((_, i) => {
+            {profile && profile.streak && Array.from({ length: 30 }).map((_, i) => {
               const dayNum = i + 1;
               const isActive = dayNum <= (profile?.streak?.current || 0);
 

@@ -219,8 +219,8 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const { address: connectedAddress } = useAccount();
   const isFallbackAddress = !context?.user?.custody_address && !context?.user?.verified_addresses?.eth_addresses?.[0] && !connectedAddress;
   const address =
-    context?.user?.custody_address ||
     context?.user?.verified_addresses?.eth_addresses?.[0] ||
+    context?.user?.custody_address ||
     connectedAddress ||
     "0x0000000000000000000000000000000000000000"; // Truly neutral fallback
 

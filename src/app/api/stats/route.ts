@@ -61,8 +61,18 @@ export async function GET(request: Request) {
             // Remove duplicates
             addressesToCheck = [...new Set(addressesToCheck.map(a => a.toLowerCase()))];
 
+            // Prioritize verified Ethereum address over custody/request address for base calculation service
+            let primaryEthAddress = address;
+            if (nUser && nUser.verified_addresses?.eth_addresses && nUser.verified_addresses.eth_addresses.length > 0) {
+                primaryEthAddress = nUser.verified_addresses.eth_addresses[0].toLowerCase();
+            } else if (nUser && nUser.verifications && nUser.verifications.length > 0) {
+                primaryEthAddress = nUser.verifications[0].toLowerCase();
+            }
+
+            console.log(`[STATS_API] Primary Ethereum address for volume fetch: ${primaryEthAddress}`);
+
             const results = await Promise.allSettled([
-                getBaseNativeVolume(address),
+                getBaseNativeVolume(primaryEthAddress),
                 getFarcasterHoldings(addressesToCheck),
                 fidParam ? getUserWalletValue(parseInt(fidParam)) : Promise.resolve(0),
                 fidParam ? getBestCast(parseInt(fidParam)) : Promise.resolve(null)
