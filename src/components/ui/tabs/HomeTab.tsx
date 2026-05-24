@@ -107,6 +107,12 @@ const RetroLoader = () => {
 import { IntroModal } from "../IntroModal";
 
 export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
+  const truncateAddress = (addr: string) => {
+    if (!addr) return "";
+    if (addr.length <= 18) return addr;
+    return `${addr.slice(0, 10)}...${addr.slice(-8)}`;
+  };
+
   const { actions, isSDKLoaded } = useMiniApp();
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
@@ -119,6 +125,18 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const [extStats, setExtStats] = useState<any>(null);
   const [calculatingExt, setCalculatingExt] = useState(false);
   const [extModalOpen, setExtModalOpen] = useState(false);
+  
+  useEffect(() => {
+    if (extModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [extModalOpen]);
+
   const [scanHistory, setScanHistory] = useState<{ address: string, stats: any }[]>([]);
 
   const [ethPrice, setEthPrice] = useState<number>(3300);
@@ -517,6 +535,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         neynarUser={neynarUser}
         loading={baseLoading}
         initialStep={hasMinted ? 5 : 1}
+        onMintSuccess={() => setHasMinted(true)}
       />
 
       {/* IDENTITY BANNER */}
@@ -695,7 +714,8 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
       >
         <div className="bg-white/5 border border-white/10 p-2 mb-4 text-center">
           <p className="text-[10px] text-gray-400">CHECK YOUR ONCHAIN ACTIVITY</p>
-          <p className="text-[10px] text-primary">DATA BROUGHT TO YOU BY ECHO</p>
+          <p className="text-[11px] text-white font-mono mt-0.5 font-bold">{truncateAddress(address)}</p>
+          <p className="text-[10px] text-primary mt-0.5">DATA BROUGHT TO YOU BY ECHO</p>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -832,14 +852,14 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
       {/* EXTERNAL SCAN MODAL */}
       {extModalOpen && extStats && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-2xl my-auto">
             <RetroWindow title={`SCANNED: ${extAddress.slice(0, 10)}...${extAddress.slice(-8)}`} icon={<span className="text-xl text-primary animate-grow-shrink">🔍</span>}>
               <div className="flex flex-col gap-6 p-2 min-h-[500px] justify-between">
                 <div className="space-y-4">
                   <div className="bg-white/5 border border-white/10 p-3 text-center shadow-inner">
                     <p className="text-[10px] text-gray-400 font-mono tracking-widest">EXTERNAL ONCHAIN ACTIVITY</p>
-                    <p className="text-xs text-primary font-mono mt-1 font-bold">{extAddress}</p>
+                    <p className="text-xs text-primary font-mono mt-1 font-bold">{truncateAddress(extAddress)}</p>
                   </div>
 
                   <div className="flex flex-col gap-4">
@@ -985,23 +1005,54 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                   </div>
                 ) : <p className="text-[10px] text-gray-600 text-center py-2">NO_DATA</p>}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                  <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
-                  <div className="flex flex-wrap gap-1">
-                    {['clanker', 'toshi', 'degen', 'brett'].map(t => (
-                      <span key={t} className={`text-[6px] border px-0.5 ${(baseStats?.farcaster?.holdings as any)?.[t] ? 'border-primary text-primary bg-primary/20 font-bold shadow-[0_0_8px_rgba(0,180,255,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
-                    ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="border border-dashed border-white/30 p-3 bg-black">
+                  <p className="text-[9px] text-primary/75 font-pixel mb-2 uppercase tracking-wider">⚡ TOKENS</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'clanker', label: 'CLANKER' },
+                      { id: 'toshi', label: 'TOSHI' },
+                      { id: 'degen', label: 'DEGEN' },
+                      { id: 'brett', label: 'BRETT' }
+                    ].map(t => {
+                      const isOwned = (baseStats?.farcaster?.holdings as any)?.[t.id];
+                      return (
+                        <span 
+                          key={t.id} 
+                          className={`text-[8px] font-pixel px-2 py-1 border transition-all duration-300 ${
+                            isOwned 
+                              ? 'border-primary text-primary bg-primary/10 font-bold shadow-[0_0_8px_rgba(0,180,255,0.4)] animate-pulse' 
+                              : 'border-dashed border-gray-800 text-gray-600 bg-gray-950/20'
+                          }`}
+                        >
+                          {t.label}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                  <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
-                  <div className="flex flex-wrap gap-1">
-                    {['warplets', 'pro_og', 'punk', 'bankr'].map(t => {
+                <div className="border border-dashed border-white/30 p-3 bg-black">
+                  <p className="text-[9px] text-yellow-500/75 font-pixel mb-2 uppercase tracking-wider">👑 NFTS</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'warplets', label: 'WARP' },
+                      { id: 'pro_og', label: 'PRO_OG' },
+                      { id: 'punk', label: 'PUNK' },
+                      { id: 'bankr', label: 'BANKR' }
+                    ].map(t => {
                       const holdings = baseStats?.farcaster?.holdings || {};
-                      const hasNft = (holdings as any)[t + '_club'] || (holdings as any)[t];
+                      const isOwned = (holdings as any)[t.id + '_club'] || (holdings as any)[t.id];
                       return (
-                        <span key={t} className={`text-[6px] border px-0.5 ${hasNft ? 'border-yellow-500 text-yellow-500 bg-yellow-500/20 font-bold shadow-[0_0_8px_rgba(234,179,8,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                        <span 
+                          key={t.id} 
+                          className={`text-[8px] font-pixel px-2 py-1 border transition-all duration-300 ${
+                            isOwned 
+                              ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10 font-bold shadow-[0_0_8px_rgba(234,179,8,0.4)] animate-pulse' 
+                              : 'border-dashed border-gray-800 text-gray-600 bg-gray-950/20'
+                          }`}
+                        >
+                          {t.label}
+                        </span>
                       );
                     })}
                   </div>

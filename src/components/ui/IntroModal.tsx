@@ -30,6 +30,7 @@ type IntroModalProps = {
     neynarUser: any;
     loading: boolean;
     initialStep?: 1 | 2 | 3 | 4 | 5;
+    onMintSuccess?: () => void;
 };
 
 const CardHeader = React.memo(({ neynarUser }: { neynarUser: any }) => (
@@ -52,7 +53,7 @@ const CardHeader = React.memo(({ neynarUser }: { neynarUser: any }) => (
     </div>
 ));
 
-export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, initialStep = 1 }: IntroModalProps) {
+export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, initialStep = 1, onMintSuccess }: IntroModalProps) {
     // --- STATE ---
     const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep);
     const [isMinting, setIsMinting] = useState(false);
@@ -279,6 +280,9 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                     setCalculatedPoints(grindPts + onchainRep + socialScore);
                     if (data.profile.referralCode) {
                         setMyRefCode(data.profile.referralCode.replace("ECHO_", ""));
+                    }
+                    if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent("points-updated"));
                     }
                 }
             } catch (e) {
@@ -519,6 +523,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
             console.log("MINT SUBMITTED: " + hash);
             toast("MINT SUCCESSFUL! CARD IS YOURS", "SUCCESS");
             setIsMintSuccess(true);
+            if (onMintSuccess) onMintSuccess();
         } catch (e: any) {
             console.error("[Mint] Error:", e.message);
             toast("MINT FAILED: " + e.message, "ERROR");
@@ -584,21 +589,55 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                             </div>
                         ) : <p className="text-[10px] text-gray-600 text-center py-2">NO_DATA</p>}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                            <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
-                            <div className="flex flex-wrap gap-1">
-                                {['clanker', 'toshi', 'degen', 'brett'].map(t => (
-                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t] ? 'border-primary text-primary bg-primary/20 font-bold shadow-[0_0_8px_rgba(0,180,255,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
-                                ))}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="border border-dashed border-white/30 p-3 bg-black">
+                            <p className="text-[9px] text-primary/75 font-pixel mb-2 uppercase tracking-wider">⚡ TOKENS</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
+                                    { id: 'clanker', label: 'CLANKER' },
+                                    { id: 'toshi', label: 'TOSHI' },
+                                    { id: 'degen', label: 'DEGEN' },
+                                    { id: 'brett', label: 'BRETT' }
+                                ].map(t => {
+                                    const isOwned = holdings?.[t.id];
+                                    return (
+                                        <span 
+                                            key={t.id} 
+                                            className={`text-[8px] font-pixel px-2 py-1 border transition-all duration-300 ${
+                                                isOwned 
+                                                    ? 'border-primary text-primary bg-primary/10 font-bold shadow-[0_0_8px_rgba(0,180,255,0.4)] animate-pulse' 
+                                                    : 'border-dashed border-gray-800 text-gray-600 bg-gray-950/20'
+                                            }`}
+                                        >
+                                            {t.label}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
-                        <div className="border border-dashed border-white/50 p-2 bg-white/5">
-                            <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
-                            <div className="flex flex-wrap gap-1">
-                                {['warplets', 'pro_og', 'punk', 'bankr'].map(t => (
-                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/20 font-bold shadow-[0_0_8px_rgba(234,179,8,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
-                                ))}
+                        <div className="border border-dashed border-white/30 p-3 bg-black">
+                            <p className="text-[9px] text-yellow-500/75 font-pixel mb-2 uppercase tracking-wider">👑 NFTS</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
+                                    { id: 'warplets', label: 'WARP' },
+                                    { id: 'pro_og', label: 'PRO_OG' },
+                                    { id: 'punk', label: 'PUNK' },
+                                    { id: 'bankr', label: 'BANKR' }
+                                ].map(t => {
+                                    const isOwned = holdings?.[t.id + '_club'] || holdings?.[t.id];
+                                    return (
+                                        <span 
+                                            key={t.id} 
+                                            className={`text-[8px] font-pixel px-2 py-1 border transition-all duration-300 ${
+                                                isOwned 
+                                                    ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10 font-bold shadow-[0_0_8px_rgba(234,179,8,0.4)] animate-pulse' 
+                                                    : 'border-dashed border-gray-800 text-gray-600 bg-gray-950/20'
+                                            }`}
+                                        >
+                                            {t.label}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

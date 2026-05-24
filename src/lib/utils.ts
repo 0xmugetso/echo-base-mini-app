@@ -20,25 +20,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function getMiniAppEmbedMetadata(ogImageUrl?: string) {
+export function getMiniAppEmbedMetadata(
+  ogImageUrl?: string,
+  type: 'miniapp' | 'frame' = 'miniapp',
+  launchUrl?: string
+) {
   return {
-    version: 'next',
+    version: '1',
     imageUrl: ogImageUrl ?? APP_OG_IMAGE_URL,
-    ogTitle: APP_NAME,
-    ogDescription: APP_DESCRIPTION,
-    ogImageUrl: ogImageUrl ?? APP_OG_IMAGE_URL,
     button: {
       title: APP_BUTTON_TEXT,
       action: {
-        type: 'launch_frame',
+        type: type === 'miniapp' ? 'launch_miniapp' : 'launch_frame' as const,
         name: APP_NAME,
-        url: APP_URL,
+        url: launchUrl ?? APP_URL,
         splashImageUrl: APP_SPLASH_URL,
-        iconUrl: APP_ICON_URL,
         splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
-        description: APP_DESCRIPTION,
-        primaryCategory: APP_PRIMARY_CATEGORY,
-        tags: APP_TAGS,
       },
     },
   };

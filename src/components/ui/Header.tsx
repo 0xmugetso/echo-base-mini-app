@@ -42,9 +42,16 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
     };
 
     fetchPoints();
+    
+    // Listen for manual points-updated events to refresh immediately
+    window.addEventListener("points-updated", fetchPoints);
+
     // Refresh every 60s to catch check-in updates
     const interval = setInterval(fetchPoints, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener("points-updated", fetchPoints);
+      clearInterval(interval);
+    };
   }, [context?.user?.fid, neynarUser?.score]);
 
   const totalDisplayScore = useMemo(() => {

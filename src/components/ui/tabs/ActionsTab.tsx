@@ -166,6 +166,9 @@ export function ActionsTab({ context }: ActionTabProps) {
         setLastCast({ points: score, hash: txHash, text: match.text });
         fetchHistory();
         toast(`MISSION COMPLETE! +${score} PTS`, "SUCCESS");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("points-updated"));
+        }
       } else {
         throw new Error(claimData.error);
       }

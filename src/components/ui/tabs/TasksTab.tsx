@@ -143,6 +143,9 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
         toast(`MISSION COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
         await fetchProfile();
         await fetchDynamicTasks();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("points-updated"));
+        }
       } else {
         toast(data.error || "Quest already claimed!", "INFO");
       }
@@ -317,6 +320,9 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
         toast(`✅ CHECK-IN COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
         await fetchProfile();
         await fetchDynamicTasks();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("points-updated"));
+        }
       } else {
         toast(`❌ Verification Failed: ${data.error}`, "ERROR");
       }
@@ -353,6 +359,9 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
         toast(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`, "SUCCESS");
         await fetchProfile();
         await fetchDynamicTasks();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("points-updated"));
+        }
       } else {
         console.error(`[BOX] Failed:`, data);
         toast(`Failed: ${data.error || "Unknown Error"}`, "ERROR");
@@ -428,6 +437,9 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                   await fetchProfile();
                   await fetchDynamicTasks();
                   toast("DATA SYNCED", "SUCCESS");
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("points-updated"));
+                  }
                 }}
                 className="text-[10px] text-gray-500 hover:text-white border border-gray-800 hover:border-white px-1"
               >
@@ -574,35 +586,110 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
               <div className="space-y-4">
                 {dynamicTasks.map((task) => {
                   const isClaimLoading = actionLoading === task._id;
-                  
+                  const isTimeLimited = task.timeSpan?.type === 'custom' && task.timeSpan?.deadline;
+
+                  // Compute dynamic card class styles based on state, UI style, and time-limit configurations
+                  let cardStyle = "";
+                  if (task.isCompleted) {
+                    cardStyle = "border-gray-800 bg-gray-900/60 opacity-60";
+                  } else if (!task.isEligible) {
+                    cardStyle = "border-red-950 bg-red-950/5 opacity-60";
+                  } else if (isTimeLimited) {
+                    cardStyle = "border-2 border-dashed border-yellow-500/60 bg-yellow-950/10 shadow-[0_0_8px_rgba(234,179,8,0.25)] hover:border-yellow-400";
+                  } else {
+                    if (task.buttonType === 'switch') {
+                      cardStyle = "border-2 border-primary/40 bg-primary/5 hover:border-primary/80 shadow-[inset_0_0_6px_rgba(0,240,255,0.05)]";
+                    } else if (task.buttonType === 'input') {
+                      cardStyle = "border-2 border-white/40 bg-white/5 hover:border-white/80 shadow-[0_0_4px_rgba(255,255,255,0.05)]";
+                    } else {
+                      cardStyle = "border-2 border-white bg-black hover:border-primary";
+                    }
+                  }
+
                   return (
                     <div
                       key={task._id}
-                      className={`border p-3 relative flex flex-col justify-between transition-all ${
-                        task.isCompleted
-                          ? 'border-gray-800 bg-gray-900/60 opacity-60'
-                          : !task.isEligible
-                          ? 'border-red-950 bg-red-950/5 opacity-50'
-                          : 'border-white bg-black hover:border-primary'
-                      }`}
+                      className={`p-3 relative flex flex-col justify-between transition-all select-none rounded-none ${cardStyle}`}
                     >
-                      {/* Priority % Indicator on top right */}
-                      {task.isActive && (
-                        <div className="absolute top-1 right-2 text-[7px] font-mono text-gray-500 uppercase">
-                          Priority: {task.relativePriority}%
-                        </div>
-                      )}
+                      {/* BIG STYLISH POINTS BADGE inside top right */}
+                      <div className={`absolute top-3 right-3 border-2 px-2 py-1 flex flex-col items-center justify-center font-pixel ${
+                        task.isCompleted 
+                          ? 'border-gray-800 bg-gray-900' 
+                          : !task.isEligible 
+                          ? 'border-red-950 bg-red-950/20' 
+                          : isTimeLimited 
+                          ? 'border-yellow-500/60 bg-yellow-500/10 shadow-[2px_2px_0_0_#eab308]' 
+                          : task.buttonType === 'switch'
+                          ? "border-primary/50 bg-primary/10 shadow-[2px_2px_0_0_theme('colors.primary')]"
+                          : "border-white bg-white/10 shadow-[2px_2px_0_0_#fff]"
+                      }`}>
+                        <span className={`text-[12px] font-bold ${
+                          task.isCompleted 
+                            ? 'text-gray-600' 
+                            : !task.isEligible 
+                            ? 'text-red-700' 
+                            : isTimeLimited 
+                            ? 'text-yellow-500 text-shadow-glow' 
+                            : 'text-white text-shadow-glow'
+                        }`}>
+                          +{task.points}
+                        </span>
+                        <span className={`text-[6px] uppercase font-mono tracking-tight ${
+                          task.isCompleted 
+                            ? 'text-gray-700' 
+                            : !task.isEligible 
+                            ? 'text-red-900' 
+                            : 'text-gray-400'
+                        }`}>
+                          PTS
+                        </span>
+                      </div>
 
                       <div className="mb-2">
-                        <div className="flex items-center gap-1.5">
+                        {/* Title block with badges and custom console markers */}
+                        <div className="flex items-center gap-1.5 flex-wrap max-w-[80%] pr-4">
                           {!task.isEligible && <span className="text-[10px]">🔒</span>}
-                          <h3 className={`font-pixel text-xs ${task.isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>
+                          
+                          {/* Hacker terminal prompt for input fields */}
+                          {task.buttonType === 'input' && !task.isCompleted && task.isEligible && (
+                            <span className="text-gray-400 font-mono text-[10px] mr-0.5 animate-pulse">&gt;_</span>
+                          )}
+
+                          {/* Switch signal badge for active telemetry */}
+                          {task.buttonType === 'switch' && !task.isCompleted && task.isEligible && (
+                            <span className="text-primary text-[8px] mr-0.5 font-bold">[SYS_ON]</span>
+                          )}
+
+                          {/* Pulsing Time-Sensitive Alert Badge */}
+                          {isTimeLimited && !task.isCompleted && task.isEligible && (
+                            <span className="bg-yellow-500 text-black text-[7px] font-bold px-1 py-0.5 uppercase tracking-tighter animate-pulse">
+                              LIMITED
+                            </span>
+                          )}
+
+                          <h3 className={`font-pixel text-xs ${task.isCompleted ? 'text-gray-600 line-through' : 'text-white'}`}>
                             {task.title}
                           </h3>
                         </div>
-                        <p className="font-mono text-[9px] text-gray-400 mt-0.5 lowercase">{task.description}</p>
-                        <p className="font-mono text-[8px] text-primary uppercase mt-1">
-                          +{task.points} PTS {task.timeSpan?.type === 'custom' && task.timeSpan?.deadline ? `• EXPIRES: ${new Date(task.timeSpan.deadline).toLocaleDateString()}` : ''}
+
+                        {/* Description block with balanced width to prevent overlaps */}
+                        <p className="font-mono text-[9px] text-gray-400 mt-1 lowercase max-w-[75%] leading-relaxed">
+                          {task.description}
+                        </p>
+
+                        {/* Timeline info block */}
+                        <p className={`font-mono text-[8px] uppercase mt-1.5 ${
+                          task.isCompleted 
+                            ? 'text-gray-700' 
+                            : !task.isEligible 
+                            ? 'text-red-900' 
+                            : isTimeLimited 
+                            ? 'text-yellow-500 animate-pulse font-bold' 
+                            : 'text-primary/70'
+                        }`}>
+                          {isTimeLimited && task.timeSpan?.deadline 
+                            ? `⌛ EXPIRES: ${new Date(task.timeSpan.deadline).toLocaleDateString()} @ ${new Date(task.timeSpan.deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` 
+                            : '♾️ INFINITE TIMELINE'}
                         </p>
                       </div>
 

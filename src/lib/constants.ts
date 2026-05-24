@@ -16,7 +16,7 @@ import { type AccountAssociation } from '@farcaster/miniapp-core/src/manifest';
  * The base URL of the application.
  * Used for generating absolute URLs for assets and API endpoints.
  */
-export const APP_URL: string = process.env.NEXT_PUBLIC_URL || 'https://echo-mini-app.vercel.app';
+export const APP_URL: string = process.env.NEXT_PUBLIC_URL || 'https://echo-base-mini-app.vercel.app';
 
 /**
  * The name of the mini app as displayed to users.
@@ -28,7 +28,7 @@ export const APP_NAME: string = 'Echo';
  * A brief description of the mini app's functionality.
  * Used in app store listings and metadata.
  */
-export const APP_DESCRIPTION: string = 'Uncover your onchain legacy on Base.';
+export const APP_DESCRIPTION: string = 'Mint your legacy or share to flex. Start exploring echo now.';
 
 /**
  * The primary category for the mini app.
@@ -40,7 +40,13 @@ export const APP_PRIMARY_CATEGORY: string = 'social';
  * Tags associated with the mini app.
  * Used for search and discovery in app stores.
  */
-export const APP_TAGS: string[] = ['neynar', 'starter-kit', 'demo'];
+export const APP_TAGS: string[] = [
+  "social",
+  "community",
+  "score",
+  "activity",
+  "base"
+];
 
 // --- Asset URLs ---
 /**
@@ -53,7 +59,7 @@ export const APP_ICON_URL: string = `${APP_URL}/assets/echo-logo.PNG`;
  * URL for the app's Open Graph image.
  * Used for social media sharing and previews.
  */
-export const APP_OG_IMAGE_URL: string = `${APP_URL}/api/opengraph-image`;
+export const APP_OG_IMAGE_URL: string = `${APP_URL}/assets/banner_skull.jpg`;
 
 /**
  * URL for the app's splash screen image.
@@ -65,22 +71,25 @@ export const APP_SPLASH_URL: string = `${APP_URL}/splash.png`;
  * Background color for the splash screen.
  * Used as fallback when splash image is loading.
  */
-export const APP_SPLASH_BACKGROUND_COLOR: string = '#f7f7f7';
+export const APP_SPLASH_BACKGROUND_COLOR: string = '#000000';
 
 /**
  * Account association for the mini app.
  * Used to associate the mini app with a Farcaster account.
  * If not provided, the mini app will be unsigned and have limited capabilities.
  */
-export const APP_ACCOUNT_ASSOCIATION: AccountAssociation | undefined =
-  undefined;
+export const APP_ACCOUNT_ASSOCIATION: AccountAssociation | undefined = {
+  header: "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGY4NDgzMzQwMEE2QkU2ZWY4NUJDZTNFQTEzOThGMDU3ZjQxOEY5N2QifQ",
+  payload: "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
+  signature: "8/Wz7Nq+tmuAm9y3431ompFIz63xU4LHBW0oRKlrNQ5Hc1FNFVdl15B2DnwMRIeKoz6N7FmP9YCNRSW9hyv8ths="
+};
 
 // --- UI Configuration ---
 /**
  * Text displayed on the main action button.
  * Used for the primary call-to-action in the mini app.
  */
-export const APP_BUTTON_TEXT: string = 'Launch Mini App';
+export const APP_BUTTON_TEXT: string = 'Launch Echo';
 
 // --- Integration Configuration ---
 /**
