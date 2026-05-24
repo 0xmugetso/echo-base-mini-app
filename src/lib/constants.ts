@@ -53,19 +53,19 @@ export const APP_TAGS: string[] = [
  * URL for the app's icon image.
  * Used in app store listings and UI elements.
  */
-export const APP_ICON_URL: string = `${APP_URL}/assets/echo-logo.PNG`;
+export const APP_ICON_URL: string = `${APP_URL}/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * URL for the app's Open Graph image.
  * Used for social media sharing and previews.
  */
-export const APP_OG_IMAGE_URL: string = `${APP_URL}/splash.png`;
+export const APP_OG_IMAGE_URL: string = `${APP_URL}/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * URL for the app's splash screen image.
  * Displayed during app loading.
  */
-export const APP_SPLASH_URL: string = `${APP_URL}/splash.png`;
+export const APP_SPLASH_URL: string = `${APP_URL}/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * Background color for the splash screen.
