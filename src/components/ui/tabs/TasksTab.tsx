@@ -31,6 +31,27 @@ type Profile = {
 export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { context?: any, neynarUser?: any, setActiveTab?: (tab: string) => void, isActive?: boolean }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dynamicTasks, setDynamicTasks] = useState<any[]>([]);
+  const [loadingDynamicTasks, setLoadingDynamicTasks] = useState(false);
+  const [inputs, setInputs] = useState<{[key: string]: string}>({});
+  const [cooldowns, setCooldowns] = useState<{[key: string]: number}>({});
+  const [engageClicked, setEngageClicked] = useState<{[key: string]: boolean}>({});
+
+  const startCooldown = (taskId: string) => {
+    setCooldowns(prev => ({ ...prev, [taskId]: 15 }));
+    const interval = setInterval(() => {
+      setCooldowns(prev => {
+        const current = prev[taskId];
+        if (current <= 1) {
+          clearInterval(interval);
+          const updated = { ...prev };
+          delete updated[taskId];
+          return updated;
+        }
+        return { ...prev, [taskId]: current - 1 };
+      });
+    }, 1000);
+  };
 
   // Wagmi & Neynar
   const { address } = useAccount();
@@ -70,6 +91,69 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
     finally { setLoading(false); }
   };
 
+  // --- FETCH DYNAMIC TASKS ---
+  const fetchDynamicTasks = async () => {
+    const targetFid = neynarUser?.fid || context?.user?.fid;
+    if (!targetFid) return;
+    setLoadingDynamicTasks(true);
+    try {
+      const res = await fetch(`/api/echo/tasks?fid=${targetFid}`);
+      const data = await res.json();
+      if (data && data.success) {
+        setDynamicTasks(data.tasks);
+      }
+    } catch (e) {
+      console.error("Failed to load dynamic tasks", e);
+    } finally {
+      setLoadingDynamicTasks(false);
+    }
+  };
+
+  const handleDynamicTask = async (task: any) => {
+    const targetFid = neynarUser?.fid || context?.user?.fid;
+    if (!targetFid) {
+      toast("Error: No FID found", "ERROR");
+      return;
+    }
+
+    if (task.buttonType === 'input') {
+      const val = inputs[task._id] || '';
+      if (val.trim().toLowerCase() !== task.actionLink.trim().toLowerCase()) {
+        toast("❌ Invalid code! Try again.", "ERROR");
+        return;
+      }
+    }
+
+    // Open URL if button type with a link
+    if (task.buttonType === 'button' && task.actionLink) {
+      window.open(task.actionLink, '_blank');
+    }
+
+    setActionLoading(task._id);
+    toast("Verifying mission...", "PROCESS");
+
+    try {
+      const res = await fetch('/api/echo/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fid: targetFid, actionType: task._id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(`MISSION COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
+        await fetchProfile();
+        await fetchDynamicTasks();
+      } else {
+        toast(data.error || "Quest already claimed!", "INFO");
+      }
+    } catch (e) {
+      console.error(e);
+      toast("Verification error", "ERROR");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Force Calculation to fetch latest Cast Count
   useEffect(() => {
     if (profile && (profile.castCount === undefined || profile.castCount === 0)) {
@@ -86,7 +170,10 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
             })
           });
           // Re-fetch after short delay
-          setTimeout(fetchProfile, 2000);
+          setTimeout(() => {
+            fetchProfile();
+            fetchDynamicTasks();
+          }, 2000);
         } catch (e) { console.error("Calc trigger failed", e); }
       };
       triggerCalc();
@@ -96,6 +183,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
   useEffect(() => {
     if ((neynarUser?.fid || context?.user?.fid) && isActive) {
       fetchProfile();
+      fetchDynamicTasks();
     }
   }, [context?.user?.fid, neynarUser?.fid, isActive]);
 
@@ -228,6 +316,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       if (data.success) {
         toast(`✅ CHECK-IN COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
         await fetchProfile();
+        await fetchDynamicTasks();
       } else {
         toast(`❌ Verification Failed: ${data.error}`, "ERROR");
       }
@@ -263,6 +352,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       if (data.success) {
         toast(`UNLOCKED ${data.tier} BOX! +${data.pointsAdded} PTS`, "SUCCESS");
         await fetchProfile();
+        await fetchDynamicTasks();
       } else {
         console.error(`[BOX] Failed:`, data);
         toast(`Failed: ${data.error || "Unknown Error"}`, "ERROR");
@@ -270,39 +360,6 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
     } catch (e: any) {
       console.error("[BOX] Exception:", e);
       toast(`BOX ERROR: ${e.message}`, "ERROR");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleSocialTask = async (task: 'follow_echo' | 'follow_khash' | 'follow_mugetso') => {
-    // Open URL
-    let url = '';
-    if (task === 'follow_echo') url = 'https://warpcast.com/echo';
-    else if (task === 'follow_khash') url = 'https://warpcast.com/khash';
-    else if (task === 'follow_mugetso') url = 'https://farcaster.xyz/mugetso';
-
-    window.open(url, '_blank');
-
-    setActionLoading(task);
-    toast("Verifying mission...", "PROCESS");
-
-    try {
-      const res = await fetch('/api/echo/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: context?.user?.fid, actionType: task })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast(`MISSION COMPLETE! +${data.pointsAdded} PTS`, "SUCCESS");
-        fetchProfile();
-      } else {
-        toast(data.error || "Quest already claimed!", "INFO");
-      }
-    } catch (e) {
-      console.error(e);
-      toast("Verification error", "ERROR");
     } finally {
       setActionLoading(null);
     }
@@ -319,7 +376,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
 
   const BoxButton = ({ day, label }: { day: number, label: string }) => {
     const claimKey = `day${day}` as keyof Profile['rewards']['claimedBoxes'];
-    const isClaimed = profile?.rewards?.claimedBoxes?.[claimKey];
+    const isClaimed = profile?.rewards?.claimedBoxes?.[claimKey] || false;
     const canClaim = (profile?.streak?.current || 0) >= day;
     const isLoading = actionLoading === `box-${day}`;
 
@@ -369,6 +426,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                     })
                   });
                   await fetchProfile();
+                  await fetchDynamicTasks();
                   toast("DATA SYNCED", "SUCCESS");
                 }}
                 className="text-[10px] text-gray-500 hover:text-white border border-gray-800 hover:border-white px-1"
@@ -454,7 +512,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       <RetroWindow title="MONTHLY_GRID">
         <div className="p-1">
           <div className="grid grid-cols-7 gap-1 mb-4">
-            {profile && profile.streak && Array.from({ length: 30 }).map((_, i) => {
+            {Array.from({ length: 30 }).map((_, i) => {
               const dayNum = i + 1;
               const isActive = dayNum <= (profile?.streak?.current || 0);
 
@@ -477,137 +535,246 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       {/* 3. DAILY ACTIONS */}
       <div className="space-y-3">
         <div className="space-y-3">
-          {/* Daily Tasks Row */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Check In */}
-            <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-              <div className="mb-2">
-                <h3 className="font-pixel text-sm text-white">CHECK_IN</h3>
-                <p className="font-mono text-[8px] text-gray-400 uppercase">+10 PTS • TX REQUIRED</p>
-              </div>
-
-              <div className="w-full">
-                {isCheckedInToday() ? (
-                  <div className="space-y-2">
-                    <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                    <RetroTimer />
-                  </div>
-                ) : (
-                  <button
-                    disabled={actionLoading === 'checkin'}
-                    onClick={handleCheckIn}
-                    className={`w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {actionLoading === 'checkin' ? 'SIGNING' : 'SIGN TX'}
-                  </button>
-                )}
-              </div>
+          {/* Check In (Streak Task) */}
+          <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCheckedInToday() ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
+            <div className="mb-2">
+              <h3 className="font-pixel text-sm text-white">CHECK_IN</h3>
+              <p className="font-mono text-[8px] text-gray-400 uppercase">+10 PTS • TX REQUIRED</p>
             </div>
 
-            {/* Daily Echo Cast */}
-            {(() => {
-                let isCompleted = false;
-                let nextTargetDate: Date | null = null;
-                
-                if (profile?.dailyActions?.lastCastDate) {
-                  const lastCastDateObj = new Date(profile.dailyActions.lastCastDate);
-                  const now = new Date();
-                  const lastCastBlock = Math.floor(lastCastDateObj.getUTCHours() / 12);
-                  const currentBlock = Math.floor(now.getUTCHours() / 12);
+            <div className="w-full">
+              {isCheckedInToday() ? (
+                <div className="space-y-2">
+                  <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
+                  <RetroTimer />
+                </div>
+              ) : (
+                <button
+                  disabled={actionLoading === 'checkin'}
+                  onClick={handleCheckIn}
+                  className={`w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black ${!profile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {actionLoading === 'checkin' ? 'SIGNING' : 'SIGN TX'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* DYNAMIC DATABASE MISSIONS */}
+          <RetroWindow title="DYNAMIC_MISSIONS" icon="⚡">
+            {loadingDynamicTasks && dynamicTasks.length === 0 ? (
+              <div className="text-center py-4 font-pixel text-[10px] text-gray-500 uppercase animate-pulse">
+                LOADING_MISSIONS_DATABASE...
+              </div>
+            ) : dynamicTasks.length === 0 ? (
+              <div className="text-center py-4 font-pixel text-[10px] text-gray-500 uppercase italic">
+                NO_ACTIVE_MISSIONS_FOUND
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {dynamicTasks.map((task) => {
+                  const isClaimLoading = actionLoading === task._id;
                   
-                  const isSameDay = lastCastDateObj.getUTCFullYear() === now.getUTCFullYear() && 
-                                    lastCastDateObj.getUTCMonth() === now.getUTCMonth() && 
-                                    lastCastDateObj.getUTCDate() === now.getUTCDate();
-                  
-                  if (isSameDay && lastCastBlock === currentBlock) {
-                    isCompleted = true;
-                    const nextTime = new Date(now);
-                    if (currentBlock === 0) {
-                      nextTime.setUTCHours(12, 0, 0, 0);
-                    } else {
-                      nextTime.setUTCDate(nextTime.getUTCDate() + 1);
-                      nextTime.setUTCHours(0, 0, 0, 0);
-                    }
-                    nextTargetDate = nextTime;
-                  }
-                }
-                
-                return (
-                  <div className={`border-2 p-3 flex flex-col justify-between transition-all min-h-[140px] ${isCompleted ? 'border-gray-800 bg-gray-900' : 'border-white bg-black hover:border-primary'}`}>
-                    <div className="mb-2">
-                      <h3 className="font-pixel text-sm text-white">DAILY_ECHO</h3>
-                      <p className="font-mono text-[8px] text-gray-400 uppercase">+20-50 PTS • CAST</p>
-                    </div>
-                    <div className="w-full">
-                      {isCompleted ? (
-                        <div className="space-y-2">
-                          <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                          <RetroTimer targetDate={nextTargetDate || undefined} />
+                  return (
+                    <div
+                      key={task._id}
+                      className={`border p-3 relative flex flex-col justify-between transition-all ${
+                        task.isCompleted
+                          ? 'border-gray-800 bg-gray-900/60 opacity-60'
+                          : !task.isEligible
+                          ? 'border-red-950 bg-red-950/5 opacity-50'
+                          : 'border-white bg-black hover:border-primary'
+                      }`}
+                    >
+                      {/* Priority % Indicator on top right */}
+                      {task.isActive && (
+                        <div className="absolute top-1 right-2 text-[7px] font-mono text-gray-500 uppercase">
+                          Priority: {task.relativePriority}%
                         </div>
+                      )}
+
+                      <div className="mb-2">
+                        <div className="flex items-center gap-1.5">
+                          {!task.isEligible && <span className="text-[10px]">🔒</span>}
+                          <h3 className={`font-pixel text-xs ${task.isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>
+                            {task.title}
+                          </h3>
+                        </div>
+                        <p className="font-mono text-[9px] text-gray-400 mt-0.5 lowercase">{task.description}</p>
+                        <p className="font-mono text-[8px] text-primary uppercase mt-1">
+                          +{task.points} PTS {task.timeSpan?.type === 'custom' && task.timeSpan?.deadline ? `• EXPIRES: ${new Date(task.timeSpan.deadline).toLocaleDateString()}` : ''}
+                        </p>
+                      </div>
+
+                      {/* LOCKED DETAILS DISPLAY */}
+                      {!task.isEligible && task.conditions && task.conditions.length > 0 && (
+                        <div className="border border-red-900/30 bg-red-950/20 p-2 mb-2 text-[8px] text-red-400 font-mono uppercase">
+                          <p className="font-bold mb-1">Locked! Requirement unsatisfied:</p>
+                          <div className="flex flex-wrap gap-1 items-center">
+                            {task.conditions.map((c: any, index: number) => (
+                              <span key={index} className="leading-tight">
+                                {index > 0 && <strong className="text-red-500 px-0.5">{c.logicalOperator}</strong>}
+                                <span>{c.field.replace(/(profile\.|userStats\.stats\.)/, '')}</span>
+                                <strong className="text-white px-0.5">{c.operator}</strong>
+                                {!['true', 'false'].includes(c.operator) && (
+                                  <span>"{c.value}"</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ACTION TYPE RENDERING */}
+                      {task.isCompleted ? (
+                        <div className="text-[9px] text-gray-600 font-pixel text-center py-1 uppercase">COMPLETED</div>
+                      ) : !task.isEligible ? (
+                        <div className="text-[9px] text-red-900 font-pixel text-center py-1 uppercase">UNSATISFIED CONDITIONS</div>
                       ) : (
-                        <button
-                          onClick={() => setActiveTab?.('actions')}
-                          className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black"
-                        >
-                          GO TO CAST
-                        </button>
+                        <div className="w-full mt-2 space-y-2">
+                          
+                          {/* 1. FOLLOW MISSION */}
+                          {task.actionType === 'follow' && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => window.open('https://warpcast.com/' + task.actionTarget, '_blank')}
+                                className="flex-1 py-1.5 font-pixel text-[9px] border border-white text-white hover:bg-white hover:text-black transition-all"
+                              >
+                                FOLLOW @{task.actionTarget}
+                              </button>
+                              <button
+                                disabled={isClaimLoading}
+                                onClick={() => handleDynamicTask(task)}
+                                className="flex-1 py-1.5 font-pixel text-[9px] border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                              >
+                                {isClaimLoading ? '...' : 'CLAIM MISSION'}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 2. ENGAGEMENT MISSION */}
+                          {task.actionType === 'engage' && (
+                            <div className="w-full">
+                              {cooldowns[task._id] ? (
+                                <button
+                                  disabled
+                                  className="w-full py-1.5 font-pixel text-[9px] border border-yellow-500/50 bg-yellow-500/10 text-yellow-500 uppercase animate-pulse"
+                                >
+                                  ⏳ ENGAGING... {cooldowns[task._id]}S
+                                </button>
+                              ) : engageClicked[task._id] ? (
+                                <button
+                                  disabled={isClaimLoading}
+                                  onClick={() => handleDynamicTask(task)}
+                                  className="w-full py-1.5 font-pixel text-[9px] border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                                >
+                                  {isClaimLoading ? 'CLAIMING...' : 'CLAIM POINT'}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    window.open(task.actionTarget, '_blank');
+                                    setEngageClicked(prev => ({ ...prev, [task._id]: true }));
+                                    startCooldown(task._id);
+                                  }}
+                                  className="w-full py-1.5 font-pixel text-[9px] border border-white text-white hover:bg-white hover:text-black transition-all"
+                                >
+                                  GO TO CAST ({task.actionSubtype || 'like'})
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 3. RAID MISSION */}
+                          {task.actionType === 'raid' && (
+                            <div className="space-y-2">
+                              <div className="border border-dashed border-primary/20 bg-primary/5 p-2 rounded-none">
+                                <p className="text-[7px] text-gray-500 font-bold mb-1 uppercase">Raid Text Template:</p>
+                                <p className="font-mono text-[9px] text-white select-all break-all">{task.actionTarget}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(task.actionTarget);
+                                    toast("✅ RAID TEMPLATE COPIED!", "SUCCESS");
+                                    window.open('https://warpcast.com/', '_blank');
+                                  }}
+                                  className="flex-1 py-1.5 font-pixel text-[9px] border border-white text-white hover:bg-white hover:text-black transition-all"
+                                >
+                                  COPY & RAID
+                                </button>
+                                <button
+                                  disabled={isClaimLoading}
+                                  onClick={() => handleDynamicTask(task)}
+                                  className="flex-1 py-1.5 font-pixel text-[9px] border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                                >
+                                  {isClaimLoading ? '...' : 'CLAIM MISSION'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 4. DEFAULT CLAIM OR FALLBACK QUESTS */}
+                          {(!task.actionType || task.actionType === 'claim') && (
+                            <div className="w-full">
+                              {/* SWITCH STYLE */}
+                              {task.buttonType === 'switch' && (
+                                <div className="flex items-center justify-between border border-primary/20 bg-primary/5 px-3 py-1.5">
+                                  <span className="font-pixel text-[9px] text-primary uppercase">ACTIVATE QUEST:</span>
+                                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      disabled={isClaimLoading}
+                                      onChange={(e) => {
+                                        if (e.target.checked) handleDynamicTask(task);
+                                      }}
+                                      className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-gray-900 peer-focus:outline-none border-2 border-primary/40 peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-primary after:border-primary after:border after:h-3 after:w-3 after:transition-all peer-checked:bg-primary/20 peer-checked:border-primary"></div>
+                                  </label>
+                                </div>
+                              )}
+
+                              {/* BUTTON STYLE */}
+                              {task.buttonType === 'button' && (
+                                <button
+                                  disabled={isClaimLoading}
+                                  onClick={() => handleDynamicTask(task)}
+                                  className="w-full py-2 font-pixel text-[10px] border uppercase border-primary text-primary hover:bg-primary hover:text-black transition-all"
+                                >
+                                  {isClaimLoading ? 'CLAIMING...' : task.actionLink ? 'GO TO MISSION' : 'CLAIM MISSION'}
+                                </button>
+                              )}
+
+                              {/* INPUT STYLE */}
+                              {task.buttonType === 'input' && (
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="ENTER VERIFICATION CODE"
+                                    value={inputs[task._id] || ''}
+                                    onChange={(e) => setInputs({ ...inputs, [task._id]: e.target.value })}
+                                    className="flex-1 bg-black border border-white/30 text-white px-2 py-1.5 font-mono text-[9px] focus:outline-none focus:border-primary placeholder-gray-800"
+                                  />
+                                  <button
+                                    disabled={isClaimLoading}
+                                    onClick={() => handleDynamicTask(task)}
+                                    className="px-3 bg-primary text-black font-pixel text-[9px] hover:bg-white uppercase font-bold"
+                                  >
+                                    {isClaimLoading ? '...' : 'VERIFY'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                        </div>
                       )}
                     </div>
-                  </div>
-                );
-            })()}
-          </div>
-
-          {/* LIMITED MISSION - YELLOW STYLE */}
-          <div className="border-2 border-dashed border-yellow-500/50 bg-yellow-900/10 p-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-0.5">LIMITED</div>
-            <div className="flex justify-between items-center relative z-10">
-              <div>
-                <h3 className="font-pixel text-sm text-yellow-500">FOLLOW_DEVELOPER</h3>
-                <p className="font-mono text-[10px] text-gray-400 uppercase tracking-tighter">FOLLOW @MUGETSO • +30 PTS</p>
+                  );
+                })}
               </div>
-              <button
-                onClick={() => handleSocialTask('follow_mugetso')}
-                disabled={actionLoading === 'follow_mugetso' || profile?.dailyActions?.completedTasks?.includes('follow_mugetso')}
-                className="px-3 py-1.5 bg-yellow-500 text-black font-pixel text-xs hover:bg-yellow-400 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-500 transition-all shadow-[2px_2px_0_0_#000]"
-              >
-                {profile?.dailyActions?.completedTasks?.includes('follow_mugetso') ? 'CLAIMED' : (actionLoading === 'follow_mugetso' ? '...' : 'CLAIM')}
-              </button>
-            </div>
-          </div>
-
-          {/* SOCIAL TASKS */}
-          <RetroWindow title="ONE_TIME_QUESTS" icon="star">
-            <div className="space-y-2">
-              {/* Follow Echo */}
-              <div className="flex justify-between items-center border-b border-white/10 pb-2 last:border-0 last:pb-0">
-                <div>
-                  <p className="font-bold text-xs">FOLLOW @ECHO</p>
-                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-                </div>
-                <button
-                  onClick={() => handleSocialTask('follow_echo')}
-                  disabled={actionLoading === 'follow_echo'} // Needs 'claimed' check from profile in future
-                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-                >
-                  {actionLoading === 'follow_echo' ? '...' : 'FOLLOW'}
-                </button>
-              </div>
-              {/* Follow Dev */}
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-xs">FOLLOW @KHASH</p>
-                  <p className="text-[9px] text-primary font-mono">+50 PTS</p>
-                </div>
-                <button
-                  onClick={() => handleSocialTask('follow_khash')}
-                  disabled={actionLoading === 'follow_khash'}
-                  className="px-2 py-1 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-                >
-                  {actionLoading === 'follow_khash' ? '...' : 'FOLLOW'}
-                </button>
-              </div>
-            </div>
+            )}
           </RetroWindow>
 
         </div>

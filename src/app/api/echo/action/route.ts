@@ -64,9 +64,81 @@ export async function POST(request: Request) {
                 description: 'Daily Cast on Farcaster'
             });
         }
+        // Dynamic Task Logic
+        let dynamicTask = null;
+        if (actionType && actionType.match(/^[0-9a-fA-F]{24}$/)) {
+            const Task = (await import('../../../../models/Task')).default;
+            dynamicTask = await Task.findById(actionType);
+        }
 
+        if (dynamicTask) {
+            if (profile.dailyActions.completedTasks.includes(actionType)) {
+                return NextResponse.json({ error: 'Task already completed', pointsAdded: 0 });
+            }
+
+            // Verify eligibility
+            const UserStats = (await import('../../../../models/UserStats')).default;
+            let userStats = null;
+            if (profile.address) {
+                userStats = await UserStats.findOne({
+                    address: { $regex: new RegExp(`^${profile.address}$`, 'i') }
+                });
+            }
+
+            const { evaluateConditions } = await import('../tasks/route');
+            const isEligible = evaluateConditions(dynamicTask.conditions || [], profile, userStats);
+            if (!isEligible) {
+                return NextResponse.json({ error: 'You do not meet the conditions for this mission!', pointsAdded: 0 });
+            }
+
+            // Verify task actions
+            if (dynamicTask.actionType === 'follow') {
+                const usernameToFollow = dynamicTask.actionTarget.trim().replace('@', '');
+                const API_KEY = process.env.NEYNAR_API_KEY;
+                if (!API_KEY) throw new Error("Server Config Error");
+
+                const res = await fetch(`https://api.neynar.com/v2/farcaster/user/search?q=${usernameToFollow}&viewer_fid=${fid}`, {
+                    headers: { 'accept': 'application/json', 'api_key': API_KEY }
+                });
+                const data = await res.json();
+                const targetUser = data.result?.users?.find((u: any) => u.username.toLowerCase() === usernameToFollow.toLowerCase());
+                
+                if (!targetUser || !targetUser.viewer_context?.following) {
+                    return NextResponse.json({ error: `You are not following @${usernameToFollow} yet!`, pointsAdded: 0 });
+                }
+            }
+            else if (dynamicTask.actionType === 'raid') {
+                const templateText = dynamicTask.actionTarget.trim().toLowerCase();
+                const API_KEY = process.env.NEYNAR_API_KEY;
+                if (!API_KEY) throw new Error("Server Config Error");
+
+                const res = await fetch(`https://api.neynar.com/v2/farcaster/feed/user/casts?fid=${fid}&limit=15`, {
+                    headers: { 'accept': 'application/json', 'api_key': API_KEY }
+                });
+                const data = await res.json();
+                const casts = data.casts || [];
+
+                const hasRaidMatch = casts.some((c: any) => {
+                    const castText = c.text?.toLowerCase() || '';
+                    return castText.includes(templateText);
+                });
+
+                if (!hasRaidMatch) {
+                    return NextResponse.json({ error: `Raid not detected! We could not find a recent cast containing the message: "${dynamicTask.actionTarget}"`, pointsAdded: 0 });
+                }
+            }
+
+            points = dynamicTask.points || 0;
+            profile.dailyActions.completedTasks.push(actionType);
+            profile.dailyActions.pointsHistory.push({
+                action: dynamicTask.title.replace(/\s+/g, '_').toLowerCase(),
+                points: points,
+                date: new Date(),
+                description: dynamicTask.description
+            });
+        }
         // Generic Task Logic
-        if (actionType === 'follow_mugetso') {
+        else if (actionType === 'follow_mugetso') {
             if (profile.dailyActions.completedTasks.includes('follow_mugetso')) {
                 return NextResponse.json({ error: 'Already followed & claimed!', pointsAdded: 0 });
             }
