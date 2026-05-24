@@ -539,7 +539,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
       />
 
       {/* IDENTITY BANNER */}
-      <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
+      <RetroBanner src="/splash.png" alt="Identity Matrx" />
 
 
       {/* Action Buttons */}

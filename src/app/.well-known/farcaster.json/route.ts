@@ -18,7 +18,7 @@ export function GET() {
       name: "Echo",
       iconUrl: `${appUrl}/assets/echo-logo.PNG`,
       homeUrl: appUrl,
-      imageUrl: `${appUrl}/assets/banner_skull.jpg`,
+      imageUrl: `${appUrl}/splash.png`,
       buttonTitle: "Launch Echo",
       splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: "#000000",
