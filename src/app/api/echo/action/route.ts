@@ -72,7 +72,25 @@ export async function POST(request: Request) {
         }
 
         if (dynamicTask) {
-            if (profile.dailyActions.completedTasks.includes(actionType)) {
+            let isAlreadyCompleted = profile.dailyActions.completedTasks.includes(actionType);
+
+            // Handle recurring task verification bypass
+            if (isAlreadyCompleted && dynamicTask.timeSpan?.type === 'recurring' && dynamicTask.timeSpan?.recurringInterval) {
+                const taskActionKey = dynamicTask.title.replace(/\s+/g, '_').toLowerCase();
+                const completions = profile.dailyActions?.pointsHistory?.filter((h: any) => h.action === taskActionKey) || [];
+                if (completions.length > 0) {
+                    const lastCompletion = completions[completions.length - 1];
+                    const lastCompletedDate = new Date(lastCompletion.date);
+                    const hoursPassed = (now.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursPassed >= dynamicTask.timeSpan.recurringInterval) {
+                        isAlreadyCompleted = false; // Cooldown expired, allowed to claim again!
+                    }
+                } else {
+                    isAlreadyCompleted = false; // No history found, allowed to claim!
+                }
+            }
+
+            if (isAlreadyCompleted) {
                 return NextResponse.json({ error: 'Task already completed', pointsAdded: 0 });
             }
 

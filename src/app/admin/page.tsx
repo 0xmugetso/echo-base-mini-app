@@ -10,8 +10,9 @@ type TaskCondition = {
 };
 
 type TimeSpan = {
-    type: 'infinite' | 'custom';
+    type: 'infinite' | 'custom' | 'recurring';
     deadline?: string | null;
+    recurringInterval?: number | null;
 };
 
 type Task = {
@@ -381,8 +382,9 @@ export default function AdminPage() {
     const [formButtonType, setFormButtonType] = useState<'switch' | 'button' | 'input'>('button');
     const [formWeight, setFormWeight] = useState<number>(10);
     const [formPoints, setFormPoints] = useState<number>(20);
-    const [formTimeSpanType, setFormTimeSpanType] = useState<'infinite' | 'custom'>('infinite');
+    const [formTimeSpanType, setFormTimeSpanType] = useState<'infinite' | 'custom' | 'recurring'>('infinite');
     const [formDeadline, setFormDeadline] = useState('');
+    const [formRecurringInterval, setFormRecurringInterval] = useState<number>(24);
     const [formConditions, setFormConditions] = useState<TaskCondition[]>([]);
     const [formIsActive, setFormIsActive] = useState<boolean>(true);
     // Extended Form Actions states
@@ -545,7 +547,8 @@ export default function AdminPage() {
             points: Number(formPoints),
             timeSpan: {
                 type: formTimeSpanType,
-                deadline: formTimeSpanType === 'custom' && formDeadline ? formDeadline : null
+                deadline: formTimeSpanType === 'custom' && formDeadline ? formDeadline : null,
+                recurringInterval: formTimeSpanType === 'recurring' ? formRecurringInterval : null
             },
             conditions: formConditions,
             isActive: formIsActive,
@@ -588,6 +591,7 @@ export default function AdminPage() {
         setFormPoints(task.points);
         setFormTimeSpanType(task.timeSpan.type);
         setFormDeadline(task.timeSpan.deadline ? new Date(task.timeSpan.deadline).toISOString() : '');
+        setFormRecurringInterval(task.timeSpan.recurringInterval || 24);
         setFormConditions(task.conditions || []);
         setFormIsActive(task.isActive);
         setFormActionType(task.actionType || 'claim');
@@ -640,6 +644,7 @@ export default function AdminPage() {
         setFormPoints(20);
         setFormTimeSpanType('infinite');
         setFormDeadline('');
+        setFormRecurringInterval(24);
         setFormConditions([]);
         setFormIsActive(true);
         setFormActionType('claim');
@@ -968,33 +973,17 @@ export default function AdminPage() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* Button Type - Fallback visual styles */}
-                                    <div>
-                                        <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">UI Style</label>
-                                        <select
-                                            value={formButtonType}
-                                            onChange={e => setFormButtonType(e.target.value as any)}
-                                            className="block w-full border border-white/30 bg-black px-3 py-1.5 text-white focus:border-primary focus:outline-none rounded-none text-xs"
-                                        >
-                                            <option value="button">Claim Button</option>
-                                            <option value="switch">Active Switch</option>
-                                            <option value="input">Verification Input</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Status */}
-                                    <div>
-                                        <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Status</label>
-                                        <select
-                                            value={formIsActive ? 'active' : 'inactive'}
-                                            onChange={e => setFormIsActive(e.target.value === 'active')}
-                                            className="block w-full border border-white/30 bg-black px-3 py-1.5 text-white focus:border-primary focus:outline-none rounded-none text-xs"
-                                        >
-                                            <option value="active">Active (Deploy)</option>
-                                            <option value="inactive">Inactive (Draft)</option>
-                                        </select>
-                                    </div>
+                                {/* Status */}
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Status</label>
+                                    <select
+                                        value={formIsActive ? 'active' : 'inactive'}
+                                        onChange={e => setFormIsActive(e.target.value === 'active')}
+                                        className="block w-full border border-white/30 bg-black px-3 py-1.5 text-white focus:border-primary focus:outline-none rounded-none text-xs"
+                                    >
+                                        <option value="active">Active (Deploy)</option>
+                                        <option value="inactive">Inactive (Draft)</option>
+                                    </select>
                                 </div>
 
                                 {/* Action Link */}
@@ -1020,7 +1009,7 @@ export default function AdminPage() {
                                                 onChange={() => setFormTimeSpanType('infinite')}
                                                 className="accent-primary"
                                             />
-                                            Infinite Duration
+                                            Infinite
                                         </label>
                                         <label className="flex items-center gap-1.5 cursor-pointer">
                                             <input
@@ -1029,7 +1018,16 @@ export default function AdminPage() {
                                                 onChange={() => setFormTimeSpanType('custom')}
                                                 className="accent-primary"
                                             />
-                                            Custom Deadline
+                                            Deadline
+                                        </label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                checked={formTimeSpanType === 'recurring'}
+                                                onChange={() => setFormTimeSpanType('recurring')}
+                                                className="accent-primary"
+                                            />
+                                            Recurring
                                         </label>
                                     </div>
 
@@ -1039,6 +1037,18 @@ export default function AdminPage() {
                                             <RetroDatetimePicker
                                                 value={formDeadline}
                                                 onChange={(val) => setFormDeadline(val)}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {formTimeSpanType === 'recurring' && (
+                                        <div className="mt-2">
+                                            <label className="block text-[9px] text-gray-500 uppercase font-bold">Repeat Interval (Hours)</label>
+                                            <input
+                                                type="number"
+                                                value={formRecurringInterval}
+                                                onChange={e => setFormRecurringInterval(Math.max(1, parseInt(e.target.value) || 24))}
+                                                className="block w-full border border-white/30 bg-black px-3 py-1.5 text-white focus:border-primary focus:outline-none rounded-none text-xs"
                                             />
                                         </div>
                                     )}
@@ -1243,7 +1253,6 @@ export default function AdminPage() {
 
                                             {/* Action Link & Deadline */}
                                             <div className="flex gap-4 text-[9px] text-gray-500 border-t border-white/5 pt-2 mt-2 uppercase">
-                                                <span>UI Style: <strong className="text-white">{t.buttonType}</strong></span>
                                                 {t.actionLink && (
                                                     <span className="truncate max-w-[200px]">
                                                         Fallback URL: <strong className="text-white font-mono lowercase">{t.actionLink}</strong>
@@ -1251,9 +1260,11 @@ export default function AdminPage() {
                                                 )}
                                                 <span>
                                                     Time Span: {' '}
-                                                    <strong className={t.timeSpan?.type === 'custom' ? 'text-yellow-500' : 'text-white'}>
+                                                    <strong className={t.timeSpan?.type === 'custom' ? 'text-yellow-500' : t.timeSpan?.type === 'recurring' ? 'text-cyan-500' : 'text-white'}>
                                                         {t.timeSpan?.type === 'custom' && t.timeSpan?.deadline
                                                             ? `Expires: ${new Date(t.timeSpan.deadline).toLocaleString('en-US', { hour12: false })}`
+                                                            : t.timeSpan?.type === 'recurring'
+                                                            ? `Recurring (Every ${t.timeSpan.recurringInterval || 24}h)`
                                                             : 'Infinite'
                                                         }
                                                     </strong>

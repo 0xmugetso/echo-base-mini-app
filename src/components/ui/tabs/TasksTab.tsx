@@ -587,6 +587,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                 {dynamicTasks.map((task) => {
                   const isClaimLoading = actionLoading === task._id;
                   const isTimeLimited = task.timeSpan?.type === 'custom' && task.timeSpan?.deadline;
+                  const isRecurring = task.timeSpan?.type === 'recurring';
 
                   // Compute dynamic card class styles based on state, UI style, and time-limit configurations
                   let cardStyle = "";
@@ -596,6 +597,8 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                     cardStyle = "border-red-950 bg-red-950/5 opacity-60";
                   } else if (isTimeLimited) {
                     cardStyle = "border-2 border-dashed border-yellow-500/60 bg-yellow-950/10 shadow-[0_0_8px_rgba(234,179,8,0.25)] hover:border-yellow-400";
+                  } else if (isRecurring) {
+                    cardStyle = "border-2 border-primary/40 bg-primary/5 hover:border-primary/80 shadow-[0_0_6px_rgba(0,240,255,0.05)]";
                   } else {
                     if (task.buttonType === 'switch') {
                       cardStyle = "border-2 border-primary/40 bg-primary/5 hover:border-primary/80 shadow-[inset_0_0_6px_rgba(0,240,255,0.05)]";
@@ -619,6 +622,8 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                           ? 'border-red-950 bg-red-950/20' 
                           : isTimeLimited 
                           ? 'border-yellow-500/60 bg-yellow-500/10 shadow-[2px_2px_0_0_#eab308]' 
+                          : isRecurring
+                          ? "border-primary/50 bg-primary/10 shadow-[2px_2px_0_0_theme('colors.primary')]"
                           : task.buttonType === 'switch'
                           ? "border-primary/50 bg-primary/10 shadow-[2px_2px_0_0_theme('colors.primary')]"
                           : "border-white bg-white/10 shadow-[2px_2px_0_0_#fff]"
@@ -630,6 +635,8 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                             ? 'text-red-700' 
                             : isTimeLimited 
                             ? 'text-yellow-500 text-shadow-glow' 
+                            : isRecurring
+                            ? 'text-primary text-shadow-glow'
                             : 'text-white text-shadow-glow'
                         }`}>
                           +{task.points}
@@ -660,6 +667,13 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                             <span className="text-primary text-[8px] mr-0.5 font-bold">[SYS_ON]</span>
                           )}
 
+                          {/* Recurring Quest Badge */}
+                          {isRecurring && !task.isCompleted && task.isEligible && (
+                            <span className="bg-primary text-black text-[7.5px] font-pixel px-1.5 py-0.5 uppercase tracking-tighter animate-pulse mr-0.5">
+                              🔄 REPEAT
+                            </span>
+                          )}
+
                           {/* Pulsing Time-Sensitive Alert Badge */}
                           {isTimeLimited && !task.isCompleted && task.isEligible && (
                             <span className="bg-yellow-500 text-black text-[7px] font-bold px-1 py-0.5 uppercase tracking-tighter animate-pulse">
@@ -685,10 +699,14 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                             ? 'text-red-900' 
                             : isTimeLimited 
                             ? 'text-yellow-500 animate-pulse font-bold' 
+                            : isRecurring
+                            ? 'text-primary font-bold animate-pulse'
                             : 'text-primary/70'
                         }`}>
                           {isTimeLimited && task.timeSpan?.deadline 
                             ? `⌛ EXPIRES: ${new Date(task.timeSpan.deadline).toLocaleDateString()} @ ${new Date(task.timeSpan.deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` 
+                            : task.timeSpan?.type === 'recurring'
+                            ? `🔄 RECURS: EVERY ${task.timeSpan?.recurringInterval || 24} HOURS`
                             : '♾️ INFINITE TIMELINE'}
                         </p>
                       </div>

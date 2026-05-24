@@ -15,8 +15,9 @@ export interface ITask {
     weight: number; // Raw weight for priority calculations
     points: number; // Points reward
     timeSpan: {
-        type: 'infinite' | 'custom';
+        type: 'infinite' | 'custom' | 'recurring';
         deadline?: Date | null;
+        recurringInterval?: number | null; // in hours
     };
     conditions: ITaskCondition[];
     isActive: boolean;
@@ -44,8 +45,9 @@ const TaskSchema = new Schema<ITask>(
         weight: { type: Number, required: true, default: 0 },
         points: { type: Number, required: true, default: 0 },
         timeSpan: {
-            type: { type: String, enum: ['infinite', 'custom'], default: 'infinite' },
-            deadline: { type: Date, default: null }
+            type: { type: String, enum: ['infinite', 'custom', 'recurring'], default: 'infinite' },
+            deadline: { type: Date, default: null },
+            recurringInterval: { type: Number, default: null }
         },
         conditions: { type: [TaskConditionSchema], default: [] },
         isActive: { type: Boolean, default: true },

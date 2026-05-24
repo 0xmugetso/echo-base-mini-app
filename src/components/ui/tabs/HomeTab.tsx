@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useMiniApp } from "@neynar/react";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
 import { parseEther, getAddress } from "viem";
 import { useToast } from "../ToastProvider";
@@ -491,15 +492,17 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
   useEffect(() => {
     if (!isSDKLoaded || promptedAdd) return;
-    if (actions?.addMiniApp) {
-      void actions
-        .addMiniApp()
-        .catch(() => null)
-        .finally(() => setPromptedAdd(true));
-    } else {
-      setPromptedAdd(true);
-    }
-  }, [actions, isSDKLoaded, promptedAdd]);
+    const triggerAddApp = async () => {
+      try {
+        await sdk.actions.addMiniApp();
+      } catch (e) {
+        console.warn("Auto addMiniApp prompt failed", e);
+      } finally {
+        setPromptedAdd(true);
+      }
+    };
+    triggerAddApp();
+  }, [isSDKLoaded, promptedAdd]);
 
   // Initial Loader State (only show on first load, before we have data)
   const showLoader = baseLoading && !baseStats;
@@ -539,7 +542,38 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
       />
 
       {/* IDENTITY BANNER */}
-      <RetroBanner src="/splash.png" alt="Identity Matrx" />
+      <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
+
+      {/* ADD APP PROMPT */}
+      {context && !context?.client?.added && (
+        <div className="border-2 border-primary bg-primary/5 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,240,255,0.15)] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <span className="text-xl animate-bounce">🛡️</span>
+            <div>
+              <p className="font-pixel text-[8px] text-primary uppercase tracking-widest leading-none">SYSTEM_NOTIFICATION</p>
+              <p className="font-mono text-xs text-white mt-1">Add Echo to your Farcaster client for quick access!</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await sdk.actions.addMiniApp();
+                toast("APP ADDED SUCCESSFULLY", "SUCCESS");
+              } catch (e: any) {
+                if (e.message?.includes("RejectedByUser")) {
+                  toast("ADD CANCELLED BY USER", "INFO");
+                } else {
+                  console.error(e);
+                  toast("ADD APP FAILED", "ERROR");
+                }
+              }
+            }}
+            className="bg-primary text-black font-pixel text-xs px-4 py-2 border-2 border-white hover:bg-white hover:text-black active:translate-y-[1px] transition-all shadow-[2px_2px_0_0_#fff] active:shadow-none uppercase font-bold"
+          >
+            ADD_APP
+          </button>
+        </div>
+      )}
 
 
       {/* Action Buttons */}

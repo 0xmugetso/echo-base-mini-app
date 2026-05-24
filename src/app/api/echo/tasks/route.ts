@@ -110,6 +110,7 @@ export async function GET(request: Request) {
             isActive: true,
             $or: [
                 { 'timeSpan.type': 'infinite' },
+                { 'timeSpan.type': 'recurring' },
                 { 
                     'timeSpan.type': 'custom', 
                     'timeSpan.deadline': { $gte: now } 
@@ -122,8 +123,26 @@ export async function GET(request: Request) {
 
         // Map and evaluate dynamic statuses
         const evaluatedTasks = activeTasks.map(t => {
-            const isCompleted = profile.dailyActions?.completedTasks?.includes(t._id.toString()) || false;
+            let isCompleted = profile.dailyActions?.completedTasks?.includes(t._id.toString()) || false;
             
+            // Handle recurring tasks completion reset check
+            if (isCompleted && t.timeSpan?.type === 'recurring' && t.timeSpan?.recurringInterval) {
+                const taskActionKey = t.title.replace(/\s+/g, '_').toLowerCase();
+                const completions = profile.dailyActions?.pointsHistory?.filter((h: any) => h.action === taskActionKey) || [];
+                if (completions.length > 0) {
+                    const lastCompletion = completions[completions.length - 1];
+                    const lastCompletedDate = new Date(lastCompletion.date);
+                    const hoursPassed = (now.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursPassed < t.timeSpan.recurringInterval) {
+                        isCompleted = true; // still in cooldown
+                    } else {
+                        isCompleted = false; // can claim again!
+                    }
+                } else {
+                    isCompleted = false; // no history found, can claim
+                }
+            }
+
             // Evaluate dynamic conditions
             const isEligible = isCompleted || evaluateConditions(t.conditions || [], profile, userStats);
 

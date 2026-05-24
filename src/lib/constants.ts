@@ -59,7 +59,7 @@ export const APP_ICON_URL: string = `${APP_URL}/assets/echo-logo.PNG`;
  * URL for the app's Open Graph image.
  * Used for social media sharing and previews.
  */
-export const APP_OG_IMAGE_URL: string = `${APP_URL}//splash.png`;
+export const APP_OG_IMAGE_URL: string = `${APP_URL}/splash.png`;
 
 /**
  * URL for the app's splash screen image.
