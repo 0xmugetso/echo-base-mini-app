@@ -29,6 +29,7 @@ type IntroModalProps = {
     baseStats: any;
     neynarUser: any;
     loading: boolean;
+    initialStep?: 1 | 2 | 3 | 4 | 5;
 };
 
 const CardHeader = React.memo(({ neynarUser }: { neynarUser: any }) => (
@@ -51,9 +52,9 @@ const CardHeader = React.memo(({ neynarUser }: { neynarUser: any }) => (
     </div>
 ));
 
-export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: IntroModalProps) {
+export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, initialStep = 1 }: IntroModalProps) {
     // --- STATE ---
-    const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+    const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep);
     const [isMinting, setIsMinting] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
@@ -76,6 +77,12 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
     const { toast } = useToast();
     const { address: connectedAddress } = useAccount(); // Wagmi connected address
     // --- EFFECTS ---
+    useEffect(() => {
+        if (isOpen) {
+            setStep(initialStep);
+        }
+    }, [isOpen, initialStep]);
+
     useEffect(() => {
         setMounted(true);
         let interval: NodeJS.Timeout;
@@ -582,7 +589,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                             <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
                             <div className="flex flex-wrap gap-1">
                                 {['clanker', 'toshi', 'degen', 'brett'].map(t => (
-                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t] ? 'border-primary text-primary bg-primary/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t] ? 'border-primary text-primary bg-primary/20 font-bold shadow-[0_0_8px_rgba(0,180,255,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
                                 ))}
                             </div>
                         </div>
@@ -590,7 +597,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading }: 
                             <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
                             <div className="flex flex-wrap gap-1">
                                 {['warplets', 'pro_og', 'punk', 'bankr'].map(t => (
-                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                                    <span key={t} className={`text-[6px] border px-0.5 ${holdings?.[t + '_club'] || holdings?.[t] ? 'border-yellow-500 text-yellow-500 bg-yellow-500/20 font-bold shadow-[0_0_8px_rgba(234,179,8,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
                                 ))}
                             </div>
                         </div>

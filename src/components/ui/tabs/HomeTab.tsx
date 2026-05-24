@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useMiniApp } from "@neynar/react";
-import { useAccount, useSendTransaction } from "wagmi";
+import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
 import { parseEther, getAddress } from "viem";
 import { useToast } from "../ToastProvider";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
@@ -12,6 +12,8 @@ import { Skull } from "../Skull";
 import { PixelMintIcon } from "../PixelMintIcon";
 import { PixelShareIcon } from "../PixelShareIcon";
 import { base64Grid } from "../gridPattern";
+import { AURA_CONTRACT_ADDRESS, AURA_ABI } from "~/lib/contracts";
+import * as htmlToImage from 'html-to-image';
 
 type HomeTabProps = {
   neynarUser?: NeynarUser | null;
@@ -119,6 +121,195 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const [extModalOpen, setExtModalOpen] = useState(false);
   const [scanHistory, setScanHistory] = useState<{ address: string, stats: any }[]>([]);
 
+  const [ethPrice, setEthPrice] = useState<number>(3300);
+
+  // Fetch ETH price in USD on mount
+  useEffect(() => {
+    fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT")
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.price) {
+          const price = parseFloat(data.price);
+          if (price > 0) setEthPrice(price);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch ETH price from Binance, trying backup...", err);
+        fetch("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD")
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.USD) {
+              setEthPrice(data.USD);
+            }
+          })
+          .catch(e => console.error("Failed to fetch backup ETH price", e));
+      });
+  }, []);
+
+  const scanFeeEthString = (0.50 / ethPrice).toFixed(6);
+
+  const [isMinting, setIsMinting] = useState(false);
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+
+  const captureImage = async () => {
+    const templateNode = document.getElementById('nft-card-capture');
+    if (!templateNode) {
+      console.error("[Capture] Template not found");
+      return null;
+    }
+
+    const clone = templateNode.cloneNode(true) as HTMLElement;
+    clone.id = 'stats-window-capture-instance';
+    clone.style.position = 'fixed';
+    clone.style.top = '0px';
+    clone.style.left = '0px';
+    clone.style.zIndex = '-9999999';
+    clone.style.display = 'block';
+    clone.style.opacity = '1';
+    clone.style.pointerEvents = 'none';
+    clone.style.width = '380px';
+    clone.style.transform = 'none';
+
+    const imgs = clone.getElementsByTagName('img');
+    for (let i = 0; i < imgs.length; i++) {
+      imgs[i].crossOrigin = "anonymous";
+    }
+
+    document.body.appendChild(clone);
+    await new Promise(r => setTimeout(r, 500));
+
+    try {
+      const dataUrl = await htmlToImage.toPng(clone, {
+        backgroundColor: '#000000',
+        cacheBust: true,
+        skipAutoScale: true,
+        pixelRatio: 2,
+        quality: 1.0,
+        includeQueryParams: true,
+        style: {
+          display: 'block',
+          opacity: '1',
+          transform: 'none',
+          margin: '0',
+        },
+        fetchRequestInit: {
+          mode: 'cors',
+          credentials: 'omit'
+        }
+      });
+      return dataUrl;
+    } catch (e: any) {
+      console.error("[Capture] Error:", e.message);
+      toast("Capture failed: " + e.message, "ERROR");
+      return null;
+    } finally {
+      if (document.body.contains(clone)) document.body.removeChild(clone);
+    }
+  };
+
+  const uploadImage = async (dataUrl: string) => {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const filename = `echo-${Date.now()}.png`;
+      const res = await fetch(`/api/upload?filename=${filename}`, { method: 'POST', body: blob });
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.url;
+    } catch (e) {
+      console.error("[Upload] Error:", e);
+      return null;
+    }
+  };
+
+  const handleMintHome = async () => {
+    setIsMinting(true);
+    toast("GENERATING MINT CARD...", "PROCESS");
+    try {
+      const dataUrl = await captureImage();
+      if (!dataUrl) throw new Error("Capture failed");
+
+      const imgRes = await uploadImage(dataUrl);
+      if (!imgRes) throw new Error("Upload failed");
+
+      const recipientAddress = connectedAddress || (actions as any)?.context?.user?.address || address;
+      console.log("[Mint] Home Recipient:", recipientAddress);
+
+      let nextTokenId = 1;
+      try {
+        if (publicClient) {
+          const id = await publicClient.readContract({
+            address: AURA_CONTRACT_ADDRESS,
+            abi: AURA_ABI,
+            functionName: 'getNextTokenId',
+          }) as bigint;
+          nextTokenId = Number(id);
+        }
+      } catch (e) {
+        console.error("[Mint] ID Fetch Error:", e);
+      }
+
+      const regRes = await fetch('/api/echo/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fid: fid,
+          address: recipientAddress,
+          action: 'register_nft',
+          nftImage: imgRes,
+          tokenId: nextTokenId,
+          neynarScore: farcasterScore,
+          castCount: castCount,
+          totalTx: totalTx,
+          totalVolume: baseVolume,
+          gasPaid: gasPaid,
+          biggestTx: biggestTx,
+          username: baseName,
+          joinDate: baseStats?.first_tx_date
+        })
+      });
+      const { tokenId } = await regRes.json();
+      if (!tokenId) throw new Error("Metadata registration failed");
+
+      let hash: string;
+      const sdkModule = (await import("@farcaster/frame-sdk")).default;
+      if ((sdkModule?.actions as any)?.sendTransaction) {
+        const { encodeFunctionData } = await import('viem');
+        const data = encodeFunctionData({
+          abi: AURA_ABI,
+          functionName: 'mint',
+          args: [getAddress(recipientAddress)],
+        });
+
+        const result = await (sdkModule.actions as any).sendTransaction({
+          chainId: 8453, // Base mainnet
+          to: AURA_CONTRACT_ADDRESS,
+          data,
+          value: 0n,
+        });
+        if (!result?.hash) throw new Error("Minting cancelled or failed");
+        hash = result.hash;
+      } else {
+        hash = await (writeContractAsync as any)({
+          address: AURA_CONTRACT_ADDRESS,
+          abi: AURA_ABI,
+          functionName: 'mint',
+          args: [getAddress(recipientAddress)],
+          value: 0n,
+        });
+      }
+
+      console.log("MINT SUBMITTED: " + hash);
+      toast("MINT SUCCESSFUL! CARD IS YOURS", "SUCCESS");
+      setHasMinted(true);
+    } catch (e: any) {
+      console.error("[Mint] Error:", e.message);
+      toast("MINT FAILED: " + e.message, "ERROR");
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
   // Load paid scan history on load
   useEffect(() => {
     if (context?.user?.fid) {
@@ -154,7 +345,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         toast("INITIALIZING PAYMENT MODULE...", "PROCESS");
         const hash = await sendTransactionAsync({
           to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
-          value: parseEther("0.00015"),
+          value: parseEther(scanFeeEthString),
         });
         toast("PAYMENT VERIFIED! ANALYZING ONCHAIN DATA...", "PROCESS");
 
@@ -308,6 +499,13 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     }
   }, [baseStats]);
 
+  const biggestTx = baseStats?.biggest_single_tx || 0;
+  const gasPaid = Number(baseStats?.total_fees_paid_wei || 0n) / 1e18;
+  const totalTx = baseStats?.total_tx || 0;
+  const baseVolume = baseStats?.total_volume_usd || 0;
+  const walletAge = baseStats?.wallet_age_days ? Math.floor(baseStats.wallet_age_days) : 0;
+  const castCount = baseStats?.farcaster?.cast_count || 0;
+
   return (
     <div className="space-y-4 pb-4 relative min-h-[400px]">
 
@@ -318,6 +516,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         baseStats={baseStats}
         neynarUser={neynarUser}
         loading={baseLoading}
+        initialStep={hasMinted ? 5 : 1}
       />
 
       {/* IDENTITY BANNER */}
@@ -339,12 +538,13 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
         {/* MINT BUTTON: Electric Blue Style */}
         <button
-          onClick={() => setIntroOpen(true)}
-          className="group relative bg-primary text-white font-pixel text-sm uppercase py-4 border-2 border-white shadow-[4px_4px_0px_0px_#ffffff] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:brightness-110 transition-all duration-0"
+          onClick={hasMinted ? handleMintHome : () => setIntroOpen(true)}
+          disabled={isMinting}
+          className="group relative bg-primary text-white font-pixel text-sm uppercase py-4 border-2 border-white shadow-[4px_4px_0px_0px_#ffffff] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:brightness-110 transition-all duration-0 disabled:opacity-50"
         >
           <span className="relative z-10 flex flex-row items-center justify-center gap-2">
             <PixelMintIcon className="w-6 h-6 text-white" />
-            <span>{hasMinted ? 'Already Minted!' : 'MINT_ECHO'}</span>
+            <span>{isMinting ? 'MINTING...' : (hasMinted ? 'Already Minted!' : 'MINT_ECHO')}</span>
           </span>
           {/* Scanline overlay for that "electric" feel */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
@@ -398,7 +598,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
             </p>
             <div className="flex justify-between items-center mt-1 pt-1 border-t border-primary/10">
               <span className="text-[8px] font-pixel text-primary uppercase tracking-wider">Fee Per Address:</span>
-              <span className="text-[10px] font-mono text-[#00ff00] font-bold tracking-widest bg-black px-1.5 py-0.5 border border-primary/20">0.00015 ETH ($0.50)</span>
+              <span className="text-[10px] font-mono text-[#00ff00] font-bold tracking-widest bg-black px-1.5 py-0.5 border border-primary/20">~{scanFeeEthString} ETH ($0.50)</span>
             </div>
           </div>
 
@@ -439,13 +639,13 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                 placeholder="PASTE ETH ADDRESS (0x...)"
                 value={extAddress}
                 onChange={e => setExtAddress(e.target.value)}
-                className="w-full bg-black border-2 border-primary/40 p-3.5 pr-20 font-mono text-xs text-white placeholder-primary/30 focus:border-primary outline-none transition-all shadow-inner focus:shadow-[0_0_10px_rgba(0,180,255,0.2)]"
+                className="w-full bg-black border-2 border-primary/40 p-3.5 pr-24 font-mono text-xs text-white placeholder-primary/30 focus:border-primary outline-none transition-all shadow-inner focus:shadow-[0_0_10px_rgba(0,180,255,0.2)]"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center h-[80%] z-20">
                 {extAddress ? (
                   <button 
                     onClick={() => setExtAddress("")}
-                    className="text-gray-500 hover:text-white font-mono text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.5"
+                    className="text-white hover:text-primary font-mono text-[9px] bg-white/5 border border-white/10 px-2.5 py-1.5 active:scale-95 transition-all"
                   >
                     CLEAR
                   </button>
@@ -462,9 +662,9 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                         toast("CLIPBOARD PERMISSION DENIED", "ERROR");
                       }
                     }}
-                    className="text-primary hover:text-white font-mono text-[9px] bg-primary/10 border border-primary/30 px-2 py-0.5 animate-pulse"
+                    className="text-white hover:text-white font-mono text-[10px] bg-primary/20 border border-primary/50 px-3 py-1.5 animate-pulse active:scale-95 transition-all uppercase tracking-wider font-bold"
                   >
-                    📋 PASTE
+                    PASTE
                   </button>
                 )}
               </div>
@@ -472,7 +672,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
             <button
               onClick={handleCalculateExt}
               disabled={calculatingExt || !extAddress}
-              className="bg-primary text-black font-pixel text-xs px-6 py-3.5 border-2 border-white hover:brightness-110 active:translate-y-[2px] transition-all disabled:opacity-30 disabled:pointer-events-none shadow-[4px_4px_0_0_#fff] active:shadow-none font-bold uppercase tracking-wider relative overflow-hidden"
+              className="bg-primary text-white font-pixel text-xs px-6 py-3.5 border-2 border-white hover:brightness-110 active:translate-y-[2px] transition-all disabled:opacity-30 disabled:pointer-events-none shadow-[4px_4px_0_0_#fff] active:shadow-none font-bold uppercase tracking-wider relative overflow-hidden"
             >
               {calculatingExt ? 'SCANNING...' : 'SCAN NOW'}
             </button>
@@ -608,7 +808,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
                 return (
                   <div
                     key={badge.id}
-                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-500 ${isOwned ? `border-white bg-gradient-to-br ${badge.color} shadow-[0_0_10px_rgba(255,255,255,0.2)]` : 'border-white/10 bg-black grayscale opacity-40'}`}
+                    className={`relative aspect-square border-2 flex flex-col items-center justify-center gap-1 transition-all duration-500 ${isOwned ? `border-primary bg-gradient-to-br ${badge.color} shadow-[0_0_15px_rgba(0,180,255,0.7)] scale-105 z-10 animate-pulse` : 'border-white/10 bg-black grayscale opacity-40'}`}
                   >
                     {/* Badge Shine */}
                     {isOwned && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
@@ -624,7 +824,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
             <p className="text-[8px] text-center text-gray-600 font-mono uppercase tracking-widest leading-relaxed">
               Tokens & Collections detected via Base Network indexing.<br />
-              Hold 10,000+ units or specific NFTs to unlock.
+              Hold tokens or specific NFTs to unlock.
             </p>
           </div>
         </div>
@@ -632,51 +832,63 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
       {/* EXTERNAL SCAN MODAL */}
       {extModalOpen && extStats && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-2xl">
-            <RetroWindow title={`SCANNED: ${extAddress}`} icon={<span className="text-xl text-primary">🔍</span>}>
-              <div className="flex flex-col gap-6">
+            <RetroWindow title={`SCANNED: ${extAddress.slice(0, 10)}...${extAddress.slice(-8)}`} icon={<span className="text-xl text-primary animate-grow-shrink">🔍</span>}>
+              <div className="flex flex-col gap-6 p-2 min-h-[500px] justify-between">
+                <div className="space-y-4">
+                  <div className="bg-white/5 border border-white/10 p-3 text-center shadow-inner">
+                    <p className="text-[10px] text-gray-400 font-mono tracking-widest">EXTERNAL ONCHAIN ACTIVITY</p>
+                    <p className="text-xs text-primary font-mono mt-1 font-bold">{extAddress}</p>
+                  </div>
 
-                <div className="bg-white/5 border border-white/10 p-3 text-center">
-                  <p className="text-xs text-gray-400">EXTERNAL ONCHAIN ACTIVITY</p>
-                  <p className="text-xs text-primary mt-1">ADDRESS: {extAddress.slice(0, 6)}...{extAddress.slice(-4)}</p>
+                  <div className="flex flex-col gap-4">
+                    {/* Row 1: 2 Columns */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <RetroStatBox
+                        label="BIGGEST TX"
+                        value={`$${formatNumber(extStats.biggest_single_tx, 0)}`}
+                      />
+                      <RetroStatBox
+                        label="GAS PAID"
+                        value={`${formatNumber(formatEth(BigInt(extStats.total_fees_paid_wei || 0)), 4)}`}
+                        subValue="ETH"
+                      />
+                    </div>
+
+                    {/* Row 2: 3 Columns */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <RetroStatBox
+                        label="TX COUNT"
+                        value={formatNumber(extStats.total_tx)}
+                      />
+                      <RetroStatBox
+                        label="VOLUME"
+                        value={`$${formatNumber(extStats.total_volume_usd, 0)}`}
+                      />
+                      <RetroStatBox
+                        label="AGE"
+                        value={`${Math.floor(extStats.wallet_age_days || 0)}`}
+                        subValue="DAYS"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  {/* Row 1: 2 Columns */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <RetroStatBox
-                      label="BIGGEST TX"
-                      value={`$${formatNumber(extStats.biggest_single_tx, 0)}`}
-                    />
-                    <RetroStatBox
-                      label="GAS PAID"
-                      value={`${formatNumber(formatEth(BigInt(extStats.total_fees_paid_wei || 0)), 4)}`}
-                      subValue="ETH"
-                    />
-                  </div>
-
-                  {/* Row 2: 3 Columns */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <RetroStatBox
-                      label="TX COUNT"
-                      value={formatNumber(extStats.total_tx)}
-                    />
-                    <RetroStatBox
-                      label="VOLUME"
-                      value={`$${formatNumber(extStats.total_volume_usd, 0)}`}
-                    />
-                    <RetroStatBox
-                      label="AGE"
-                      value={`${Math.floor(extStats.wallet_age_days || 0)}`}
-                      subValue="DAYS"
-                    />
-                  </div>
+                {/* COOL TRANSMISSION SECURED BOX */}
+                <div className="border border-dashed border-primary/40 bg-primary/5 p-4 text-center mt-2 relative overflow-hidden group shadow-[inset_0_0_10px_rgba(0,0,255,0.1)]">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse pointer-events-none" />
+                  <p className="text-[10px] font-pixel text-primary uppercase tracking-[0.25em] animate-pulse leading-none font-bold">
+                    ⚡ TRANSMISSION SECURED BY ECHO PROTOCOL ⚡
+                  </p>
+                  <p className="text-[9px] font-mono text-gray-500 mt-2 uppercase leading-relaxed tracking-wider">
+                    This deep-scan report is powered by Echo OS Indexer v1.0. All statistics are cryptographically synchronized with the Base network.
+                  </p>
                 </div>
 
                 <button
                   onClick={() => setExtModalOpen(false)}
-                  className="w-full bg-primary text-white font-pixel text-sm py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all"
+                  className="w-full bg-primary text-white font-pixel text-sm py-4 border-2 border-white hover:brightness-110 active:translate-y-1 transition-all uppercase tracking-wider font-bold shadow-[4px_4px_0_0_#fff] active:shadow-none"
                 >
                   CLOSE WINDOW
                 </button>
@@ -720,6 +932,85 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
           </div>
         </div>
       )}
+
+      {/* Hidden card capture node for direct re-mints */}
+      <div className="fixed -left-[2000px] top-0 pointer-events-none" aria-hidden="true">
+        <div id="nft-card-capture" className="space-y-6 bg-black p-4 mx-auto" style={{ width: '380px' }}>
+          <div className="window">
+            <div className="window-header">
+              <div className="flex items-center gap-2"><span>ECHO_OS_V1.0</span></div>
+            </div>
+            <div className="window-content bg-black flex items-center gap-4 p-3 border-2 border-t-0 border-white">
+              {pfp ? (
+                <img src={pfp} crossOrigin="anonymous" className="w-12 h-12 border-2 border-white grayscale contrast-125" />
+              ) : (
+                <div className="w-12 h-12 border-2 border-white bg-primary"></div>
+              )}
+              <div>
+                <p className="text-white text-base font-bold uppercase tracking-widest leading-none font-pixel">{baseName}</p>
+                <p className="text-primary text-xs font-mono mt-1">FID: {fid || "---"}</p>
+              </div>
+            </div>
+          </div>
+
+          <RetroWindow title="BASE_ACTIVITY">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <RetroStatBox label="BIGGEST TX" value={`$${formatNumber(biggestTx, 0)}`} />
+                <RetroStatBox label="GAS PAID" value={`${formatNumber(gasPaid, 4)}`} subValue="ETH" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <RetroStatBox label="TX COUNT" value={formatNumber(totalTx)} />
+                <RetroStatBox label="VOLUME" value={`$${formatNumber(baseVolume, 0)}`} />
+                <RetroStatBox label="AGE" value={`${formatNumber(walletAge, 0)}`} subValue="DAYS" />
+              </div>
+            </div>
+          </RetroWindow>
+
+          <RetroWindow title="FARCASTER_METRICS">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <RetroStatBox label="SCORE" value={formatNumber(farcasterScore, 2)} />
+                <RetroStatBox label="TOTAL CASTS" value={formatNumber(castCount)} />
+              </div>
+              <div className="border border-dashed border-white/30 p-4 relative bg-black">
+                <span className="absolute -top-3 left-3 bg-black px-2 text-[10px] text-primary font-bold border border-white/30 uppercase">TOP_CAST.LOG</span>
+                {baseStats?.farcaster?.best_cast ? (
+                  <div className="text-left">
+                    <p className="text-xs text-gray-300 italic line-clamp-3 leading-relaxed">"{baseStats.farcaster.best_cast.text}"</p>
+                    <div className="flex gap-4 mt-3 text-[8px] text-gray-500 font-mono border-t border-white/10 pt-2">
+                      <span>♥ LIKES: {baseStats.farcaster.best_cast.likes}</span>
+                      <span>↻ RECASTS: {baseStats.farcaster.best_cast.recasts}</span>
+                    </div>
+                  </div>
+                ) : <p className="text-[10px] text-gray-600 text-center py-2">NO_DATA</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="border border-dashed border-white/50 p-2 bg-white/5">
+                  <p className="text-[8px] text-gray-500 mb-1 uppercase">TOKENS</p>
+                  <div className="flex flex-wrap gap-1">
+                    {['clanker', 'toshi', 'degen', 'brett'].map(t => (
+                      <span key={t} className={`text-[6px] border px-0.5 ${(baseStats?.farcaster?.holdings as any)?.[t] ? 'border-primary text-primary bg-primary/20 font-bold shadow-[0_0_8px_rgba(0,180,255,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="border border-dashed border-white/50 p-2 bg-white/5">
+                  <p className="text-[8px] text-gray-500 mb-1 uppercase">NFTS</p>
+                  <div className="flex flex-wrap gap-1">
+                    {['warplets', 'pro_og', 'punk', 'bankr'].map(t => {
+                      const holdings = baseStats?.farcaster?.holdings || {};
+                      const hasNft = (holdings as any)[t + '_club'] || (holdings as any)[t];
+                      return (
+                        <span key={t} className={`text-[6px] border px-0.5 ${hasNft ? 'border-yellow-500 text-yellow-500 bg-yellow-500/20 font-bold shadow-[0_0_8px_rgba(234,179,8,0.8)] animate-pulse' : 'border-dashed border-gray-800 text-gray-800'}`}>{t.toUpperCase()}</span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </RetroWindow>
+        </div>
+      </div>
 
     </div>
   );

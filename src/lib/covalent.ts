@@ -198,18 +198,7 @@ export async function getFarcasterHoldings(addresses: string[]) {
                         // Only sum value for specific Farcaster assets
                         wallet_value_usd += item.quote || 0;
 
-                        const isToken = ["clanker", "jesse", "degen", "brett", "toshi"].includes(key);
-                        let hasEnough = false;
-
-                        if (isToken) {
-                            const decimals = item.contract_decimals || 18;
-                            const required = BigInt(10000) * (10n ** BigInt(decimals));
-                            if (BigInt(item.balance || 0) >= required) hasEnough = true;
-                        } else {
-                            if (BigInt(item.balance || 0) > 0n) hasEnough = true;
-                        }
-
-                        if (hasEnough) {
+                        if (BigInt(item.balance || 0) > 0n) {
                             holdings[key as keyof typeof holdings] = true;
                         }
                     }
