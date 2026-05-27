@@ -124,6 +124,7 @@ export async function GET(request: Request) {
         // Map and evaluate dynamic statuses
         const evaluatedTasks = activeTasks.map(t => {
             let isCompleted = profile.dailyActions?.completedTasks?.includes(t._id.toString()) || false;
+            let nextClaimAvailableAt: number | null = null;
             
             // Handle recurring tasks completion reset check
             if (isCompleted && t.timeSpan?.type === 'recurring' && t.timeSpan?.recurringInterval) {
@@ -135,6 +136,7 @@ export async function GET(request: Request) {
                     const hoursPassed = (now.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60);
                     if (hoursPassed < t.timeSpan.recurringInterval) {
                         isCompleted = true; // still in cooldown
+                        nextClaimAvailableAt = lastCompletedDate.getTime() + t.timeSpan.recurringInterval * 60 * 60 * 1000;
                     } else {
                         isCompleted = false; // can claim again!
                     }
@@ -151,6 +153,9 @@ export async function GET(request: Request) {
             // Append dynamic custom fields
             taskObj.isCompleted = isCompleted;
             taskObj.isEligible = isEligible;
+            if (nextClaimAvailableAt) {
+                taskObj.nextClaimAvailableAt = nextClaimAvailableAt;
+            }
             taskObj.relativePriority = totalActiveWeight > 0 
                 ? parseFloat((( (t.weight || 0) / totalActiveWeight ) * 100).toFixed(2)) 
                 : 0;

@@ -51,6 +51,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
   const [activityPoints, setActivityPoints] = useState(0);
   const [referrerUsername, setReferrerUsername] = useState<string>("");
   const [refreshingReferrals, setRefreshingReferrals] = useState(false);
+  const [claimingReferral, setClaimingReferral] = useState(false);
 
   const { toast } = useToast();
 
@@ -86,6 +87,32 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
       toast("REFRESH ERROR", "ERROR");
     } finally {
       setRefreshingReferrals(false);
+    }
+  };
+
+  const handleClaimReferral = async () => {
+    if (!user?.fid) return;
+    setClaimingReferral(true);
+    toast("CLAIMING REFERRAL XP...", "PROCESS");
+    try {
+      const res = await fetch('/api/echo/referral/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fid: user.fid })
+      });
+      const data = await res.json();
+      if (data.success && data.profile) {
+        setProfile(data.profile);
+        setActivityPoints(data.profile.points);
+        toast(`SUCCESSFULLY CLAIMED +${data.claimed} PTS`, "SUCCESS");
+        window.dispatchEvent(new CustomEvent("points-updated"));
+      } else {
+        toast(data.error || "CLAIM FAILED", "ERROR");
+      }
+    } catch {
+      toast("CLAIM ERROR", "ERROR");
+    } finally {
+      setClaimingReferral(false);
     }
   };
   // Fetch Base Stats for Base Score
@@ -212,180 +239,234 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
             </div>
           </div>
         </div>
-      </RetroWindow>
-
-      {/* REFERRAL PROGRAM */}
+      </RetroWindow>      {/* REFERRAL PROGRAM */}
       <RetroWindow title="REFERRAL_SYSTEM_V2" icon="users">
-        <div className="p-2 space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <p className="font-pixel text-lg text-white leading-none">ECHO_RECRUITMENT</p>
-                <button
-                  onClick={handleRefreshReferrals}
-                  disabled={refreshingReferrals}
-                  className="px-2 py-0.5 border border-primary text-[9px] font-pixel text-primary bg-black hover:bg-primary hover:text-black transition-colors disabled:opacity-50"
-                >
-                  {refreshingReferrals ? "SYNCING..." : "REFRESH ↻"}
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-400 leading-tight">
-                Invite friends and earn a cut of their grind points. Every 5 active recruits gives you a <span className="text-primary font-bold">+2% BONUS</span>.
-              </p>
-            </div>
-            <div className="bg-primary/10 border border-primary px-2 py-1 flex flex-col items-center shadow-[2px_2px_0_0_theme('colors.primary')]">
-              <span className="text-[8px] text-primary font-bold uppercase">CURRENT_RATE</span>
-              <span className="text-xl font-pixel text-white">{5 + (Math.floor((profile?.referralStats?.count || 0) / 5) * 2)}%</span>
-            </div>
-          </div>
+        <div className="p-3 space-y-5">
+          {(() => {
+            const count = profile?.referralStats?.count || 0;
+            let currentRate = 2;
+            if (count >= 25) {
+              currentRate = 10;
+            } else if (count >= 15) {
+              currentRate = 7.5;
+            } else if (count >= 5) {
+              currentRate = 5;
+            }
 
-          {/* Tier Tracker */}
-          <div className="bg-white/5 border border-white/10 p-2">
-            <div className="flex justify-between text-[8px] text-gray-500 uppercase mb-1">
-              <span>Next Reward Tier</span>
-              <span>{(profile?.referralStats?.count || 0) % 5} / 5</span>
-            </div>
-            <div className="h-2 w-full bg-black border border-white/20 flex gap-1 p-[1px]">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className={`flex-1 ${i < ((profile?.referralStats?.count || 0) % 5) ? 'bg-primary' : 'bg-white/5'}`} />
-              ))}
-            </div>
-            <p className="text-[7px] text-gray-500 text-right mt-1 uppercase italic">* Friends must perform 1 txn to activate</p>
-          </div>
+            let nextTierGoal = 5;
+            let currentTierStart = 0;
+            let nextTierRate = "5%";
+            let isMaxTier = false;
 
-          {/* Referral Stats (Invites & Earnings) */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-900 border border-gray-700 p-2 text-center">
-              <p className="text-[9px] text-gray-500 uppercase">ACTIVE_REFS</p>
-              <p className="font-pixel text-xl text-white">
-                {profile?.referralStats?.count || 0}
-              </p>
-            </div>
-            <div className="bg-gray-900 border border-gray-700 p-2 text-center">
-              <p className="text-[9px] text-gray-500 uppercase">COMMISSION_PTS</p>
-              <p className="font-pixel text-xl text-white">
-                {profile?.referralStats?.earnings || 0} <span className="text-sm text-primary">PT</span>
-              </p>
-            </div>
-          </div>
+            if (count >= 25) {
+              isMaxTier = true;
+            } else if (count >= 15) {
+              nextTierGoal = 25;
+              currentTierStart = 15;
+              nextTierRate = "10%";
+            } else if (count >= 5) {
+              nextTierGoal = 15;
+              currentTierStart = 5;
+              nextTierRate = "7.5%";
+            } else {
+              nextTierGoal = 5;
+              currentTierStart = 0;
+              nextTierRate = "5%";
+            }
 
-          {/* Invite Code & Link Buttons */}
-          <div className="space-y-4 mt-4">
-            <div className="flex flex-col gap-2 border-2 border-primary bg-primary/5 p-4 shadow-[4px_4px_0_0_theme('colors.primary')] relative overflow-hidden">
-              {/* Scanline decoration */}
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
-              
-              <div className="relative z-10 text-center mb-2">
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">YOUR_INVITE_CODE</p>
-                <p className="text-3xl text-primary font-pixel mt-1 tracking-wider text-shadow-glow">
-                  {profile?.referralCode?.replace("ECHO_", "") || "---"}
-                </p>
-              </div>
+            const progressNumerator = count - currentTierStart;
+            const progressDenominator = nextTierGoal - currentTierStart;
+            const progressPercentage = isMaxTier ? 100 : Math.min(100, (progressNumerator / progressDenominator) * 100);
 
-              <div className="relative z-10 grid grid-cols-2 gap-2 mt-2">
-                <button
-                  onClick={() => {
-                    if (!profile?.referralCode) return;
-                    navigator.clipboard.writeText(profile.referralCode.replace("ECHO_", ""));
-                    toast("CODE COPIED", "SUCCESS");
-                  }}
-                  className="w-full py-3 bg-white text-black text-xs font-bold font-pixel hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  COPY
-                </button>
+            return (
+              <>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <p className="font-pixel text-xl text-white leading-none">ECHO_RECRUITMENT</p>
+                      <button
+                        onClick={handleRefreshReferrals}
+                        disabled={refreshingReferrals}
+                        className="px-2 py-0.5 border border-primary text-[10px] font-pixel text-primary bg-black hover:bg-primary hover:text-black transition-colors disabled:opacity-50"
+                      >
+                        {refreshingReferrals ? "SYNCING..." : "REFRESH ↻"}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-300 leading-relaxed">
+                      Invite friends and earn a cut of their grind points. Every recruit increases your potential, scaling up as you build your squad.
+                    </p>
+                  </div>
+                  <div className="bg-primary/10 border-2 border-primary px-3 py-2 flex flex-col items-center shadow-[4px_4px_0_0_theme('colors.primary')] shrink-0">
+                    <span className="text-[9px] text-primary font-bold uppercase tracking-wider">CURRENT_RATE</span>
+                    <span className="text-2xl font-pixel text-white mt-1">{currentRate}%</span>
+                  </div>
+                </div>
 
-                <button
-                  onClick={async () => {
-                    if (!profile?.referralCode) return;
-                    const cleanRefCode = profile.referralCode.replace("ECHO_", "");
-                    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
-                    const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${cleanRefCode}`;
-                    const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
-                    try {
-                      const sdk = (await import("@farcaster/frame-sdk")).default;
-                      await sdk.actions.composeCast({
-                        text,
-                        embeds: [embedUrl]
-                      });
-                    } catch (e) {
-                      const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-                      window.open(composeUrl, '_blank');
-                    }
-                  }}
-                  className="w-full py-3 bg-primary text-black font-pixel text-xs hover:brightness-110 flex items-center justify-center gap-2"
-                >
-                  CAST INVITE
-                </button>
-              </div>
-            </div>
-          </div>
+                {/* Tier Tracker */}
+                <div className="bg-white/5 border border-white/10 p-3 rounded-none">
+                  <div className="flex justify-between text-xs text-gray-300 font-bold uppercase mb-1.5">
+                    <span>{isMaxTier ? "MAX TIER ACTIVE" : `Next Reward Tier: ${nextTierRate} Bonus`}</span>
+                    <span>{isMaxTier ? "MAXED" : `${count} / ${nextTierGoal} refs`}</span>
+                  </div>
+                  <div className="h-3 w-full bg-black border border-white/20 p-[2px]">
+                    <div 
+                      className="h-full bg-primary shadow-[0_0_8px_theme('colors.primary')] transition-all duration-500" 
+                      style={{ width: `${progressPercentage}%` }} 
+                    />
+                  </div>
+                  <p className="text-[9px] text-gray-500 text-right mt-1.5 uppercase italic">* recruits must perform 1 txn to activate</p>
+                </div>
 
-          {/* Referral Input (For Existing Users) */}
-          <div className="mt-4 pt-4 border-t border-dashed border-gray-600">
-            <p className="text-[9px] text-gray-500 uppercase mb-2">REDEEM_INVITE_CODE</p>
-            {profile?.referredBy ? (
-              <div className="bg-green-500/10 border border-green-500 text-green-500 text-center py-2 font-pixel text-xs">
-                INVITED BY: {referrerUsername ? `@${referrerUsername.toUpperCase()}` : `FID ${profile.referredBy}`}
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  id="wallet-ref-input"
-                  type="text"
-                  maxLength={6}
-                  placeholder="ENTER CODE"
-                  className="flex-1 bg-black border border-white/20 p-2 font-pixel text-xs text-center text-white uppercase outline-none focus:border-primary"
-                />
-                <button
-                  onClick={async () => {
-                    const input = document.getElementById("wallet-ref-input") as HTMLInputElement;
-                    const enteredCode = input?.value?.toUpperCase();
-                    if (!enteredCode || enteredCode.length < 6) return;
+                {/* Referral Stats (Invites & Earnings) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 border border-white/10 p-3 text-center">
+                    <p className="text-[11px] text-gray-400 font-bold uppercase mb-1">ACTIVE_REFS</p>
+                    <p className="font-pixel text-2xl text-white">
+                      {profile?.referralStats?.count || 0}
+                    </p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 p-3 text-center">
+                    <p className="text-[11px] text-gray-400 font-bold uppercase mb-1">TOTAL_EARNED</p>
+                    <p className="font-pixel text-2xl text-white">
+                      {profile?.referralStats?.earnings || 0} <span className="text-xs text-primary font-mono font-bold">PTS</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* CLAIMABLE REFERRAL COMMISSION BOX */}
+                <div className="border-2 border-primary bg-primary/5 p-4 shadow-[4px_4px_0_0_theme('colors.primary')] relative overflow-hidden flex flex-col items-center justify-center text-center">
+                  <div className="absolute inset-0 bg-primary/5 opacity-40 pointer-events-none z-0" />
+                  <p className="text-xs text-gray-300 font-bold uppercase tracking-widest mb-1.5 z-10">CLAIMABLE_REFERRAL_XP</p>
+                  <p className="font-pixel text-4xl text-primary tracking-wider text-shadow-glow mb-2 z-10">
+                    {profile?.referralStats?.claimable || 0} <span className="text-sm">XP</span>
+                  </p>
+                  <p className="text-[10px] text-gray-400 mb-3 z-10 max-w-[90%] leading-normal">
+                    Pending commissions are calculated and credited daily at midnight UTC via Vercel Cron based on active recruits' daily grind points.
+                  </p>
+                  <button
+                    disabled={claimingReferral || !(profile?.referralStats?.claimable > 0)}
+                    onClick={handleClaimReferral}
+                    className="w-full py-2.5 font-pixel text-xs border-2 uppercase border-primary bg-black text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-30 disabled:hover:bg-black disabled:hover:text-primary z-10"
+                  >
+                    {claimingReferral ? 'CLAIMING...' : 'CLAIM REFERRAL XP'}
+                  </button>
+                </div>
+
+                {/* Invite Code & Link Buttons */}
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2 border-2 border-primary bg-primary/5 p-4 shadow-[4px_4px_0_0_theme('colors.primary')] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none" />
                     
-                    // Prepend ECHO_ before sending request
-                    const fullCode = enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`;
-                    try {
-                      // Submit referral code to backend
-                      // Note: We need a backend route to handle this logic if it's not present.
-                      // For now, let's use the profile calculation endpoint with checkCode and then update the profile.
-                      const res = await fetch(`/api/echo/profile?fid=${context?.user?.fid}&referralCode=${fullCode}`);
-                      const data = await res.json();
-                      if (data && data.fid) {
-                         toast("REFERRAL APPLIED!", "SUCCESS");
-                         setProfile(data); // reload profile to show ALREADY INVITED
-                      } else {
-                         toast("INVALID CODE", "ERROR");
-                      }
-                    } catch {
-                      toast("ERROR", "ERROR");
-                    }
-                  }}
-                  className="px-4 bg-white text-black font-pixel text-[10px] hover:bg-gray-200"
-                >
-                  APPLY
-                </button>
-              </div>
-            )}
-          </div>
+                    <div className="relative z-10 text-center mb-2">
+                      <p className="text-xs text-gray-300 uppercase tracking-widest font-bold">YOUR_INVITE_CODE</p>
+                      <p className="text-3xl text-primary font-pixel mt-1 tracking-wider text-shadow-glow">
+                        {profile?.referralCode?.replace("ECHO_", "") || "---"}
+                      </p>
+                    </div>
 
-          {/* Invitee List (NEW) */}
-          {profile?.invitees && profile.invitees.length > 0 && (
-            <div className="mt-6">
-              <p className="text-[8px] text-gray-500 uppercase mb-2 border-b border-white/10 pb-1">RECENT_RECRUITS</p>
-              <div className="space-y-1">
-                {profile.invitees.map((inv: any) => (
-                  <div key={inv.fid} className="flex justify-between items-center bg-white/5 py-1 px-2 border-l-2 border-primary">
-                    <span className="text-xs font-mono text-white">@{inv.username || `UID_${inv.fid}`}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] text-gray-500 uppercase">REFS:</span>
-                      <span className="text-xs font-pixel text-primary">{inv.referralStats?.count || 0}</span>
+                    <div className="relative z-10 grid grid-cols-2 gap-3 mt-1">
+                      <button
+                        onClick={() => {
+                          if (!profile?.referralCode) return;
+                          navigator.clipboard.writeText(profile.referralCode.replace("ECHO_", ""));
+                          toast("CODE COPIED", "SUCCESS");
+                        }}
+                        className="w-full py-3 bg-white text-black text-xs font-bold font-pixel hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 border-2 border-white"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        COPY
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          if (!profile?.referralCode) return;
+                          const cleanRefCode = profile.referralCode.replace("ECHO_", "");
+                          const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
+                          const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${cleanRefCode}`;
+                          const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
+                          try {
+                            const sdk = (await import("@farcaster/frame-sdk")).default;
+                            await sdk.actions.composeCast({
+                              text,
+                              embeds: [embedUrl]
+                            });
+                          } catch (e) {
+                            const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                            window.open(composeUrl, '_blank');
+                          }
+                        }}
+                        className="w-full py-3 bg-primary text-black font-pixel text-xs hover:brightness-110 flex items-center justify-center gap-2 border-2 border-primary"
+                      >
+                        CAST INVITE
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+
+                {/* Referral Input (For Existing Users) */}
+                <div className="pt-4 border-t border-dashed border-gray-600">
+                  <p className="text-[11px] text-gray-400 font-bold uppercase mb-2 block">REDEEM_INVITE_CODE</p>
+                  {profile?.referredBy ? (
+                    <div className="bg-green-500/10 border border-green-500 text-green-500 text-center py-2.5 font-pixel text-xs">
+                      INVITED BY: {referrerUsername ? `@${referrerUsername.toUpperCase()}` : `FID ${profile.referredBy}`}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        id="wallet-ref-input"
+                        type="text"
+                        maxLength={6}
+                        placeholder="ENTER CODE"
+                        className="flex-1 bg-black border border-white/20 p-2 font-pixel text-xs text-center text-white uppercase outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={async () => {
+                          const input = document.getElementById("wallet-ref-input") as HTMLInputElement;
+                          const enteredCode = input?.value?.toUpperCase();
+                          if (!enteredCode || enteredCode.length < 6) return;
+                          
+                          const fullCode = enteredCode.startsWith("ECHO_") ? enteredCode : `ECHO_${enteredCode}`;
+                          try {
+                            const res = await fetch(`/api/echo/profile?fid=${context?.user?.fid}&referralCode=${fullCode}`);
+                            const data = await res.json();
+                            if (data && data.fid) {
+                               toast("REFERRAL APPLIED!", "SUCCESS");
+                               setProfile(data);
+                            } else {
+                               toast("INVALID CODE", "ERROR");
+                            }
+                          } catch {
+                            toast("ERROR", "ERROR");
+                          }
+                        }}
+                        className="px-4 bg-white text-black font-pixel text-xs hover:bg-gray-200"
+                      >
+                        APPLY
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Invitee List (NEW) */}
+                {profile?.invitees && profile.invitees.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 border-b border-white/10 pb-1">RECENT_RECRUITS</p>
+                    <div className="space-y-1.5">
+                      {profile.invitees.map((inv: any) => (
+                        <div key={inv.fid} className="flex justify-between items-center bg-white/5 py-1.5 px-2.5 border-l-2 border-primary">
+                          <span className="text-xs font-mono text-white">@{inv.username || `UID_${inv.fid}`}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase">REFS:</span>
+                            <span className="text-xs font-pixel text-primary">{inv.referralStats?.count || 0}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </RetroWindow>
 

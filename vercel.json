@@ -7,5 +7,11 @@
       "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019e1d5f-b92e-81c7-269f-404ca5eac701",
       "permanent": false
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/echo/referral/cron",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

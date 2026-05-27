@@ -147,7 +147,9 @@ export async function POST(request: Request) {
             }
 
             points = dynamicTask.points || 0;
-            profile.dailyActions.completedTasks.push(actionType);
+            if (!profile.dailyActions.completedTasks.includes(actionType)) {
+                profile.dailyActions.completedTasks.push(actionType);
+            }
             profile.dailyActions.pointsHistory.push({
                 action: dynamicTask.title.replace(/\s+/g, '_').toLowerCase(),
                 points: points,

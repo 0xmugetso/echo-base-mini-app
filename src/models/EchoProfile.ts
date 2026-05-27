@@ -22,6 +22,7 @@ export interface IEchoProfile {
     referralStats?: {
         count: number;
         earnings: number;
+        claimable: number;
     };
     pointsGrinded: number;
     nftTokenId?: number | null;
@@ -84,7 +85,8 @@ const EchoProfileSchema = new Schema<IEchoProfile>(
         referralStatus: { type: String, enum: ['pending', 'active'], default: 'pending' },
         referralStats: {
             count: { type: Number, default: 0 },
-            earnings: { type: Number, default: 0 }
+            earnings: { type: Number, default: 0 },
+            claimable: { type: Number, default: 0 }
         },
 
         // NFT Integration

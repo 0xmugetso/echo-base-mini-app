@@ -615,7 +615,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                       className={`p-3 relative flex flex-col justify-between transition-all select-none rounded-none ${cardStyle}`}
                     >
                       {/* BIG STYLISH POINTS BADGE inside top right */}
-                      <div className={`absolute top-3 right-3 border-2 px-2 py-1 flex flex-col items-center justify-center font-pixel ${
+                      <div className={`absolute top-3 right-3 border-2 px-2.5 py-1 flex flex-col items-center justify-center font-pixel ${
                         task.isCompleted 
                           ? 'border-gray-800 bg-gray-900' 
                           : !task.isEligible 
@@ -628,7 +628,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                           ? "border-primary/50 bg-primary/10 shadow-[2px_2px_0_0_theme('colors.primary')]"
                           : "border-white bg-white/10 shadow-[2px_2px_0_0_#fff]"
                       }`}>
-                        <span className={`text-[12px] font-bold ${
+                        <span className={`text-sm font-bold ${
                           task.isCompleted 
                             ? 'text-gray-600' 
                             : !task.isEligible 
@@ -641,7 +641,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                         }`}>
                           +{task.points}
                         </span>
-                        <span className={`text-[6px] uppercase font-mono tracking-tight ${
+                        <span className={`text-[8px] uppercase font-mono tracking-tight ${
                           task.isCompleted 
                             ? 'text-gray-700' 
                             : !task.isEligible 
@@ -669,30 +669,30 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
 
                           {/* Recurring Quest Badge */}
                           {isRecurring && !task.isCompleted && task.isEligible && (
-                            <span className="bg-primary text-black text-[7.5px] font-pixel px-1.5 py-0.5 uppercase tracking-tighter animate-pulse mr-0.5">
+                            <span className="bg-primary text-black text-[9px] font-pixel px-1.5 py-0.5 uppercase tracking-tighter animate-pulse mr-0.5">
                               🔄 REPEAT
                             </span>
                           )}
 
                           {/* Pulsing Time-Sensitive Alert Badge */}
                           {isTimeLimited && !task.isCompleted && task.isEligible && (
-                            <span className="bg-yellow-500 text-black text-[7px] font-bold px-1 py-0.5 uppercase tracking-tighter animate-pulse">
+                            <span className="bg-yellow-500 text-black text-[8px] font-bold px-1 py-0.5 uppercase tracking-tighter animate-pulse">
                               LIMITED
                             </span>
                           )}
 
-                          <h3 className={`font-pixel text-xs ${task.isCompleted ? 'text-gray-600 line-through' : 'text-white'}`}>
+                          <h3 className={`font-pixel text-[13px] sm:text-sm font-bold tracking-wide ${task.isCompleted ? 'text-gray-600 line-through' : 'text-white'}`}>
                             {task.title}
                           </h3>
                         </div>
 
                         {/* Description block with balanced width to prevent overlaps */}
-                        <p className="font-mono text-[9px] text-gray-400 mt-1 lowercase max-w-[75%] leading-relaxed">
+                        <p className="font-mono text-[11px] text-gray-300 mt-1.5 max-w-[75%] leading-relaxed">
                           {task.description}
                         </p>
 
                         {/* Timeline info block */}
-                        <p className={`font-mono text-[8px] uppercase mt-1.5 ${
+                        <p className={`font-mono text-[10px] uppercase mt-2 ${
                           task.isCompleted 
                             ? 'text-gray-700' 
                             : !task.isEligible 
@@ -713,7 +713,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
 
                       {/* LOCKED DETAILS DISPLAY */}
                       {!task.isEligible && task.conditions && task.conditions.length > 0 && (
-                        <div className="border border-red-900/30 bg-red-950/20 p-2 mb-2 text-[8px] text-red-400 font-mono uppercase">
+                        <div className="border border-red-900/30 bg-red-950/20 p-2 mb-2 text-[10px] text-red-400 font-mono uppercase">
                           <p className="font-bold mb-1">Locked! Requirement unsatisfied:</p>
                           <div className="flex flex-wrap gap-1 items-center">
                             {task.conditions.map((c: any, index: number) => (
@@ -732,7 +732,15 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
 
                       {/* ACTION TYPE RENDERING */}
                       {task.isCompleted ? (
-                        <div className="text-[9px] text-gray-600 font-pixel text-center py-1 uppercase">COMPLETED</div>
+                        <div className="space-y-2 w-full mt-2">
+                          <div className="text-[10px] text-gray-500 font-pixel text-center py-1 uppercase">MISSION_COMPLETED</div>
+                          {task.nextClaimAvailableAt && (
+                            <div className="flex flex-col items-center justify-center p-2.5 border border-primary/20 bg-primary/5">
+                              <span className="text-[9px] font-pixel text-primary mb-1 uppercase tracking-wider animate-pulse">REDEPLOYMENT_COOLDOWN</span>
+                              <RetroTimer targetDate={new Date(task.nextClaimAvailableAt)} />
+                            </div>
+                          )}
+                        </div>
                       ) : !task.isEligible ? (
                         <div className="text-[9px] text-red-900 font-pixel text-center py-1 uppercase">UNSATISFIED CONDITIONS</div>
                       ) : (

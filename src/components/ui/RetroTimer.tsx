@@ -41,7 +41,7 @@ export function RetroTimer({ targetDate }: RetroTimerProps) {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [targetDate]);
 
     return (
         <div className="flex items-center gap-1 font-mono text-sm text-gray-400 bg-gray-900/50 px-2 py-1 rounded border border-gray-800 w-full justify-center">

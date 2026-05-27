@@ -35,8 +35,19 @@ export async function GET(request: Request) {
             const referrer = await EchoProfile.findOne({ fid });
             if (!referrer) continue;
 
-            // Tiered Rate: 5% + 2% per 5 active referrals
-            const rate = 5 + (Math.floor(stats.activeCount / 5) * 2);
+            // Tiered Referral Rates:
+            // 0–4 invites: 2%
+            // 5–14 invites: 5%
+            // 15–24 invites: 7.5%
+            // 25+ invites: 10%
+            let rate = 2;
+            if (stats.activeCount >= 25) {
+                rate = 10;
+            } else if (stats.activeCount >= 15) {
+                rate = 7.5;
+            } else if (stats.activeCount >= 5) {
+                rate = 5;
+            }
             const rateDecimal = rate / 100;
 
             const totalCut = Math.floor(stats.totalGrinded * rateDecimal);
@@ -44,15 +55,34 @@ export async function GET(request: Request) {
             const newEarnings = totalCut - alreadyPaid;
 
             if (newEarnings > 0 || referrer.referralStats?.count !== stats.activeCount) {
-                // Update
+                // Initialize sub-doc if missing
+                if (!referrer.referralStats) {
+                    referrer.referralStats = { count: 0, earnings: 0, claimable: 0 };
+                }
+
                 if (newEarnings > 0) {
-                    referrer.points += newEarnings;
+                    referrer.referralStats.claimable = (referrer.referralStats.claimable || 0) + newEarnings;
                     referrer.referralStats.earnings = totalCut;
                     totalDistributed += newEarnings;
+
+                    // Initialize pointsHistory if missing
+                    if (!referrer.dailyActions) {
+                        referrer.dailyActions = { lastCastDate: null, completedTasks: [], pointsHistory: [] };
+                    }
+                    if (!referrer.dailyActions.pointsHistory) {
+                        referrer.dailyActions.pointsHistory = [];
+                    }
+
+                    // Push a detailed cron cut history entry
+                    referrer.dailyActions.pointsHistory.push({
+                        action: 'referral_cut',
+                        points: newEarnings,
+                        date: new Date(),
+                        description: `Daily ${rate}% commission from your active recruits' grind points`
+                      });
                 }
 
                 // Update active count
-                if (!referrer.referralStats) referrer.referralStats = { count: 0, earnings: 0 };
                 referrer.referralStats.count = stats.activeCount;
 
                 await referrer.save();
