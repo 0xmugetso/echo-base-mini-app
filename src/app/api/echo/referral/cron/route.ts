@@ -3,6 +3,14 @@ import dbConnect from '../../../../../lib/db';
 import EchoProfile from '../../../../../models/EchoProfile';
 
 export async function GET(request: Request) {
+    // 1. Secure check for Vercel Cron in production
+    if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET) {
+        const authHeader = request.headers.get('authorization');
+        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+            return new Response('Unauthorized', { status: 401 });
+        }
+    }
+
     try {
         await dbConnect();
 
