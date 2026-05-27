@@ -487,8 +487,8 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                         <div className="uppercase font-bold text-white leading-tight">{item.action.replace(/_/g, ' ')}</div>
                         <div className="text-[8px] text-gray-500 italic lowercase truncate max-w-[120px]">{item.description}</div>
                       </td>
-                      <td className={`py-2 text-right pr-2 font-pixel text-[#00ff00]`}>
-                        +{item.points}
+                      <td className={`py-2 text-right pr-2 font-pixel ${item.points < 0 || item.action === 'admin_deduction' ? 'text-red-500' : 'text-[#00ff00]'}`}>
+                        {item.points >= 0 && item.action !== 'admin_deduction' ? '+' : ''}{item.points}
                       </td>
                     </tr>
                   ));

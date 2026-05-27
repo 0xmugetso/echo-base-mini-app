@@ -29,12 +29,11 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
         const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
         const data = await res.json();
         if (data && !data.error) {
-          // Unified Formula: Grind Points + Onchain Score + Neynar Score
+          // Unified Formula: Grind Points + Onchain Score
           const grindPoints = Number(data.points) || 0;
           const onchainRep = Number(data.onchainScore) || 0;
-          const neynarScore = Number(neynarUser?.score) || 0;
 
-          setEchoPoints(grindPoints + onchainRep + neynarScore);
+          setEchoPoints(grindPoints + onchainRep);
         }
       } catch (e) {
         console.error("Points fetch failed", e);

@@ -154,9 +154,26 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
   }, [user?.fid, isActive]);
 
   // Use unified Base Score from hook
-  const neynarScore = Number(user?.score) || 0;
   const onchainRep = Number(profile?.onchainScore) || 0;
-  const totalScore = activityPoints + onchainRep + neynarScore;
+
+  // Calculate referral-related points (SOCIAL)
+  const socialPoints = useMemo(() => {
+    if (!profile?.dailyActions?.pointsHistory) return 0;
+    return profile.dailyActions.pointsHistory
+      .filter((p: any) => 
+        p.action === 'referral_joining_bonus' || 
+        p.action === 'referral_bonus' || 
+        p.action === 'referral_claim'
+      )
+      .reduce((sum: number, p: any) => sum + (p.points || 0), 0);
+  }, [profile]);
+
+  // Actions points = total points - social points
+  const actionPoints = useMemo(() => {
+    return Math.max(0, activityPoints - socialPoints);
+  }, [activityPoints, socialPoints]);
+
+  const totalScore = activityPoints + onchainRep;
 
   const handleSyncPoints = async () => {
     if (!user?.fid) return;
@@ -512,7 +529,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                 ACTIONS
               </p>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-pixel text-white">+{formatNumber(activityPoints)}</p>
+                <p className="text-2xl font-pixel text-white">+{formatNumber(actionPoints)}</p>
                 <div className="text-[8px] font-mono text-[#00ff00] animate-pulse">● LIVE</div>
               </div>
             </div>
@@ -528,7 +545,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                 <span className="w-1 h-1 bg-gray-500 group-hover/stat:bg-white transition-colors" />
                 SOCIAL
               </p>
-              <p className="text-2xl font-pixel text-white">+{formatNumber(neynarScore)}</p>
+              <p className="text-2xl font-pixel text-white">+{formatNumber(socialPoints)}</p>
             </div>
           </div>
 

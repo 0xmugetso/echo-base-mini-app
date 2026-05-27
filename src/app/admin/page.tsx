@@ -354,7 +354,64 @@ export default function AdminPage() {
     const [loginError, setLoginError] = useState('');
 
     // Tab switcher state
-    const [adminTab, setAdminTab] = useState<'tasks' | 'users'>('tasks');
+    const [adminTab, setAdminTab] = useState<'tasks' | 'users' | 'points'>('tasks');
+
+    // Points console states
+    const [selectedUser, setSelectedUser] = useState<any | null>(null);
+    const [pointsSearchQuery, setPointsSearchQuery] = useState('');
+    const [pointsAmount, setPointsAmount] = useState<string>('');
+    const [pointsReason, setPointsReason] = useState('');
+    const [pointsLoading, setPointsLoading] = useState(false);
+    const [pointsSuccess, setPointsSuccess] = useState('');
+    const [pointsError, setPointsError] = useState('');
+
+    const handlePointsAdjustment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUser) {
+            setPointsError('Select a user first');
+            return;
+        }
+        const amt = Number(pointsAmount);
+        if (isNaN(amt) || amt === 0) {
+            setPointsError('Please enter a valid non-zero point amount');
+            return;
+        }
+
+        setPointsLoading(true);
+        setPointsError('');
+        setPointsSuccess('');
+
+        try {
+            const res = await fetch('/api/admin/points', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fid: selectedUser.fid,
+                    amount: amt,
+                    reason: pointsReason
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setPointsSuccess(`Successfully updated! User points changed by ${amt}.`);
+                // Clear input values
+                setPointsAmount('');
+                setPointsReason('');
+                
+                // Re-fetch users so the lists update immediately
+                await fetchUsers();
+
+                // Update selectedUser's points inline to match the new database points
+                setSelectedUser((prev: any) => prev ? { ...prev, points: data.newPoints } : null);
+            } else {
+                setPointsError(data.error || 'Failed to update points');
+            }
+        } catch (err: any) {
+            setPointsError('Network error while modifying points');
+        } finally {
+            setPointsLoading(false);
+        }
+    };
 
     // Tasks states
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -807,6 +864,16 @@ export default function AdminPage() {
                     }`}
                 >
                     [ REGISTERED_USERS ]
+                </button>
+                <button
+                    onClick={() => setAdminTab('points')}
+                    className={`px-4 py-2 font-bold text-xs uppercase border-2 transition-all cursor-pointer ${
+                        adminTab === 'points'
+                            ? 'border-primary bg-primary text-black shadow-[2px_2px_0_0_#fff]'
+                            : 'border-white/20 text-gray-400 hover:border-white hover:text-white'
+                    }`}
+                >
+                    [ MANAGE_POINTS ]
                 </button>
             </div>
 
@@ -1517,6 +1584,244 @@ export default function AdminPage() {
                                 </tbody>
                             </table>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* --- 3. POINTS TAB VIEW --- */}
+            {adminTab === 'points' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fadeIn">
+                    {/* LEFT COLUMN: MANUAL POINT ADJUSTMENT */}
+                    <div className="lg:col-span-5 space-y-4">
+                        <div className="border-2 border-primary bg-black p-4 relative shadow-[4px_4px_0_0_theme('colors.primary')]">
+                            <div className="flex justify-between items-center border-b border-primary/30 pb-2 mb-4">
+                                <h2 className="text-sm font-bold uppercase tracking-wider text-primary">
+                                    MANUAL_XP_ADJUSTMENT
+                                </h2>
+                            </div>
+
+                            <form onSubmit={handlePointsAdjustment} className="space-y-4">
+                                {/* User Search Autocomplete */}
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Search User Profile</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={pointsSearchQuery}
+                                            onChange={e => {
+                                                setPointsSearchQuery(e.target.value);
+                                                setPointsError('');
+                                                setPointsSuccess('');
+                                            }}
+                                            placeholder="SEARCH BY FID, USERNAME, OR ADDR..."
+                                            className="block w-full border border-white/20 bg-black px-3 py-2 text-white placeholder-gray-800 focus:border-primary focus:outline-none rounded-none text-xs font-mono"
+                                        />
+                                        {/* Dropdown suggestions */}
+                                        {(() => {
+                                            const query = pointsSearchQuery.trim().toLowerCase();
+                                            const matching = query === '' ? [] : users.filter((u: any) =>
+                                                u.username?.toLowerCase().includes(query) ||
+                                                u.fid.toString().includes(query) ||
+                                                u.address?.toLowerCase().includes(query)
+                                            ).slice(0, 5);
+
+                                            if (matching.length > 0) {
+                                                return (
+                                                    <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a0a] border-2 border-primary z-50 p-1 divide-y divide-white/10 max-h-48 overflow-y-auto shadow-[4px_4px_0_0_rgba(0,0,0,0.8)]">
+                                                        {matching.map((u: any) => (
+                                                            <button
+                                                                key={u.fid}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedUser(u);
+                                                                    setPointsSearchQuery('');
+                                                                }}
+                                                                className="w-full text-left p-2 hover:bg-primary hover:text-black text-white font-mono text-xs flex justify-between items-center cursor-pointer transition-colors"
+                                                            >
+                                                                <span>@{u.username?.toUpperCase() || `FID_${u.fid}`}</span>
+                                                                <span className="text-[10px] font-pixel text-primary hover:text-black">{u.points || 0} XP</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* Selected User Status Card */}
+                                {selectedUser ? (
+                                    <div className="border border-primary bg-primary/5 p-3 font-mono text-xs space-y-2 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 bg-primary text-black px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest">
+                                            ACTIVE_TARGET
+                                        </div>
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
+                                            <span className="font-bold text-white uppercase">@{selectedUser.username?.toUpperCase() || `UID_${selectedUser.fid}`}</span>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedUser(null);
+                                                    setPointsError('');
+                                                    setPointsSuccess('');
+                                                }} 
+                                                className="text-[9px] text-red-500 hover:text-white border border-red-500/20 px-1 py-0.5 hover:bg-red-500/20 cursor-pointer uppercase font-bold"
+                                            >
+                                                [ Reset ]
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-y-1.5 gap-x-2 text-gray-300 text-[10px] uppercase">
+                                            <div><span className="text-gray-500 font-bold">FID:</span> {selectedUser.fid}</div>
+                                            <div><span className="text-gray-500 font-bold">CURRENT_PTS:</span> <span className="text-primary font-bold">{selectedUser.points || 0} XP</span></div>
+                                            <div className="col-span-2 truncate"><span className="text-gray-500 font-bold">ADDRESS:</span> {selectedUser.address}</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="border border-dashed border-white/10 p-4 text-center text-xs text-gray-600 uppercase italic font-mono bg-white/5">
+                                        NO_USER_SELECTED_YET
+                                    </div>
+                                )}
+
+                                {/* Points Amount */}
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                        Adjustment Amount (Positive for reward, Negative for deduction)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={pointsAmount}
+                                        onChange={e => setPointsAmount(e.target.value)}
+                                        placeholder="E.G. 250 OR -500..."
+                                        className="block w-full border border-white/20 bg-black px-3 py-2 text-white placeholder-gray-800 focus:border-primary focus:outline-none rounded-none text-xs font-mono"
+                                    />
+                                    {/* Quick Modifiers */}
+                                    <div className="grid grid-cols-6 gap-1 mt-2">
+                                        {[
+                                            { val: 100, label: "+100" },
+                                            { val: 500, label: "+500" },
+                                            { val: 1000, label: "+1K" },
+                                            { val: -100, label: "-100" },
+                                            { val: -500, label: "-500" },
+                                            { val: -1000, label: "-1K" }
+                                        ].map(btn => (
+                                            <button
+                                                key={btn.label}
+                                                type="button"
+                                                onClick={() => setPointsAmount(btn.val.toString())}
+                                                className={`text-[9px] font-bold font-mono border py-1 cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                                                    btn.val > 0 
+                                                        ? 'border-green-500/30 text-green-500 hover:bg-green-500 hover:text-black hover:border-green-500' 
+                                                        : 'border-red-500/30 text-red-500 hover:bg-red-500 hover:text-black hover:border-red-500'
+                                                }`}
+                                            >
+                                                {btn.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Reason */}
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reason / Description</label>
+                                    <textarea
+                                        value={pointsReason}
+                                        onChange={e => setPointsReason(e.target.value)}
+                                        rows={3}
+                                        placeholder="ENTER DETAILED LOG EXPLANATION..."
+                                        className="block w-full border border-white/20 bg-black px-3 py-2 text-white placeholder-gray-800 focus:border-primary focus:outline-none rounded-none text-xs font-mono resize-none"
+                                    />
+                                </div>
+
+                                {/* Error/Success Statuses */}
+                                {pointsError && (
+                                    <div className="border border-red-500 bg-red-500/10 text-red-500 p-3 font-mono text-xs uppercase leading-normal">
+                                        ❌ ERROR: {pointsError}
+                                    </div>
+                                )}
+                                {pointsSuccess && (
+                                    <div className="border border-green-500 bg-green-500/10 text-green-500 p-3 font-mono text-xs uppercase leading-normal">
+                                        🛡️ SUCCESS: {pointsSuccess}
+                                    </div>
+                                )}
+
+                                {/* Submit button */}
+                                <button
+                                    type="submit"
+                                    disabled={pointsLoading || !selectedUser || !pointsAmount}
+                                    className="w-full py-2.5 font-bold text-xs border-2 uppercase border-primary bg-black text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-30 disabled:hover:bg-black disabled:hover:text-primary cursor-pointer disabled:cursor-not-allowed select-none font-mono"
+                                >
+                                    {pointsLoading ? "EXECUTING ADJUSTMENT..." : "SUBMIT_POINTS_TRANSACTION"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: RECENTLY UPDATED PROFILES QUICK-VIEW */}
+                    <div className="lg:col-span-7 space-y-4">
+                        <div className="border-2 border-white/20 bg-black p-4 relative shadow-[4px_4px_0_0_rgba(255,255,255,0.1)]">
+                            <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-4">
+                                <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+                                    RECENTLY_UPDATED_PROFILES
+                                </h2>
+                                <span className="text-[9px] font-mono text-gray-500">LIVE FEED</span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse select-none">
+                                    <thead>
+                                        <tr className="border-b-2 border-white/10 text-[9px] font-mono text-gray-500 uppercase font-bold">
+                                            <th className="py-2 pl-2">USER</th>
+                                            <th className="py-2 text-center">FID</th>
+                                            <th className="py-2 text-center">CURRENT POINTS</th>
+                                            <th className="py-2 pr-2 text-right">LAST UPDATE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-[11px] font-mono">
+                                        {(() => {
+                                            const recentlyUpdated = [...users]
+                                                .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+                                                .slice(0, 10);
+
+                                            if (recentlyUpdated.length > 0) {
+                                                return recentlyUpdated.map((u: any, idx) => (
+                                                    <tr key={u.fid} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                        <td className="py-2.5 pl-2">
+                                                            <div className="font-bold text-white">
+                                                                @{u.username?.toUpperCase() || `UID_${u.fid}`}
+                                                            </div>
+                                                            <div className="text-[8px] text-gray-500 truncate max-w-[150px] font-mono lowercase">
+                                                                {u.address}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-2.5 text-center text-gray-400">
+                                                            {u.fid}
+                                                        </td>
+                                                        <td className="py-2.5 text-center font-pixel text-primary font-bold">
+                                                            {u.points || 0} XP
+                                                        </td>
+                                                        <td className="py-2.5 pr-2 text-right text-gray-500">
+                                                            {new Date(u.updatedAt || 0).toLocaleTimeString(undefined, {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                second: '2-digit'
+                                                            })}
+                                                        </td>
+                                                    </tr>
+                                                ));
+                                            } else {
+                                                return (
+                                                    <tr>
+                                                        <td colSpan={4} className="py-8 text-center text-gray-500 uppercase italic">
+                                                            NO_ACCOUNTS_FOUND
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+                                        })()}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
