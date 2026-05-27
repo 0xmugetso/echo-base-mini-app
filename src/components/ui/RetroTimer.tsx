@@ -1,13 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface RetroTimerProps {
     targetDate?: string | Date;
+    onExpire?: () => void;
 }
 
-export function RetroTimer({ targetDate }: RetroTimerProps) {
+export function RetroTimer({ targetDate, onExpire }: RetroTimerProps) {
     const [timeLeft, setTimeLeft] = useState('');
+    const expiredRef = useRef(false);
+
+    // Keep callback ref stable to avoid triggering useEffect re-runs
+    const onExpireRef = useRef(onExpire);
+    useEffect(() => {
+        onExpireRef.current = onExpire;
+    }, [onExpire]);
 
     useEffect(() => {
+        expiredRef.current = false; // Reset lock when target date changes
+
         const calculateTimeLeft = () => {
             const now = new Date();
             let targetTime: number;
@@ -24,9 +34,16 @@ export function RetroTimer({ targetDate }: RetroTimerProps) {
 
             const diff = targetTime - now.getTime();
 
-            if (diff <= 0) return "00:00:00";
+            if (diff <= 0) {
+                if (onExpireRef.current && !expiredRef.current) {
+                    expiredRef.current = true;
+                    onExpireRef.current();
+                }
+                return "00:00:00";
+            }
 
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            // Remove % 24 to display absolute hours correctly (e.g. 48h, 72h cooldowns)
+            const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff / (1000 * 60)) % 60);
             const seconds = Math.floor((diff / 1000) % 60);
 

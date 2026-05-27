@@ -558,7 +558,14 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
               {isCheckedInToday() ? (
                 <div className="space-y-2">
                   <div className="text-[9px] text-gray-600 font-pixel text-center">COMPLETED</div>
-                  <RetroTimer />
+                  <RetroTimer 
+                    onExpire={() => {
+                      setTimeout(() => {
+                        fetchProfile();
+                        fetchDynamicTasks();
+                      }, 1000);
+                    }}
+                  />
                 </div>
               ) : (
                 <button
@@ -737,7 +744,14 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                           {task.nextClaimAvailableAt && (
                             <div className="flex flex-col items-center justify-center p-2.5 border border-primary/20 bg-primary/5">
                               <span className="text-[9px] font-pixel text-primary mb-1 uppercase tracking-wider animate-pulse">REDEPLOYMENT_COOLDOWN</span>
-                              <RetroTimer targetDate={new Date(task.nextClaimAvailableAt)} />
+                              <RetroTimer 
+                                targetDate={new Date(task.nextClaimAvailableAt)} 
+                                onExpire={() => {
+                                  setTimeout(() => {
+                                    fetchDynamicTasks();
+                                  }, 1000);
+                                }}
+                              />
                             </div>
                           )}
                         </div>
