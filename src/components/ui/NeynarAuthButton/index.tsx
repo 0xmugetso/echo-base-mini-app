@@ -15,7 +15,7 @@ import { Button } from '~/components/ui/Button';
 import { ProfileButton } from '~/components/ui/NeynarAuthButton/ProfileButton';
 import { AuthDialog } from '~/components/ui/NeynarAuthButton/AuthDialog';
 import { getItem, removeItem, setItem } from '~/lib/localStorage';
-import { useMiniApp } from '@neynar/react';
+import { useMiniApp } from '~/hooks/useMiniApp';
 import {
   signIn as miniappSignIn,
   signOut as miniappSignOut,

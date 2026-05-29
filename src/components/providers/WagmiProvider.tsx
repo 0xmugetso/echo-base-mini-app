@@ -1,8 +1,7 @@
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { base, degen, mainnet, optimism, unichain, celo } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { farcasterFrame } from "@farcaster/miniapp-wagmi-connector";
-import { coinbaseWallet, metaMask } from 'wagmi/connectors';
+import { coinbaseWallet, metaMask, baseAccount } from 'wagmi/connectors';
 import { APP_NAME, APP_ICON_URL, APP_URL } from "~/lib/constants";
 import { useEffect, useState } from "react";
 import { useConnect, useAccount } from "wagmi";
@@ -34,7 +33,14 @@ function useCoinbaseWalletAutoConnect() {
   useEffect(() => {
     // Auto-connect if in Coinbase Wallet and not already connected
     if (isCoinbaseWallet && !isConnected) {
-      connect({ connector: connectors[1] }); // Coinbase Wallet connector
+      const cbConnector = connectors.find(
+        c => c.id === 'coinbaseWalletSDK' || 
+             c.id === 'coinbaseWallet' || 
+             c.id === 'baseAccount'
+      );
+      if (cbConnector) {
+        connect({ connector: cbConnector });
+      }
     }
   }, [isCoinbaseWallet, isConnected, connect, connectors]);
 
@@ -52,7 +58,10 @@ export const config = createConfig({
     [celo.id]: http(),
   },
   connectors: [
-    farcasterFrame(),
+    baseAccount({
+      appName: APP_NAME,
+      appLogoUrl: APP_ICON_URL,
+    }),
     coinbaseWallet({
       appName: APP_NAME,
       appLogoUrl: APP_ICON_URL,

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
 import { parseEther, getAddress } from "viem";
@@ -291,7 +291,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
       if (!tokenId) throw new Error("Metadata registration failed");
 
       let hash: string;
-      const sdkModule = (await import("@farcaster/frame-sdk")).default;
+      const { sdk: sdkModule } = await import("@farcaster/miniapp-sdk");
       if ((sdkModule?.actions as any)?.sendTransaction) {
         const { encodeFunctionData } = await import('viem');
         const data = encodeFunctionData({
@@ -420,7 +420,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     const shareText = `I just checked my onchain Echo Stats! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${cleanRefCode}`;
     const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
     try {
-      const sdk = (await import("@farcaster/frame-sdk")).default;
+      const { sdk } = await import("@farcaster/miniapp-sdk");
       await sdk.actions.composeCast({
         text: shareText,
         embeds: [embedUrl]
@@ -467,10 +467,10 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     (context?.user as any)?.verifiedAddresses?.ethAddresses?.[0];
 
   const address =
+    connectedAddress ||
     primaryEthAddress ||
     context?.user?.custody_address ||
     (context?.user as any)?.custodyAddress ||
-    connectedAddress ||
     "0x0000000000000000000000000000000000000000"; // Truly neutral fallback
 
   const isFallbackAddress = !address || address === "0x0000000000000000000000000000000000000000";
@@ -494,7 +494,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     if (!isSDKLoaded || promptedAdd) return;
     const triggerAddApp = async () => {
       try {
-        await sdk.actions.addMiniApp();
+        await actions.addMiniApp();
       } catch (e) {
         console.warn("Auto addMiniApp prompt failed", e);
       } finally {
@@ -557,7 +557,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
           <button
             onClick={async () => {
               try {
-                await sdk.actions.addMiniApp();
+                await actions.addMiniApp();
                 toast("APP ADDED SUCCESSFULLY", "SUCCESS");
               } catch (e: any) {
                 if (e.message?.includes("RejectedByUser")) {

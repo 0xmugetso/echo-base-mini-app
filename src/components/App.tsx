@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { Header } from "~/components/ui/Header";
 import { Footer } from "~/components/ui/Footer";
 import { HomeTab, ActionsTab, TasksTab, WalletTab } from "~/components/ui/tabs";
 import { USE_WALLET } from "~/lib/constants";
 import { useNeynarUser } from "../hooks/useNeynarUser";
 import { sdk } from '@farcaster/miniapp-sdk'
+import { useAccount } from "wagmi";
 
 
 export enum Tab {
@@ -32,6 +33,7 @@ const TabContent = ({ isActive, children }: { isActive: boolean, children: React
 export default function App(
   { title }: AppProps = { title: "Neynar Starter Kit" }
 ) {
+  const { address } = useAccount();
   const {
     isSDKLoaded,
     context,
@@ -40,13 +42,17 @@ export default function App(
     currentTab,
   } = useMiniApp();
 
-  const { user: neynarUser } = useNeynarUser(context || undefined);
+  const { user: neynarUser } = useNeynarUser(context || undefined, address);
 
   // Scroll to top on tab change
   useEffect(() => {
     window.scrollTo(0, 0);
     async function init() {
-      await sdk.actions.ready()
+      try {
+        await sdk.actions.ready();
+      } catch (err) {
+        console.warn("sdk.actions.ready failed:", err);
+      }
     }
     init();
   }, [currentTab]);

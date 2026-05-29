@@ -5,7 +5,7 @@ import { RetroTimer } from "../RetroTimer";
 import { useAccount, useSendTransaction } from "wagmi";
 import { parseEther, stringToHex, getAddress } from "viem";
 import { useNeynarSigner } from "~/hooks/useNeynarSigner";
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { useToast } from "../ToastProvider";
 
 type Profile = {
@@ -56,7 +56,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
   // Wagmi & Neynar
   const { address } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
-  const { sdk } = useMiniApp() as any;
+  const { sdk, context: miniAppContext } = useMiniApp() as any;
 
   const primaryEthAddress =
     neynarUser?.verified_addresses?.primary?.eth_address ||
@@ -210,7 +210,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
     // ---------------------------------------------------------
     // AGENT TRANSACTION FLOW (Primary for Farcaster Native)
     // ---------------------------------------------------------
-    if ((sdk as any)?.actions?.openUrl) {
+    if (miniAppContext && sdk.context && (sdk as any)?.actions?.openUrl) {
       toast("Initializing Agent Transaction...", "PROCESS");
       console.log("[Checkin] Starting Agent Flow...");
       try {

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useAccount, useDisconnect, useConnect } from "wagmi";
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { RetroWindow } from "../RetroWindow";
 import { RetroBanner } from "../RetroBanner";
 import { Skull } from "../Skull";
@@ -402,7 +402,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                           const text = `Join me on Echo! 🛡️\n\nUse my invite code to get a +20 PTS bonus on sign up, and we both earn more points as we grind!\n\nInvite Code: ${cleanRefCode}`;
                           const embedUrl = `${appUrl}?ref=${cleanRefCode}`;
                           try {
-                            const sdk = (await import("@farcaster/frame-sdk")).default;
+                            const { sdk } = await import("@farcaster/miniapp-sdk");
                             await sdk.actions.composeCast({
                               text,
                               embeds: [embedUrl]

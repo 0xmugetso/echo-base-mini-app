@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const fids = searchParams.get('fids');
+  const address = searchParams.get('address');
   const apiKey = process.env.NEYNAR_API_KEY;
 
   if (!apiKey) {
@@ -10,12 +11,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Server Configuration Error' }, { status: 500 });
   }
 
-  if (!fids) {
-    return NextResponse.json({ error: 'FIDs required' }, { status: 400 });
+  if (!fids && !address) {
+    return NextResponse.json({ error: 'FIDs or address required' }, { status: 400 });
   }
 
   try {
-    const response = await fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${fids}`, {
+    const url = fids
+      ? `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fids}`
+      : `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`;
+
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         accept: 'application/json',
@@ -31,12 +36,24 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    if (data.users && data.users.length > 0) {
-      console.log("Debug User Object Keys:", Object.keys(data.users[0]));
-      console.log("Debug User Score:", data.users[0].score);
-      console.log("Debug User Power Ranking:", data.users[0].power_ranking);
+    
+    // Robustly normalize any format into a flat array of standard users
+    let normalizedUsers = [];
+    if (data && Array.isArray(data.users)) {
+      normalizedUsers = data.users;
+    } else if (data && typeof data === 'object') {
+      // If it's a map (e.g. address to user details), extract all user records
+      const values = Object.values(data);
+      for (const val of values) {
+        if (Array.isArray(val)) {
+          normalizedUsers.push(...val);
+        } else if (val && typeof val === 'object' && (val as any).object === 'user') {
+          normalizedUsers.push(val);
+        }
+      }
     }
-    return NextResponse.json(data);
+
+    return NextResponse.json({ users: normalizedUsers });
   } catch (error) {
     console.error("API User Fetch Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

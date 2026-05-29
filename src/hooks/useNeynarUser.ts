@@ -23,20 +23,27 @@ export interface NeynarUser {
   };
 }
 
-export function useNeynarUser(context?: { user?: { fid?: number } }) {
+export function useNeynarUser(context?: { user?: { fid?: number } }, connectedAddress?: string) {
   const [user, setUser] = useState<NeynarUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!context?.user?.fid) {
+    const fid = context?.user?.fid;
+    const address = connectedAddress;
+
+    if (!fid && !address) {
       setUser(null);
       setError(null);
       return;
     }
+
     setLoading(true);
     setError(null);
-    fetch(`/api/users?fids=${context.user.fid}`)
+
+    const query = fid ? `fids=${fid}` : `address=${address}`;
+
+    fetch(`/api/users?${query}`)
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return response.json();
@@ -50,7 +57,7 @@ export function useNeynarUser(context?: { user?: { fid?: number } }) {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [context?.user?.fid]);
+  }, [context?.user?.fid, connectedAddress]);
 
   return { user, loading, error };
 } 

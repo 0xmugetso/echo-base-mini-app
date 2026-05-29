@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useMiniApp } from '@neynar/react';
+import { useMiniApp } from '~/hooks/useMiniApp';
 import { ShareButton } from '../Share';
 import { Button } from '../Button';
 import { SignIn } from '../wallet/SignIn';

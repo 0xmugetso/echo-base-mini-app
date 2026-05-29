@@ -1,9 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { MiniAppProvider } from '@neynar/react';
-
-import { ANALYTICS_ENABLED, RETURN_URL } from '~/lib/constants';
 import { ToastProvider } from '~/components/ui/ToastProvider';
 
 const WagmiProvider = dynamic(
@@ -21,15 +18,9 @@ export function Providers({
 
   return (
     <WagmiProvider>
-      <MiniAppProvider
-        analyticsEnabled={ANALYTICS_ENABLED}
-        backButtonEnabled={true}
-        returnUrl={RETURN_URL}
-      >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </MiniAppProvider>
+      <ToastProvider>
+        {children}
+      </ToastProvider>
     </WagmiProvider>
   );
 }

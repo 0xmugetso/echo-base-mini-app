@@ -87,8 +87,8 @@ export function ActionsTab({ context }: ActionTabProps) {
     }
 
     try {
-      // Use Frame SDK compose action
-      const sdk = (await import("@farcaster/frame-sdk")).default;
+      // Use Farcaster SDK compose action
+      const { sdk } = await import("@farcaster/miniapp-sdk");
       await sdk.actions.composeCast({
         text: castText
       });
@@ -185,7 +185,7 @@ export function ActionsTab({ context }: ActionTabProps) {
     const shareText = `I just earned ${lastCast?.points || 20} points on Echo! 🛡️\n\nEcho Cast Mission Complete.\n\nVerify yours: ${appUrl}`;
 
     try {
-      const sdk = (await import("@farcaster/frame-sdk")).default;
+      const { sdk } = await import("@farcaster/miniapp-sdk");
       await sdk.actions.composeCast({
         text: shareText
       });

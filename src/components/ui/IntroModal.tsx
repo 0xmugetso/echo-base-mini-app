@@ -11,7 +11,7 @@ import { parseEther, getAddress } from "viem";
 import { base } from "viem/chains";
 import { createPortal } from "react-dom";
 import * as htmlToImage from 'html-to-image';
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { useNeynarSigner } from "../../hooks/useNeynarSigner";
 import { AURA_CONTRACT_ADDRESS, AURA_ABI } from "../../lib/contracts";
 import { useToast } from "./ToastProvider";
@@ -539,7 +539,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
         const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
 
         try {
-            const sdk = (await import("@farcaster/frame-sdk")).default;
+            const { sdk } = await import("@farcaster/miniapp-sdk");
             await sdk.actions.composeCast({
                 text,
                 embeds: imageUrl ? [appUrl, imageUrl] : [appUrl]
@@ -859,7 +859,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                                 const shareText = `I just minted my Echo Card! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${myRefCode || "ECHO"}`;
                                 const embedUrl = `${appUrl}?ref=${myRefCode || "ECHO"}`;
                                 try {
-                                    const sdk = (await import("@farcaster/frame-sdk")).default;
+                                    const { sdk } = await import("@farcaster/miniapp-sdk");
                                     await sdk.actions.composeCast({
                                         text: shareText,
                                         embeds: [embedUrl]

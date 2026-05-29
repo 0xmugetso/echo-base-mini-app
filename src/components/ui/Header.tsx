@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { APP_NAME } from "~/lib/constants";
 import sdk from "@farcaster/miniapp-sdk";
-import { useMiniApp } from "@neynar/react";
+import { useMiniApp } from "~/hooks/useMiniApp";
 import { type NeynarUser } from "~/hooks/useNeynarUser";
 import { useBaseStats } from "~/hooks/useCoinBaseData";
 import { EchoLogo } from "./Icons";
@@ -18,15 +18,19 @@ interface HeaderProps {
 
 export function Header({ neynarUser, tab, address }: HeaderProps) {
   const { context } = useMiniApp();
-  const { data: baseStats } = useBaseStats(address, context?.user?.fid);
+  const activeFid = context?.user?.fid || neynarUser?.fid;
+  const { data: baseStats } = useBaseStats(address, activeFid);
 
   const [echoPoints, setEchoPoints] = useState(0);
 
   useEffect(() => {
     const fetchPoints = async () => {
-      if (!context?.user?.fid) return;
+      if (!activeFid) {
+        setEchoPoints(0);
+        return;
+      }
       try {
-        const res = await fetch(`/api/echo/profile?fid=${context.user.fid}`);
+        const res = await fetch(`/api/echo/profile?fid=${activeFid}`);
         const data = await res.json();
         if (data && !data.error) {
           // Unified Formula: Grind Points + Onchain Score
@@ -51,11 +55,14 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
       window.removeEventListener("points-updated", fetchPoints);
       clearInterval(interval);
     };
-  }, [context?.user?.fid, neynarUser?.score]);
+  }, [activeFid, neynarUser?.score]);
 
   const totalDisplayScore = useMemo(() => {
     return Math.floor(echoPoints);
   }, [echoPoints]);
+
+  const displayPfp = context?.user?.pfpUrl || neynarUser?.pfp_url;
+  const displayName = context?.user?.displayName || neynarUser?.display_name || neynarUser?.username || APP_NAME;
 
   return (
     <div className="p-4 relative">
@@ -72,16 +79,16 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
         </div>
         <div className="window-content bg-black flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {context?.user.pfpUrl ? (
-              <img src={context.user.pfpUrl} alt="Profile" className="w-16 h-16 border-2 border-white grayscale contrast-125" />
+            {displayPfp ? (
+              <img src={displayPfp} alt="Profile" className="w-16 h-16 border-2 border-white grayscale contrast-125" />
             ) : (
               <div className="w-16 h-16 border-2 border-white bg-primary"></div>
             )}
             <div>
               <p className="text-white text-lg font-bold uppercase tracking-widest leading-none">
-                {context?.user?.displayName?.split('.')[0] || APP_NAME}
+                {displayName.split('.')[0]}
               </p>
-              <p className="text-primary text-sm font-mono mt-1">FID: {context?.user.fid}</p>
+              <p className="text-primary text-sm font-mono mt-1">FID: {activeFid || "N/A"}</p>
             </div>
           </div>
 
