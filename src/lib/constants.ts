@@ -16,7 +16,7 @@ import { type AccountAssociation } from '@farcaster/miniapp-core/src/manifest';
  * The base URL of the application.
  * Used for generating absolute URLs for assets and API endpoints.
  */
-export const APP_URL: string = process.env.NEXT_PUBLIC_URL || 'https://echo-base-mini-app.vercel.app';
+export const APP_URL: string = process.env.NEXT_PUBLIC_URL || 'https://echo-mini-base-app.vercel.app';
 
 /**
  * The name of the mini app as displayed to users.
@@ -53,19 +53,19 @@ export const APP_TAGS: string[] = [
  * URL for the app's icon image.
  * Used in app store listings and UI elements.
  */
-export const APP_ICON_URL: string = `https://echo-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
+export const APP_ICON_URL: string = `https://echo-mini-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * URL for the app's Open Graph image.
  * Used for social media sharing and previews.
  */
-export const APP_OG_IMAGE_URL: string = `https://echo-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
+export const APP_OG_IMAGE_URL: string = `https://echo-mini-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * URL for the app's splash screen image.
  * Displayed during app loading.
  */
-export const APP_SPLASH_URL: string = `https://echo-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
+export const APP_SPLASH_URL: string = `https://echo-mini-base-app.vercel.app/_next/image?url=%2Fassets%2Fbanner_eye.jpg&w=1920&q=75`;
 
 /**
  * Background color for the splash screen.

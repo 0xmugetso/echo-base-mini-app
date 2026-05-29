@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
  */
 
 export function GET() {
-  const appUrl = "https://echo-base-mini-app.vercel.app";
+  const appUrl = "https://echo-mini-base-app.vercel.app";
 
   const manifest = {
     accountAssociation: {
