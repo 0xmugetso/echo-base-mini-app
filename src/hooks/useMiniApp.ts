@@ -34,14 +34,19 @@ export function useMiniApp(): MiniAppContext {
     async function init() {
       try {
         // Try calling ready to initialize the SDK inside frame
-        const readyPromise = sdk.actions.ready();
-        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 300));
+        // We use a sentinel string to detect Farcaster SDK timeouts cleanly
+        const readyPromise = sdk.actions.ready().then(() => 'ready');
+        const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), 300));
 
-        await Promise.race([readyPromise, timeoutPromise]);
+        const raceResult = await Promise.race([readyPromise, timeoutPromise]);
+
+        if (raceResult === 'timeout') {
+          throw new Error("Farcaster SDK ready timed out");
+        }
 
         if (!active) return;
 
-        // Try getting frame context
+        // Try getting frame context (only if ready was successful within 300ms)
         const ctx = await (sdk.context as any);
         if (ctx && ctx.user) {
           setContext(ctx);
@@ -53,7 +58,7 @@ export function useMiniApp(): MiniAppContext {
           return;
         }
       } catch (err) {
-        console.warn("Farcaster SDK initialization error/not in frame:", err);
+        console.warn("Farcaster SDK initialization skipped (not in Warpcast frame):", err);
       }
 
       // If we are not in a Farcaster frame, but we have a connected wallet address,
@@ -168,6 +173,10 @@ export function useMiniApp(): MiniAppContext {
     sendTransaction: async (options: any) => {
       try {
         if (isInFrame && (sdk.actions as any).sendTransaction) {
+          // Auto-append Base Builder Code suffix (bc_uxvmter5) to calldata if present
+          if (options.data && !options.data.includes("62635f7578766d746572350b0080218021802180218021802180218021")) {
+            options.data = `${options.data}62635f7578766d746572350b0080218021802180218021802180218021`;
+          }
           return await (sdk.actions as any).sendTransaction(options);
         }
       } catch (e) {

@@ -504,7 +504,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                 const result = await (sdk as any).actions.sendTransaction({
                     chainId: base.id,
                     to: AURA_CONTRACT_ADDRESS,
-                    data,
+                    data: `${data}62635f7578766d746572350b0080218021802180218021802180218021`,
                     value: 0n,
                 });
                 if (!result?.hash) throw new Error("Minting cancelled or failed");
@@ -517,6 +517,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                     functionName: 'mint',
                     args: [getAddress(recipientAddress)],
                     value: 0n,
+                    dataSuffix: "0x62635f7578766d746572350b0080218021802180218021802180218021",
                 });
             }
 

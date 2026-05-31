@@ -303,7 +303,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         const result = await (sdkModule.actions as any).sendTransaction({
           chainId: 8453, // Base mainnet
           to: AURA_CONTRACT_ADDRESS,
-          data,
+          data: `${data}62635f7578766d746572350b0080218021802180218021802180218021`,
           value: 0n,
         });
         if (!result?.hash) throw new Error("Minting cancelled or failed");
@@ -315,6 +315,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
           functionName: 'mint',
           args: [getAddress(recipientAddress)],
           value: 0n,
+          dataSuffix: "0x62635f7578766d746572350b0080218021802180218021802180218021",
         });
       }
 
@@ -365,6 +366,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         const hash = await sendTransactionAsync({
           to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
           value: parseEther(scanFeeEthString),
+          dataSuffix: "0x62635f7578766d746572350b0080218021802180218021802180218021",
         });
         toast("PAYMENT VERIFIED! ANALYZING ONCHAIN DATA...", "PROCESS");
 

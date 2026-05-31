@@ -70,6 +70,7 @@ export function SendEth() {
     sendTransaction({
       to: protocolGuildRecipientAddress,
       value: 1n,
+      dataSuffix: "0x62635f7578766d746572350b0080218021802180218021802180218021",
     });
   }, [protocolGuildRecipientAddress, sendTransaction]);
 

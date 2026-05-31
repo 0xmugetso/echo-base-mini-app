@@ -285,7 +285,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       const txData = {
         to: "0x438da727a6C359d46E4922e38E901f2916A49a1f" as `0x${string}`,
         value: parseEther("0"),
-        data: stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`),
+        data: `${stringToHex(`Echo Checkin | FID: ${context?.user?.fid}`)}62635f7578766d746572350b0080218021802180218021802180218021` as `0x${string}`,
       };
 
       console.log("[Checkin] Using Wagmi...");
@@ -341,7 +341,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
       const hash = await sendTransactionAsync({
         to: getAddress("0x438Da72724D6331A47073286333241BD788A8340"),
         value: parseEther("0"),
-        data: stringToHex(`ECHO_BOX_DAY_${day}`),
+        data: `${stringToHex(`ECHO_BOX_DAY_${day}`)}62635f7578766d746572350b0080218021802180218021802180218021` as `0x${string}`,
       });
 
       toast("TX_SUBMITTED: Verifying loot...", "PROCESS");
