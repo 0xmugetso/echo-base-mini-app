@@ -2,13 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "next build",
   "framework": "nextjs",
-  "redirects": [
-    {
-      "source": "/.well-known/farcaster.json",
-      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019e74f5-b06d-dcd1-fb29-4614180cebbc",
-      "permanent": false
-    }
-  ],
   "crons": [
     {
       "path": "/api/echo/referral/cron",
