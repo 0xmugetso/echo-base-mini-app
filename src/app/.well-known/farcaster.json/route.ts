@@ -1,42 +1,28 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 /**
- * Serving the Farcaster Manifest with detailed Frame v2 metadata.
+ * Serving the Farcaster Manifest dynamically by reading the public/.well-known/farcaster.json file.
+ * This ensures that updates to the public static manifest are immediately reflected and served.
  */
-
 export function GET() {
-  const appUrl = "https://echo-mini-base-app.vercel.app";
-
-  const manifest = {
-    accountAssociation: {
-      header: "eyJmaWQiOjQ3OTA0NCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGY4NDgzMzQwMEE2QkU2ZWY4NUJDZTNFQTEzOThGMDU3ZjQxOEY5N2QifQ",
-      payload: "eyJkb21haW4iOiJlY2hvLWJhc2UtbWluaS1hcHAudmVyY2VsLmFwcCJ9",
-      signature: "8/Wz7Nq+tmuAm9y3431ompFIz63xU4LHBW0oRKlrNQ5Hc1FNFVdl15B2DnwMRIeKoz6N7FmP9YCNRSW9hyv8ths="
-    },
-    frame: {
-      version: "1",
-      name: "Echo",
-      iconUrl: `${appUrl}/assets/echo-logo.PNG`,
-      homeUrl: appUrl,
-      imageUrl: `${appUrl}/splash.png`,
-      buttonTitle: "Launch Echo",
-      splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#000000",
-      webhookUrl: `${appUrl}/api/webhook`,
-      subtitle: "Immortalize your status.",
-      description: "Mint your legacy or share to flex. Start exploring echo now.",
-      primaryCategory: "social",
-      tags: [
-        "social",
-        "community",
-        "score",
-        "activity",
-        "base"
-      ],
-      ogTitle: "Echo - Immortalize your status",
-      ogDescription: "Immortalize your on-chain base status and farcaster metrics in awesome mintable Echo card."
-    },
-  };
-
-  return NextResponse.json(manifest);
+  try {
+    const filePath = path.join(process.cwd(), "public", ".well-known", "farcaster.json");
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const manifest = JSON.parse(fileContent);
+    
+    return new NextResponse(JSON.stringify(manifest), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+      },
+    });
+  } catch (error) {
+    console.error("Error reading farcaster.json:", error);
+    return NextResponse.json({ error: "Manifest not found" }, { status: 500 });
+  }
 }
