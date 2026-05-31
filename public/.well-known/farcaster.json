@@ -25,5 +25,10 @@
         "ogTitle": "Echo",
         "ogImageUrl": "https://echo-mini-base-app.vercel.app/splash.png",
         "tagline": "Step into the ultimate retro"
+    },
+    "accountAssociation": {
+        "header": "eyJmaWQiOjMzMzM1NzMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg5RDREYTk4M0UzYjBGODQ5NUNlNjAwOTMyNDUwYjU3MDY0RDUyNTg3In0",
+        "payload": "eyJkb21haW4iOiJlY2hvLW1pbmktYmFzZS1hcHAudmVyY2VsLmFwcCJ9",
+        "signature": "DPfuiPqEwlOJpyrMzjVpRMbMgMseY7NbN3iEFl2U/QceMn6Vhja/LJUbIXBl+E61nHOT2i2wstdnc/vU9HwhDxw="
     }
 }
