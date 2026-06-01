@@ -547,7 +547,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
             });
             toast("OPENING COMPOSER...", "SUCCESS");
         } catch (e) {
-            const intentUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(appUrl)}${imageUrl ? `&embeds[]=${encodeURIComponent(imageUrl)}` : ''}`;
+            const intentUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(appUrl)}${imageUrl ? `&embeds[]=${encodeURIComponent(imageUrl)}` : ''}`;
             window.open(intentUrl, "_blank");
             toast("OPENING WINDOW...", "SUCCESS");
         }
@@ -866,7 +866,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                                         embeds: [embedUrl]
                                     });
                                 } catch (e) {
-                                    const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                                    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
                                     window.open(composeUrl, '_blank');
                                 }
                                 setIsMintSuccess(false);

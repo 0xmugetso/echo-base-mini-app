@@ -97,7 +97,7 @@ export function ActionsTab({ context }: ActionTabProps) {
       console.error("SDK Compose failed", e);
       // Fallback to manual if needed (though user said it redirects to download)
       const encodedText = encodeURIComponent(castText);
-      const url = `farcaster://compose?text=${encodedText}`;
+      const url = `https://warpcast.com/~/compose?text=${encodedText}`;
       window.open(url, '_blank');
       setStatus('AWAITING_VERIFICATION');
     }
@@ -191,7 +191,7 @@ export function ActionsTab({ context }: ActionTabProps) {
       });
     } catch (e) {
       console.error("SDK Share failed", e);
-      window.open(`farcaster://compose?text=${encodeURIComponent(shareText)}`, '_blank');
+      window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}`, '_blank');
     }
   };
 

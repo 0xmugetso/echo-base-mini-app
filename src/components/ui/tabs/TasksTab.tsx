@@ -56,7 +56,7 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
   // Wagmi & Neynar
   const { address } = useAccount();
   const { sendTransactionAsync } = useSendTransaction();
-  const { sdk, context: miniAppContext } = useMiniApp() as any;
+  const { sdk, context: miniAppContext, platform } = useMiniApp() as any;
 
   const primaryEthAddress =
     neynarUser?.verified_addresses?.primary?.eth_address ||
@@ -762,26 +762,33 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                           
                           {/* 1. FOLLOW MISSION */}
                           {task.actionType === 'follow' && (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => window.open('https://warpcast.com/' + task.actionTarget, '_blank')}
-                                className="flex-1 py-1.5 font-pixel text-[9px] border border-white text-white hover:bg-white hover:text-black transition-all"
-                              >
-                                FOLLOW @{task.actionTarget}
-                              </button>
-                              <button
-                                disabled={isClaimLoading}
-                                onClick={() => handleDynamicTask(task)}
-                                className="flex-1 py-1.5 font-pixel text-[9px] border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-50"
-                              >
-                                {isClaimLoading ? '...' : 'CLAIM MISSION'}
-                              </button>
+                            <div className="space-y-1.5">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => window.open('https://warpcast.com/' + task.actionTarget, '_blank')}
+                                  className="flex-1 py-1.5 font-pixel text-[9px] border border-white text-white hover:bg-white hover:text-black transition-all"
+                                >
+                                  FOLLOW @{task.actionTarget}
+                                </button>
+                                <button
+                                  disabled={isClaimLoading}
+                                  onClick={() => handleDynamicTask(task)}
+                                  className="flex-1 py-1.5 font-pixel text-[9px] border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                                >
+                                  {isClaimLoading ? '...' : 'CLAIM MISSION'}
+                                </button>
+                              </div>
+                              {platform !== 'warpcast' && (
+                                <p className="text-[7px] font-mono text-gray-500 uppercase text-center mt-1">
+                                  * Launches native Warpcast app on mobile
+                                </p>
+                              )}
                             </div>
                           )}
 
                           {/* 2. ENGAGEMENT MISSION */}
                           {task.actionType === 'engage' && (
-                            <div className="w-full">
+                            <div className="w-full space-y-1.5">
                               {cooldowns[task._id] ? (
                                 <button
                                   disabled
@@ -808,6 +815,11 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                                 >
                                   GO TO CAST ({task.actionSubtype || 'like'})
                                 </button>
+                              )}
+                              {platform !== 'warpcast' && !cooldowns[task._id] && !engageClicked[task._id] && (
+                                <p className="text-[7px] font-mono text-gray-500 uppercase text-center mt-1">
+                                  * Launches native Warpcast app on mobile
+                                </p>
                               )}
                             </div>
                           )}
@@ -838,6 +850,11 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
                                   {isClaimLoading ? '...' : 'CLAIM MISSION'}
                                 </button>
                               </div>
+                              {platform !== 'warpcast' && (
+                                <p className="text-[7px] font-mono text-gray-500 uppercase text-center mt-1">
+                                  * Launches native Warpcast app on mobile
+                                </p>
+                              )}
                             </div>
                           )}
 

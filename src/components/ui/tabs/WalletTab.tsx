@@ -408,7 +408,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                               embeds: [embedUrl]
                             });
                           } catch (e) {
-                            const composeUrl = `farcaster://compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+                            const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
                             window.open(composeUrl, '_blank');
                           }
                         }}

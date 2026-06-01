@@ -428,7 +428,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
         embeds: [embedUrl]
       });
     } catch (e) {
-      const composeUrl = `farcaster://compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+      const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`;
       window.open(composeUrl, '_blank');
     }
   };

@@ -17,7 +17,7 @@ interface HeaderProps {
 }
 
 export function Header({ neynarUser, tab, address }: HeaderProps) {
-  const { context } = useMiniApp();
+  const { context, platform } = useMiniApp();
   const activeFid = context?.user?.fid || neynarUser?.fid;
   const { data: baseStats } = useBaseStats(address, activeFid);
 
@@ -88,7 +88,18 @@ export function Header({ neynarUser, tab, address }: HeaderProps) {
               <p className="text-white text-lg font-bold uppercase tracking-widest leading-none">
                 {displayName.split('.')[0]}
               </p>
-              <p className="text-primary text-sm font-mono mt-1">FID: {activeFid || "N/A"}</p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-primary text-sm font-mono leading-none">FID: {activeFid || "N/A"}</span>
+                <span className={`text-[8px] font-pixel px-1 py-0.5 border leading-none ${
+                  platform === 'warpcast' 
+                    ? 'border-[#9c4df4] bg-[#9c4df4]/10 text-[#9c4df4]' 
+                    : platform === 'base-app'
+                    ? 'border-[#0052ff] bg-[#0052ff]/10 text-[#0052ff]'
+                    : 'border-gray-500 bg-gray-500/10 text-gray-400'
+                }`}>
+                  {platform.toUpperCase().replace('-', '_')}
+                </span>
+              </div>
             </div>
           </div>
 

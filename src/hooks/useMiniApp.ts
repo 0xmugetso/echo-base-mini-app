@@ -19,6 +19,7 @@ export interface MiniAppContext {
   added?: boolean;
   notificationDetails?: any;
   haptics?: any;
+  platform: 'warpcast' | 'base-app' | 'browser';
 }
 
 export function useMiniApp(): MiniAppContext {
@@ -26,7 +27,27 @@ export function useMiniApp(): MiniAppContext {
   const [context, setContext] = useState<any>(null);
   const [isInFrame, setIsInFrame] = useState(false);
   const [currentTab, setCurrentTab] = useState<string>('home');
-  const { address } = useAccount();
+  const [platform, setPlatform] = useState<'warpcast' | 'base-app' | 'browser'>('browser');
+  const { address, connector } = useAccount();
+
+  useEffect(() => {
+    if (isInFrame) {
+      setPlatform('warpcast');
+    } else if (typeof window !== 'undefined') {
+      const isCbWallet = !!(
+        (window.ethereum as any)?.isCoinbaseWallet ||
+        (window.ethereum as any)?.isCoinbaseBrowser ||
+        window.navigator.userAgent.toLowerCase().includes('coinbase')
+      );
+      const isCbConnector = connector?.id === 'coinbaseWalletSDK' || connector?.id === 'coinbaseWallet';
+      
+      if (isCbWallet || isCbConnector) {
+        setPlatform('base-app');
+      } else {
+        setPlatform('browser');
+      }
+    }
+  }, [isInFrame, connector]);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +72,7 @@ export function useMiniApp(): MiniAppContext {
         if (ctx && ctx.user) {
           setContext(ctx);
           setIsInFrame(true);
+          setPlatform('warpcast');
           if (ctx.client?.initialTab) {
             setCurrentTab(ctx.client.initialTab);
           }
@@ -197,5 +219,6 @@ export function useMiniApp(): MiniAppContext {
     added: context?.client?.added || false,
     notificationDetails: context?.client?.notificationDetails || null,
     haptics: (sdk.actions as any)?.haptics || null,
+    platform,
   };
 }
