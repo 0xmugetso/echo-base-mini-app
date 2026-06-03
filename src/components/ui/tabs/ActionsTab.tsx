@@ -8,12 +8,14 @@ import { RetroBanner } from '../RetroBanner';
 import Image from 'next/image';
 import { useToast } from '../ToastProvider';
 import { RetroTimer } from '../RetroTimer';
+import { useMiniApp } from '~/hooks/useMiniApp';
 
 type ActionTabProps = {
   context?: any;
 };
 
 export function ActionsTab({ context }: ActionTabProps) {
+  const { platform } = useMiniApp();
   const [castText, setCastText] = useState('');
   const [status, setStatus] = useState<'IDLE' | 'VALIDATING' | 'PUBLISHING' | 'AWAITING_VERIFICATION' | 'CLAIMING' | 'SUCCESS'>('IDLE');
   const [lastCast, setLastCast] = useState<any>(null);
@@ -196,7 +198,25 @@ export function ActionsTab({ context }: ActionTabProps) {
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-24 relative min-h-[400px]">
+      {platform === 'base-app' && (
+        <div className="absolute inset-0 bg-black/85 backdrop-blur-xs z-50 flex flex-col items-center justify-center p-6 text-center">
+          <div className="border-2 border-primary bg-black p-6 max-w-xs space-y-4 shadow-[0_0_15px_rgba(0,180,255,0.3)]">
+            <h3 className="font-pixel text-sm text-primary uppercase animate-pulse">:: ACCESS RESTRICTED ::</h3>
+            <p className="font-mono text-[10px] text-gray-300 uppercase leading-relaxed">
+              FOR EXPERIENCING THE ECHO CAST, OPEN THE APP ON FARCASTER.
+            </p>
+            <a
+              href="https://warpcast.com/~/miniapps/echo-base-mini-app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-2.5 bg-primary text-black font-pixel text-xs hover:brightness-110 border-2 border-primary text-center uppercase"
+            >
+              OPEN ON FARCASTER
+            </a>
+          </div>
+        </div>
+      )}
       <RetroBanner src="/assets/banner_hand.jpg" alt="Echo Transmission" />
 
       {/* MAIN TERMINAL */}

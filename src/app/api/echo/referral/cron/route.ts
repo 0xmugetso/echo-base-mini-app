@@ -14,10 +14,9 @@ export async function GET(request: Request) {
     try {
         await dbConnect();
 
-        // 1. Find all users who have referred others (optimized query?)
-        // Ideally we'd group by `referredBy` but let's do simple iteration for now as volume is low.
-        // Actually, let's find all profiles where `referredBy` is NOT null.
-        const referrals = await EchoProfile.find({ referredBy: { $ne: null } });
+        // 1. Find all users who have referred others
+        // Target only referred users with valid positive FIDs
+        const referrals = await EchoProfile.find({ referredBy: { $gt: 0 } });
 
         // Map: ReferrerFID -> { totalGrinded: number, activeCount: number }
         const referrerMap = new Map<number, { totalGrinded: number, activeCount: number }>();
@@ -27,8 +26,9 @@ export async function GET(request: Request) {
 
             const current = referrerMap.get(ref.referredBy) || { totalGrinded: 0, activeCount: 0 };
 
-            current.totalGrinded += (ref.pointsGrinded || 0);
+            // Only add grind points and active count if the invitee's status is active
             if (ref.referralStatus === 'active') {
+                current.totalGrinded += (ref.pointsGrinded || 0);
                 current.activeCount += 1;
             }
 
@@ -44,23 +44,31 @@ export async function GET(request: Request) {
             if (!referrer) continue;
 
             // Tiered Referral Rates:
-            // 0–4 invites: 2%
-            // 5–14 invites: 5%
-            // 15–24 invites: 7.5%
-            // 25+ invites: 10%
-            let rate = 2;
+            // 0 active invites: 0%
+            // 1-4 active invites: 2%
+            // 5–14 active invites: 5%
+            // 15–24 active invites: 7.5%
+            // 25+ active invites: 10%
+            let rate = 0;
             if (stats.activeCount >= 25) {
                 rate = 10;
             } else if (stats.activeCount >= 15) {
                 rate = 7.5;
             } else if (stats.activeCount >= 5) {
                 rate = 5;
+            } else if (stats.activeCount > 0) {
+                rate = 2;
             }
             const rateDecimal = rate / 100;
 
             const totalCut = Math.floor(stats.totalGrinded * rateDecimal);
-            const alreadyPaid = referrer.referralStats?.earnings || 0;
-            const newEarnings = totalCut - alreadyPaid;
+            
+            // Exclude signup bonuses (20 XP per active invite) from already paid grind commissions
+            const alreadyPaidGrind = Math.max(
+                0,
+                (referrer.referralStats?.earnings || 0) - (referrer.referralStats?.count || 0) * 20
+            );
+            const newEarnings = totalCut - alreadyPaidGrind;
 
             if (newEarnings > 0 || referrer.referralStats?.count !== stats.activeCount) {
                 // Initialize sub-doc if missing
@@ -70,7 +78,7 @@ export async function GET(request: Request) {
 
                 if (newEarnings > 0) {
                     referrer.referralStats.claimable = (referrer.referralStats.claimable || 0) + newEarnings;
-                    referrer.referralStats.earnings = totalCut;
+                    referrer.referralStats.earnings = (referrer.referralStats.earnings || 0) + newEarnings;
                     totalDistributed += newEarnings;
 
                     // Initialize pointsHistory if missing

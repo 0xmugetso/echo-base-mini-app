@@ -72,7 +72,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
 
     // --- HOOKS ---
     const { signerStatus, checkStatus } = useNeynarSigner();
-    const { sdk } = useMiniApp() as any;
+    const { sdk, platform } = useMiniApp() as any;
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
     const { toast } = useToast();
@@ -792,7 +792,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
     const renderStep4 = () => (
         <div className="flex flex-col h-full bg-black text-white items-center justify-center p-6 relative">
             <div className="text-center space-y-8 z-10 w-full max-w-sm">
-                <h2 className="text-3xl font-pixel animate-pulse uppercase text-primary">CALCULATING_ECHO_POWER</h2>
+                <h2 className="text-lg sm:text-2xl md:text-3xl font-pixel animate-pulse uppercase text-primary leading-tight px-2 break-words">CALCULATING_ECHO_POWER</h2>
                 <div className="border-4 border-white bg-black p-8 shadow-[8px_8px_0_0_theme('colors.primary')] relative">
                     <div className="absolute -top-3 left-4 bg-black px-2 text-[10px] text-gray-400 uppercase font-mono">Total Echo Power</div>
                     <div className="text-8xl font-pixel text-white text-shadow-glow">
@@ -815,8 +815,19 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
             <div className="w-full max-w-sm mb-8 z-10"><RetroBanner src="/assets/banner-modal.JPG" alt="Echo Banner" /></div>
             <div className="w-full max-w-sm flex flex-col gap-4 z-10">
                 <div className="grid grid-cols-2 gap-4">
-                    <button onClick={handleShare} className="group border-2 border-white bg-black p-3 flex flex-col items-center gap-1 hover:bg-white hover:text-black transition-all shadow-[4px_4px_0_0_#fff]">
-                        <PixelShareIcon className="w-6 h-6" /><span className="font-pixel text-sm uppercase">SHARE</span>
+                    <button 
+                        onClick={handleShare} 
+                        disabled={platform === 'base-app'}
+                        className={`group border-2 p-3 flex flex-col items-center gap-1 transition-all shadow-[4px_4px_0_0_#fff] ${
+                            platform === 'base-app'
+                                ? 'bg-gray-900 border-gray-800 text-gray-600 cursor-not-allowed opacity-50 shadow-none'
+                                : 'border-white bg-black hover:bg-white hover:text-black'
+                        }`}
+                    >
+                        <PixelShareIcon className="w-6 h-6" />
+                        <span className="font-pixel text-sm uppercase">
+                            {platform === 'base-app' ? 'LOCKED' : 'SHARE'}
+                        </span>
                     </button>
                     <button onClick={handleMint} disabled={isMinting} className="group border-2 border-primary bg-black p-3 flex flex-col items-center gap-1 hover:bg-primary hover:text-white transition-all shadow-[4px_4px_0_0_theme('colors.primary')]">
                         <PixelMintIcon className="w-6 h-6 text-primary group-hover:text-white" /><span className="font-pixel text-sm text-white uppercase">{isMinting ? "..." : "MINT"}</span>
@@ -855,6 +866,7 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                     
                     <div className="space-y-3">
                         <button 
+                            disabled={platform === 'base-app'}
                             onClick={async () => {
                                 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://echo-mini-app.vercel.app';
                                 const shareText = `I just minted my Echo Card! 🛡️\n\nJoin me on Echo using my invite code and let's earn points together!\n\nInvite Code: ${myRefCode || "ECHO"}`;
@@ -872,9 +884,13 @@ export function IntroModal({ isOpen, onClose, baseStats, neynarUser, loading, in
                                 setIsMintSuccess(false);
                                 onClose();
                             }}
-                            className="w-full py-3 bg-primary text-black font-pixel text-sm hover:brightness-110"
+                            className={`w-full py-3 font-pixel text-sm ${
+                                platform === 'base-app'
+                                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50'
+                                    : 'bg-primary text-black hover:brightness-110'
+                            }`}
                         >
-                            SHARE_ON_WARPCAST
+                            {platform === 'base-app' ? 'SHARE_DISABLED_ON_BASE' : 'SHARE_ON_WARPCAST'}
                         </button>
                         <button 
                             onClick={() => {

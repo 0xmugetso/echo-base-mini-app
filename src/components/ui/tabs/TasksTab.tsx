@@ -581,7 +581,23 @@ export function TasksTab({ context, neynarUser, setActiveTab, isActive }: { cont
 
           {/* DYNAMIC DATABASE MISSIONS */}
           <RetroWindow title="DYNAMIC_MISSIONS" icon="⚡">
-            {loadingDynamicTasks && dynamicTasks.length === 0 ? (
+            {platform === 'base-app' ? (
+              <div className="p-6 text-center space-y-4 bg-black/60 relative">
+                <p className="font-mono text-xs text-gray-300 uppercase leading-relaxed">
+                  SOCIAL MISSIONS ARE UNAVAILABLE ON BASE APP.
+                  <br />
+                  USE FARCASTER TO ACCESS THE FULL EXPERIENCE AND EARN POINTS.
+                </p>
+                <a
+                  href="https://warpcast.com/~/miniapps/echo-base-mini-app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block py-2.5 px-6 bg-primary text-black font-pixel text-[10px] hover:brightness-110 border-2 border-primary text-center uppercase"
+                >
+                  OPEN ON FARCASTER
+                </a>
+              </div>
+            ) : loadingDynamicTasks && dynamicTasks.length === 0 ? (
               <div className="text-center py-4 font-pixel text-[10px] text-gray-500 uppercase animate-pulse">
                 LOADING_MISSIONS_DATABASE...
               </div>

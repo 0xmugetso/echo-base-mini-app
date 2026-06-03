@@ -41,7 +41,7 @@ const RetroStatBox = ({ label, value, subValue }: { label: string; value: string
 );
 
 export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynarUser?: any }) {
-  const { context } = useMiniApp();
+  const { context, platform } = useMiniApp();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { connect, connectors } = useConnect();
@@ -158,14 +158,13 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
 
   // Calculate referral-related points (SOCIAL)
   const socialPoints = useMemo(() => {
-    if (!profile?.dailyActions?.pointsHistory) return 0;
-    return profile.dailyActions.pointsHistory
-      .filter((p: any) => 
-        p.action === 'referral_joining_bonus' || 
-        p.action === 'referral_bonus' || 
-        p.action === 'referral_claim'
-      )
-      .reduce((sum: number, p: any) => sum + (p.points || 0), 0);
+    if (!profile) return 0;
+    const joiningBonus = profile.referredBy ? 20 : 0;
+    const referralEarnings = profile.referralStats?.earnings || 0;
+    const claimable = profile.referralStats?.claimable || 0;
+    // Earnings already credited to profile.points are total earnings minus what is still claimable (pending)
+    const creditedReferralEarnings = Math.max(0, referralEarnings - claimable);
+    return joiningBonus + creditedReferralEarnings;
   }, [profile]);
 
   // Actions points = total points - social points
@@ -214,6 +213,19 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
   return (
     <div className="space-y-6 pb-24">
       <RetroBanner src="/assets/banner_data.jpg" alt="Wallet Data" />
+
+      {/* Platform Checker Relocated */}
+      <div className="flex justify-end pr-1 -mt-2">
+        <span className={`text-[8px] font-pixel px-1.5 py-0.5 border leading-none ${
+          platform === 'warpcast' 
+            ? 'border-[#9c4df4] bg-[#9c4df4]/10 text-[#9c4df4]' 
+            : platform === 'base-app'
+            ? 'border-[#0052ff] bg-[#0052ff]/10 text-[#0052ff]'
+            : 'border-gray-500 bg-gray-500/10 text-gray-400'
+        }`}>
+          {platform.toUpperCase().replace('-', '_')}
+        </span>
+      </div>
 
       {/* COMPACT PROFILE CARD */}
       <RetroWindow title="AGENT_PROFILE.DAT" icon="info">
@@ -395,6 +407,7 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                       </button>
 
                       <button
+                        disabled={platform === 'base-app'}
                         onClick={async () => {
                           if (!profile?.referralCode) return;
                           const cleanRefCode = profile.referralCode.replace("ECHO_", "");
@@ -412,9 +425,13 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
                             window.open(composeUrl, '_blank');
                           }
                         }}
-                        className="w-full py-3 bg-primary text-black font-pixel text-xs hover:brightness-110 flex items-center justify-center gap-2 border-2 border-primary"
+                        className={`w-full py-3 font-pixel text-xs flex items-center justify-center gap-2 border-2 ${
+                          platform === 'base-app'
+                            ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50 shadow-none'
+                            : 'bg-primary text-black hover:brightness-110 border-primary'
+                        }`}
                       >
-                        CAST INVITE
+                        {platform === 'base-app' ? 'LOCKED_ON_BASE' : 'CAST INVITE'}
                       </button>
                     </div>
                   </div>

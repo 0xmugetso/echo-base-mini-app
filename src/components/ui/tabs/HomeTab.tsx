@@ -114,7 +114,13 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     return `${addr.slice(0, 10)}...${addr.slice(-8)}`;
   };
 
-  const { actions, isSDKLoaded } = useMiniApp();
+  const { actions, isSDKLoaded, platform } = useMiniApp();
+  const [hideAddApp, setHideAddApp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('echo_hide_add_app') === 'true';
+    }
+    return false;
+  });
   const [promptedAdd, setPromptedAdd] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -547,8 +553,18 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
       <RetroBanner src="/assets/banner_skull.jpg" alt="Identity Matrx" />
 
       {/* ADD APP PROMPT */}
-      {context && !context?.client?.added && (
-        <div className="border-2 border-primary bg-primary/5 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,240,255,0.15)] animate-in fade-in slide-in-from-top-4 duration-300">
+      {context && !context?.client?.added && platform !== 'base-app' && !hideAddApp && (
+        <div className="border-2 border-primary bg-primary/5 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,240,255,0.15)] animate-in fade-in slide-in-from-top-4 duration-300 relative">
+          <button
+            onClick={() => {
+              setHideAddApp(true);
+              localStorage.setItem('echo_hide_add_app', 'true');
+              toast("NOTIFICATION MUTED", "INFO");
+            }}
+            className="absolute top-1 right-2 text-gray-500 hover:text-white font-mono text-[9px] uppercase cursor-pointer"
+          >
+            [X]
+          </button>
           <div className="flex items-center gap-3">
             <span className="text-xl animate-bounce">🛡️</span>
             <div>
