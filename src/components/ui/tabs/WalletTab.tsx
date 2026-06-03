@@ -214,25 +214,12 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
     <div className="space-y-6 pb-24">
       <RetroBanner src="/assets/banner_data.jpg" alt="Wallet Data" />
 
-      {/* Platform Checker Relocated */}
-      <div className="flex justify-end pr-1 -mt-2">
-        <span className={`text-[8px] font-pixel px-1.5 py-0.5 border leading-none ${
-          platform === 'warpcast' 
-            ? 'border-[#9c4df4] bg-[#9c4df4]/10 text-[#9c4df4]' 
-            : platform === 'base-app'
-            ? 'border-[#0052ff] bg-[#0052ff]/10 text-[#0052ff]'
-            : 'border-gray-500 bg-gray-500/10 text-gray-400'
-        }`}>
-          {platform.toUpperCase().replace('-', '_')}
-        </span>
-      </div>
-
       {/* COMPACT PROFILE CARD */}
       <RetroWindow title="AGENT_PROFILE.DAT" icon="info">
         <div className="space-y-4">
 
           {/* Main Info Row */}
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start gap-4">
             <div>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">OPERATOR</p>
               <h1 className="text-2xl font-pixel text-white leading-none">
@@ -241,11 +228,24 @@ export function WalletTab({ isActive, neynarUser }: { isActive?: boolean; neynar
               <p className="text-xs font-mono text-primary mt-1">@{user?.username?.toUpperCase() || "ANON"}</p>
             </div>
 
-            {/* Status Badge */}
-            <div className="flex flex-col items-end gap-2">
+            {/* Status Badge & Platform Client */}
+            <div className="flex flex-col items-end gap-2 shrink-0">
               <div className={`px-2 py-1 border ${isConnected ? 'border-primary bg-primary/20 text-primary' : 'border-red-500 text-red-500'} text-[10px] font-bold uppercase flex items-center gap-2`}>
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-primary animate-pulse' : 'bg-red-500'}`} />
                 {isConnected ? 'ONLINE' : 'OFFLINE'}
+              </div>
+
+              <div className={`px-2.5 py-1 border font-pixel text-xs flex items-center gap-1.5 shadow-[2px_2px_0_0_rgba(0,0,0,0.3)] select-none ${
+                platform === 'warpcast' 
+                  ? 'border-[#9c4df4] bg-[#9c4df4]/10 text-[#9c4df4] shadow-[#9c4df4]/20' 
+                  : platform === 'base-app'
+                  ? 'border-[#0052ff] bg-[#0052ff]/10 text-[#0052ff] shadow-[#0052ff]/20'
+                  : 'border-gray-500 bg-gray-500/10 text-gray-400'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  platform === 'warpcast' ? 'bg-[#9c4df4]' : platform === 'base-app' ? 'bg-[#0052ff]' : 'bg-gray-400'
+                }`} />
+                {platform === 'warpcast' ? 'WARPCAST_OS' : platform === 'base-app' ? 'BASE_CLIENT' : 'BROWSER_ENV'}
               </div>
             </div>
           </div>

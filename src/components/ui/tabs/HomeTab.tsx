@@ -125,6 +125,8 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const [introOpen, setIntroOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [hasMinted, setHasMinted] = useState(false);
+  const [remintModalOpen, setRemintModalOpen] = useState(false);
+  const [remintTokenId, setRemintTokenId] = useState<number | null>(null);
 
   const { toast } = useToast();
   const { sendTransactionAsync } = useSendTransaction();
@@ -134,7 +136,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
   const [extModalOpen, setExtModalOpen] = useState(false);
   
   useEffect(() => {
-    if (extModalOpen) {
+    if (extModalOpen || remintModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -142,7 +144,7 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [extModalOpen]);
+  }, [extModalOpen, remintModalOpen]);
 
   const [scanHistory, setScanHistory] = useState<{ address: string, stats: any }[]>([]);
 
@@ -327,6 +329,10 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
 
       console.log("MINT SUBMITTED: " + hash);
       toast("MINT SUCCESSFUL! CARD IS YOURS", "SUCCESS");
+      if (hasMinted) {
+        setRemintTokenId(tokenId);
+        setRemintModalOpen(true);
+      }
       setHasMinted(true);
     } catch (e: any) {
       console.error("[Mint] Error:", e.message);
@@ -1001,6 +1007,49 @@ export function HomeTab({ neynarUser, context, setActiveTab }: HomeTabProps) {
             >
               ENTER SYSTEM
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* RE-MINT SUCCESS MODAL */}
+      {remintModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[95%] max-w-md bg-black border-4 border-[#00ff00] p-6 shadow-[8px_8px_0px_0px_#00ff00] flex flex-col gap-6 relative z-10 transform animate-in zoom-in-95 duration-200">
+            {/* Hologram/CRT scanlines */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-40" />
+
+            <div className="text-center space-y-3 relative z-10">
+              <span className="text-4xl animate-bounce inline-block">🎉</span>
+              <h2 className="text-2xl font-pixel text-[#00ff00] uppercase tracking-widest text-shadow-glow">
+                MINT SUCCESSFUL!
+              </h2>
+              <div className="border border-dashed border-[#00ff00]/40 bg-[#00ff00]/5 p-4 shadow-[inset_0_0_10px_rgba(0,255,0,0.1)]">
+                <p className="text-sm font-pixel text-white uppercase leading-normal">
+                  CONGRATS! YOUR MINT IS SUCCESSFUL!
+                </p>
+                <p className="text-[10px] font-mono text-gray-400 mt-2 uppercase tracking-wide">
+                  YOUR UNIQUE AGENT IDENTITY CARD HAS BEEN SECURED ON THE BASE NETWORK{remintTokenId ? ` (TOKEN #${remintTokenId})` : ""}.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 relative z-10">
+              <a
+                href={remintTokenId ? `https://opensea.io/assets/base/${AURA_CONTRACT_ADDRESS}/${remintTokenId}` : `https://opensea.io/assets/base/${AURA_CONTRACT_ADDRESS}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#00ff00] text-black font-pixel text-xs py-3.5 border-2 border-white hover:brightness-110 active:translate-y-0.5 transition-all uppercase text-center font-bold shadow-[4px_4px_0_0_#ffffff] active:shadow-none"
+              >
+                VIEW ON OPENSEA 🌊
+              </a>
+
+              <button
+                onClick={() => setRemintModalOpen(false)}
+                className="w-full bg-black text-white font-pixel text-xs py-3.5 border-2 border-white hover:bg-white hover:text-black active:translate-y-0.5 transition-all uppercase font-bold shadow-[4px_4px_0_0_#ffffff] active:shadow-none"
+              >
+                CLOSE WINDOW
+              </button>
+            </div>
           </div>
         </div>
       )}
